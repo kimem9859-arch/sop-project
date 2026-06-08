@@ -1,0 +1,6 @@
+# PoC Step 1·2 의존성 (Windows 노트북 / 일반 환경용)
+# Windows에서는 libGLESv2 같은 리눅스 핵이 필요 없음 — 그냥 아래만 설치.
+opencv-python>=4.8
+mediapipe>=0.10,<0.11
+ultralytics>=8.0
+numpy

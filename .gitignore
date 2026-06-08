@@ -1,0 +1,38 @@
+# 가상환경 / 캐시
+.poc_venv/
+.ppt_venv/
+__pycache__/
+*.pyc
+
+# LibreOffice / 정크
+.lo_root/
+.lo_fontwork/
+.lo_install/
+.lo_libs/
+.lo_profile/
+.qa_img/
+.syslibs/
+
+# 대용량 데이터 · 출력 · 모델
+poc_data/
+poc/out/
+poc/out2/
+poc/out3/
+poc/*.task
+
+# 영상: 전부 제외하되 정상 · 스침만 포함
+poc/*.mp4
+!poc/overlay_정상.mp4
+!poc/overlay_스침.mp4
+
+# 로그
+*.log
+*.err
+
+# 이전 / 별도 작업 (Rpi5는 별도 깃 저장소)
+Test/
+Rpi5/
+
+# 윈도우 / OS 정크
+*Zone.Identifier
+.DS_Store
