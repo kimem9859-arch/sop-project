@@ -21,7 +21,6 @@
 │  ├─ fsm/                순서위반 상태머신 (정본 코드는 Rpi5/Demo/fsm.py)
 │  └─ ai_model/           트랙 B — console_v1 YOLO 버튼 동적검출
 ├─ media/                 🎬 overlay 영상 (정상·스침만 git 추적)
-├─ tools/                 🔧 build_pptx.py
 └─ Rpi5/                  🍓 RPi 데모 (별도 git repo)
 
 gitignore 환경자산(루트): .poc_venv · poc_data · .syslibs
