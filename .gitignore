@@ -1,16 +1,9 @@
 # 가상환경 / 캐시
 .poc_venv/
-.ppt_venv/
 __pycache__/
 *.pyc
 
-# LibreOffice / 정크
-.lo_root/
-.lo_fontwork/
-.lo_install/
-.lo_libs/
-.lo_profile/
-.qa_img/
+# 시스템 라이브러리 (run.sh가 libGLESv2로 사용)
 .syslibs/
 
 # 대용량 데이터 · 출력 · 모델
@@ -29,8 +22,8 @@ poc/*.mp4
 *.log
 *.err
 
-# 이전 / 별도 작업 (Rpi5는 별도 깃 저장소)
-Test/
+# 별도 작업·자산 (Rpi5는 별도 깃 저장소)
+trackA_interlock_ref/
 Rpi5/
 
 # 윈도우 / OS 정크
