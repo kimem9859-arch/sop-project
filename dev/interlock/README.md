@@ -11,7 +11,7 @@
 - **산출물**: §12 입력버튼·인터록 결선도 (버튼 배치 확정됨).
 
 ## 참고 자산
-- `../../trackA_interlock_ref/` — 구 Test에서 살린 ESP32 TCP·Arduino 스케치(`camera_stream` 등).
+- `./ref/` — 구 Test에서 살린 ESP32 TCP·Arduino 스케치(`camera_stream` 등). gitignore(637M).
 
 ## 역할 분담
 - 배선·실연결 = 사용자 / 코드·배선도 = Claude.

@@ -23,7 +23,7 @@ media/*.mp4
 *.err
 
 # 별도 작업·자산 (Rpi5는 별도 깃 저장소)
-trackA_interlock_ref/
+dev/interlock/ref/
 Rpi5/
 
 # 윈도우 / OS 정크
