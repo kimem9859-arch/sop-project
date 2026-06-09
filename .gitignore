@@ -8,15 +8,15 @@ __pycache__/
 
 # 대용량 데이터 · 출력 · 모델
 poc_data/
-poc/out/
-poc/out2/
-poc/out3/
-poc/*.task
+dev/poc/out/
+dev/poc/out2/
+dev/poc/out3/
+dev/poc/*.task
 
-# 영상: 전부 제외하되 정상 · 스침만 포함
-poc/*.mp4
-!poc/overlay_정상.mp4
-!poc/overlay_스침.mp4
+# 영상: media/ 전부 제외하되 정상 · 스침만 포함
+media/*.mp4
+!media/overlay_정상.mp4
+!media/overlay_스침.mp4
 
 # 로그
 *.log

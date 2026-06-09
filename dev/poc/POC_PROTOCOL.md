@@ -73,14 +73,14 @@
 
 ## 5. 실행 순서 (명령)
 ```bash
-# (1) 첫 프레임 떠서 버튼 위치 확인 → poc/rois.json 에 B1~B4 박스 좌표 입력
-./poc/run.sh poc_data/clips/정상01.mp4 --dump-frame0 poc/frame0.png
+# (1) 첫 프레임 떠서 버튼 위치 확인 → dev/poc/rois.json 에 B1~B4 박스 좌표 입력
+./dev/poc/run.sh poc_data/clips/정상01.mp4 --dump-frame0 dev/poc/frame0.png
 
 # (2) 계측: 모든 클립 → out/ 에 frames.csv·events.csv + 종합표
-./poc/run.sh poc_data/clips/ --rois poc/rois.json --out poc/out
+./dev/poc/run.sh poc_data/clips/ --rois dev/poc/rois.json --out dev/poc/out
 
 # (3) 채점: frames.csv ↔ GT → 지표
-.poc_venv/bin/python poc/score.py --frames poc/out --gt poc_data/ground_truth_segments.csv --sweep
+.poc_venv/bin/python dev/poc/score.py --frames dev/poc/out --gt poc_data/ground_truth_segments.csv --sweep
 ```
 
 ## 6. 통제 (결과 오염 방지)
@@ -90,6 +90,6 @@
 - 가림 구간은 프레임 정확도에서 **분리 집계**(가림제외/포함 둘 다 본다).
 
 ## 7. 산출물
-- `poc/out/*.frames.csv` · `*.events.csv` (계측)
+- `dev/poc/out/*.frames.csv` · `*.events.csv` (계측)
 - score.py 콘솔 리포트 (지표 + 혼동행렬 + sweep)
 - 통과/미달 판정 1줄 + 다음 단계 결정

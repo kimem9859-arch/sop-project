@@ -104,9 +104,9 @@
 
 | 항목 | 파일 |
 | --- | --- |
-| 계측 하니스 | `poc/roi_hover.py` (MediaPipe 손 + 색 ROI + dwell) |
-| 채점기 | `poc/score.py` (순서·오탐·검출률) |
-| 수행 프로토콜 | `poc/POC_PROTOCOL.md` |
+| 계측 하니스 | `dev/poc/roi_hover.py` (MediaPipe 손 + 색 ROI + dwell) |
+| 채점기 | `dev/poc/score.py` (순서·오탐·검출률) |
+| 수행 프로토콜 | `dev/poc/POC_PROTOCOL.md` |
 | 정답(GT) | `poc_data/ground_truth_segments.csv` |
-| 계측 결과 | `poc/out3/*.frames.csv` |
+| 계측 결과 | `dev/poc/out3/*.frames.csv` |
 | 인식 모델 | MediaPipe HandLandmarker(`hand_landmarker.task`) |

@@ -9,8 +9,8 @@
   5) dwell 임계 sweep: 0.3~1.5초에서 recall/오탐 변화 → 최적 임계 확인
 
 사용:
-  python score.py --frames out/ --gt ../poc_data/ground_truth_segments.csv
-  python score.py --frames out/정상01.frames.csv --gt ../poc_data/ground_truth_segments.csv --sweep
+  python score.py --frames out/ --gt ../../poc_data/ground_truth_segments.csv
+  python score.py --frames out/정상01.frames.csv --gt ../../poc_data/ground_truth_segments.csv --sweep
 """
 import argparse
 import csv
