@@ -51,12 +51,18 @@
 - ✅ 폴더 정리·구조 재편·정본 모델 네이밍 3단계화.
 - ✅ **console_v1.hef 빌드 완료**(버튼 5클래스, 학습 mAP 0.993[낙관]·level0 양자화). → `dev/ai_model/`.
 - ✅ recipe.json 단계라벨 PM 시퀀스 동기화(Rpi5).
-- **▶ 최우선 다음 = console_v1.hef 파이 통합·실추론** — `Rpi5/Demo/detector.py` HailoDetector 배선(uint8 640·NMS·5클래스), B1~B4+EMO 검출·FPS·**새영상 검증** → 정본 갱신.
+- ✅ **console_v1 파이 통합·실추론·벤치마크 완료** — B1·B2·B3·EMO 검출 동작 확인. ESP32 TCP ~13fps(하드웨어 상한). **B4 완전 미탐지 확인 → console_v2 재학습 확정**.
+- ✅ `Rpi5/Demo/test/bench_detector.py` 작성 + 2회 실측(4종 CSV + 영상). test-artifacts 브랜치 보관.
+- ✅ Hailo-8 드라이버 재빌드(kernel 6.18.29 대응). `/etc/modules-load.d/hailo.conf`로 자동로드 설정.
+- ✅ MediaPipe 호환성 문제 확인: hailo_platform은 Python 3.13 전용, mediapipe는 aarch64/3.13 미지원 → **HOI 검증 보류**(PoC 단계 YOLO 탐지만 확인).
+- **▶ 최우선 다음 = console_v2 재학습** — B4 미탐지 해결(더 많은 데이터·calibration 이미지·640 해상도 확정), GPU 환경에서 재학습·DFC 변환.
 - 트랙 A 인터락(`dev/interlock/README`), Step3 통합 → 4 E2E → 5 데모·발표.
 
 ## 미해결
-- **입력 해상도 320/640**: console_v1은 640, 정본 §7.1 "QVGA 320 기본" → 정책 확정 필요.
-- console_v1 정확도 2겹 리스크(낙관 지표 + level0 양자화) → 새영상 검증·필요시 `console_v2` 재학습.
+- **입력 해상도**: console_v1은 640 빌드·검증 완료. §7.1 "QVGA 320 기본" 정책은 console_v2 재학습 시 확정 필요(현재 잠정 640).
+- **B4 미탐지**: level-0 DFC 양자화 + 검정 버튼 저대비 추정 → console_v2 재학습 및 B4 데이터 보강으로 해결 필요.
+- **MediaPipe / HOI 검증**: Python 3.13 aarch64 미지원. hailo_platform과 공존 불가 → console_v2 단계에서 Python 버전 정책 재검토 필요.
+- **FPS**: ESP32-S3 TCP ~13fps 상한. NFR-1 30fps 목표 미달 — 카메라 경로 변경(USB 웹캠→글래스 직접연결 등) 또는 목표 조정 필요.
 - 페일세이프 표현 정정(§1 "능동형 Fail-Safe" 과장), §2.3 적합 사고사례 미발굴.
 
 ## 안전 용어
