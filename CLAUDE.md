@@ -42,6 +42,7 @@
 - 머신별 차이는 `dev/poc/SETUP.md`. 환경자산 `.poc_venv`·`poc_data`·`.syslibs`는 gitignore → 머신마다 재구축.
 
 ## 작업·커밋 규칙
+- **⭐ 세션 시작 = 원격 먼저**: 양 머신이 같은 repo를 편집하므로, 로컬이 최신이라 가정 금지. 작업 전 `git fetch`로 ahead/behind 확인 후 필요시 `git pull`. (SessionStart 훅 `.claude/hooks/session-sync-check.sh`가 sop-project·Rpi5 양쪽을 자동 점검·보고 — 훅이 안 돌면 수동으로.)
 - 사양은 통합문서에만(README/CLAUDE 복붙 금지 → drift). 폴더·경로 바꾸면 README·CLAUDE 같이 갱신.
 - **커밋 구분**: 코드 수정 → 해당 repo(파이 코드는 `Rpi5`로) / 통합문서·설계 → `sop-project`로.
 - 커밋 끝에 `Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>`. push는 사용자 요청 시.
