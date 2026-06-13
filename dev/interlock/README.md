@@ -9,7 +9,7 @@
 - ▶ **다음 = 코드 작성** → [`코드작업_핸드오프.md`](코드작업_핸드오프.md) (`interlock.py` + Arduino `.ino`, Rpi5 repo).
 
 ## 구성 (확정)
-- **차단 대상**: 실장비 없음 → 시뮬 부하(12V LED 파일럿, PoC). 최종 차단 시각화 = 타워램프 녹 OFF. Arduino UNO R4 + **8채널 릴레이**(SZH-RLBG-009).
+- **차단 대상**: 실장비 없음 → 시뮬 부하(12V LED 파일럿, PoC). 최종 차단 시각화 = 타워램프 녹 OFF. Arduino UNO R4 + 릴레이(**최종 4채널 사용** / 8채널 모듈 SZH-RLBG-009는 PoC·확장용).
 - **프로토콜**: RPi `pyserial` → `RUN`/`WARN`/`BLOCK\n`(+ACK). `/dev/ttyACM0` 115200.
 - **연결**: fsm `SafetyFSM(on_interlock=…, on_feedback=…)` → `safety_console._on_interlock/_on_feedback` 배선.
 - **입력**: 버튼 B1~B4·EMO → Pi GPIO (별도 follow-on).
