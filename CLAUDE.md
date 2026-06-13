@@ -47,7 +47,7 @@
 - **커밋 구분**: 코드 수정 → 해당 repo(파이 코드는 `Rpi5`로) / 통합문서·설계 → `sop-project`로.
 - 커밋 끝에 `Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>`. push는 사용자 요청 시.
 
-## 현재 상태 · 다음 작업 (2026-06-11)
+## 현재 상태 · 다음 작업 (2026-06-13)
 - ✅ Step1 PoC 완료(색 ROI, 정상 100%·스침 오탐 0).
 - ✅ 폴더 정리·구조 재편·정본 모델 네이밍 3단계화.
 - ✅ **console_v1.hef 빌드 완료**(버튼 5클래스, 학습 mAP 0.993[낙관]·level0 양자화). → `dev/ai_model/`.
@@ -56,15 +56,17 @@
 - ✅ `Rpi5/Demo/test/bench_detector.py` 작성 + 2회 실측(4종 CSV + 영상). test-artifacts 브랜치 보관.
 - ✅ Hailo-8 드라이버 재빌드(kernel 6.18.29 대응). `/etc/modules-load.d/hailo.conf`로 자동로드 설정.
 - ✅ MediaPipe 호환성 문제 확인: hailo_platform은 Python 3.13 전용, mediapipe는 aarch64/3.13 미지원 → **HOI 검증 보류**(PoC 단계 YOLO 탐지만 확인).
+- ✅ **트랙 A 인터락 코드 완료(2026-06-13, Rpi5 `feature/fsm-interlock`)** — 출력부 `interlock.py`(pyserial→Arduino UNO R4 **Minima** 릴레이, RUN/WARN/BLOCK+ACK, 실연결·ACK 검증) + 입력부 `gpio_input.py`(버튼 B1~B4·EMO→FSM, gpiozero Mock 검증) + GUI `⏻ 시스템 종료`. 전원부 = 결선도 §8(멀티탭 마스터·GUI 안전종료). **입력→판정→출력 코드상 완성**(실물 결선만 남음).
+- ✅ **목적 프레이밍 B 정렬(2026-06-13)** — '작업자 안전'→**'휴먼 에러(순서 위반) 사전 예방'**(안전은 효과). 통합문서 §1·§3 과장표현(Fail-Safe·원천차단) 정정.
 - **▶ 최우선 다음 = console_v2 재학습** — B4 미탐지 해결(더 많은 데이터·calibration 이미지·640 해상도 확정), GPU 환경에서 재학습·DFC 변환.
-- 트랙 A 인터락(`dev/interlock/README`), Step3 통합 → 4 E2E → 5 데모·발표.
+- 트랙 A 인터락 코드 ✅완료 → **다음 = 실물 결선 + E2E**(버튼 GPIO·릴레이·타워램프 배선, 사용자). Step3 통합 → 4 E2E → 5 데모·발표.
 
 ## 미해결
 - **입력 해상도**: console_v1은 640 빌드·검증 완료. §7.1 "QVGA 320 기본" 정책은 console_v2 재학습 시 확정 필요(현재 잠정 640).
 - **B4 미탐지**: level-0 DFC 양자화 + 검정 버튼 저대비 추정 → console_v2 재학습 및 B4 데이터 보강으로 해결 필요.
 - **MediaPipe / HOI 검증**: Python 3.13 aarch64 미지원. hailo_platform과 공존 불가 → console_v2 단계에서 Python 버전 정책 재검토 필요.
 - **FPS**: ESP32-S3 TCP ~13fps 상한. NFR-1 30fps 목표 미달 — 카메라 경로 변경(USB 웹캠→글래스 직접연결 등) 또는 목표 조정 필요.
-- 페일세이프 표현 정정(§1 "능동형 Fail-Safe" 과장), §2.3 적합 사고사례 미발굴.
+- ✅ 페일세이프/안전 용어 정정 완료(프레이밍 B: 휴먼 에러 예방, 안전은 효과). §2.3 적합 사고사례 미발굴(진행 중).
 
 ## 안전 용어
 포카요케(실수방지)·인터락·안돈(타워램프 경고)·능동형 안전. ※풀프루프·페일세이프는 과장/조건부라 주의.

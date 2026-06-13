@@ -9,7 +9,7 @@
 | 모델 | 정체 | 상태 |
 |---|---|---|
 | `person_v1.pt` | 초기 검증(person 단일, mAP50≈0.96) | ✅ 완료 |
-| **`console_v1`** | **버튼검출 1차 PoC·검증용** (5클래스) | 🔄 학습·.hef 빌드완료 / **실추론 미검증** |
+| **`console_v1`** | **버튼검출 1차 PoC·검증용** (5클래스) | ✅ 학습·.hef 빌드·파이 통합·실추론·벤치마크 완료(2026-06-11) / B1~B3·EMO 검출, **B4 미탐지 → console_v2 재학습 확정** |
 | `console_v2` | 최종 시연 모델(정확도 보강 재학습) | ⬜ 추후 |
 
 ## console_v1 — 5클래스 (버튼만, 디스플레이·타워램프 미포함)
@@ -37,7 +37,7 @@
 - 출력: **HailoRT NMS 결과** `[클래스5, 5, 100]` 파싱 (raw 텐서 디코딩 ❌)
 - **HailoRT 4.x 필수** (DFC 3.33.1 hef 호환 / 5.x 금지)
 - 클래스 순서 = 위 5클래스 표
-- 산출물 `console_v1.hef`(4.4MB, 빌드명 `yolov8n.hef` 개명)는 현재 **`D:\Hailo_DFC\`**. 아직 repo·파이 미반영.
+- 산출물 `console_v1.hef`(4.4MB, 빌드명 `yolov8n.hef` 개명) — ✅ **Rpi5 repo·파이 반영 완료**(`Demo/models/console_v1.hef`, `config.HEF_MODEL_PATH` 연결, 실추론 검증). 빌드 원본은 `D:\Hailo_DFC\`.
 
 ## 통합 시 주의 (Pi)
 - ⚠️ `Rpi5/Demo/recipe.json` 단계 라벨이 **구 기동 시퀀스**(웨이퍼로딩 등)라 정본 §6.1 PM 시퀀스와 불일치 → 동기화 필요. (버튼 클래스명 B1~B4·EMO는 일치)
