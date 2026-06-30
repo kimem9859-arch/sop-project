@@ -5,7 +5,7 @@
 > [`docs/통합수행설계문서_전체_섹션1-15.md`](../../docs/통합수행설계문서_전체_섹션1-15.md) §8·§11·§12.
 
 ## 현황 (2026-06-13)
-- ✅ **결선도 확정** → [`결선도_초안.md`](결선도_초안.md) (부품·핀맵·전원·배선 전부 검증) + Drive drawio 도면 2종.
+- ✅ **결선도 확정** → [`결선도_초안.md`](결선도_초안.md) (부품·핀맵·전원·배선 전부 검증) + drawio 도면 2종(팀 공유 드라이브 보관, 정본 아님).
 - ✅ **코드 작성·실연결 검증 완료** (Rpi5 `feature/fsm-interlock`):
   - `Demo/interlock.py`(pyserial 매니저)·`Demo/console_interlock/console_interlock.ino`·`config.py`(시리얼 설정)·`safety_console.py`(스텁→실송신 배선).
   - 펌웨어 업로드 후 RUN/WARN/BLOCK ↔ ACK 왕복 + `InterlockController` end-to-end 동작 확인. (부품 미배선 상태에서 통신 경로만 검증)
@@ -15,7 +15,7 @@
 - ▶ **다음 = 실제 릴레이·타워램프·버튼 배선**(사용자) → 점등·E2E 확인. (코드는 전부 준비됨, 결선만 하면 동작)
 
 ## 구성 (확정)
-- **차단 대상**: 실장비 없음 → 시뮬 부하(12V LED 파일럿, PoC). 최종 차단 시각화 = 타워램프 녹 OFF. Arduino UNO R4 + 릴레이(**최종 4채널 사용** / 8채널 모듈 SZH-RLBG-009는 PoC·확장용).
+- **차단 대상**: 실장비 없음 → 시뮬 부하(12V LED 파일럿, 시연용). 최종 차단 시각화 = 타워램프 녹 OFF. Arduino UNO R4 + 릴레이(**최종 4채널 사용** / 8채널 모듈 SZH-RLBG-009는 시연·확장용).
 - **프로토콜**: RPi `pyserial` → `RUN`/`WARN`/`BLOCK\n`(+ACK). `/dev/ttyACM0` 115200.
 - **연결**: fsm `SafetyFSM(on_interlock=…, on_feedback=…)` → `safety_console._on_interlock/_on_feedback` 배선.
 - **입력**: 버튼 B1~B4·EMO → Pi GPIO (✅ 코드 완료 `gpio_input.py`, 결선도 §3.1).
