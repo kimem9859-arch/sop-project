@@ -45,6 +45,8 @@
 ## 작업·커밋 규칙
 - **⭐ 세션 시작 = 원격 먼저**: 양 머신이 같은 repo를 편집하므로, 로컬이 최신이라 가정 금지. 작업 전 `git fetch`로 ahead/behind 확인 후 필요시 `git pull`. (SessionStart 훅 `.claude/hooks/session-sync-check.sh`가 sop-project·Rpi5 양쪽을 자동 점검·보고 — 훅이 안 돌면 수동으로.)
 - 사양은 통합문서에만(README/CLAUDE 복붙 금지 → drift). 폴더·경로 바꾸면 README·CLAUDE 같이 갱신.
+- **⭐ 측정·사양 수치 = 통합문서 단일 정본**: mAP·FPS·해상도 등 측정값은 통합문서 §10(설계값은 해당 §)에만 두고, 운영문서(CLAUDE·기준문서 제외 dev/README)는 **"§X 참조" 포인터만**(복제 금지). 수치가 바뀌면 통합문서만 고친다. (기준문서는 나침반이라 요약 보유 허용)
+- **⭐ 큰/되돌리기 어려운 변경 전 = 계획·확인 먼저**: 다중 파일 수정·구조(번호·파일명) 변경·삭제·외부 전송은 곧장 실행하지 말고, 계획(EnterPlanMode) 또는 A/B 선택지로 **먼저 확인**받는다. 단순·국소 수정은 바로 진행.
 - **커밋 구분**: 코드 수정 → 해당 repo(파이 코드는 `Rpi5`로) / 통합문서·설계 → `sop-project`로.
 - 커밋 끝에 `Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>`. push는 사용자 요청 시.
 
