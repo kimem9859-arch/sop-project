@@ -52,9 +52,9 @@
 - 라벨링: 가린 버튼도 amodal 박스, 25%↑ 보이거나 위치 식별되면 라벨.
 
 ## 향후 단계
-1. **(다음)** `console_v1.hef` 파이 통합·실추론 — B1~B4+EMO 검출·FPS 실측·새영상 검증 → 정본 갱신.
-2. 색 ROI → YOLO ROI 교체, 가림 대응(camera_thread IoU 트래커 `YOLO_MAX_MISS`).
-3. 정확도 보강 재학습 → **`console_v2`**(최종 시연).
+1. ✅ `console_v1.hef` 파이 통합·실추론·벤치마크 완료(2026-06-11) — B1~B3·EMO 검출, FPS ~13fps 실측, **B4 미탐지 확인**.
+2. **(다음)** 정확도 보강 재학습 → **`console_v2`**(최종 시연) — B4 해결(GPU 양자화·캘리브 1024+장·새영상).
+3. 색 ROI → YOLO ROI 교체, 가림 대응(camera_thread IoU 트래커 `YOLO_MAX_MISS`).
 - 디스플레이·타워램프 검출은 console_v1 미포함 → 필요 시 console_v2/별도.
 
 ## 기술 핵심
