@@ -34,8 +34,9 @@
 - `Rpi5/`는 sop-project에서 gitignore(별도 repo). 런타임 맥락은 `Rpi5/CLAUDE.md`.
 
 ## 모델 (네이밍 규약 정본 §7.1, 3단계)
-- `person_v1.pt` 초기 검증(mAP 0.96 완료) → **`console_v1`** 버튼검출 **1차 검증 테스트**(5클래스 B1~B4+EMO, .hef 빌드완료·파이 실추론·벤치마크 완료 — B1·B2·B3·EMO 검출 동작, **B4 미탐지** 확인) → `console_v2` 최종(B4 해결 위해 재학습 확정).
+- `person_v1.pt` 초기 검증(완료) → **`console_v1`** 버튼검출 **1차 검증 테스트**(5클래스 B1~B4+EMO, .hef 빌드완료·파이 실추론·벤치마크 완료 — B1·B2·B3·EMO 검출 동작, **B4 미탐지** 확인) → `console_v2` 최종(B4 해결 위해 재학습 확정).
 - 버튼 클래스맵·Pi 추론 규격(uint8 640·HailoRT NMS·4.x): `dev/ai_model/README.md`.
+- ※ **측정 수치 정본 = 통합문서 §10**(학습 mAP·실추론 FPS 등). 여기·dev/README는 상태·결정만, 수치는 §10 참조.
 
 ## PoC 실행 (Step1, 데스크톱)
 루트에서: `./dev/poc/run.sh poc_data/clips/ --rois dev/poc/rois.json --out dev/poc/out`
@@ -50,9 +51,9 @@
 ## 현재 상태 · 다음 작업 (2026-06-29)
 - ✅ Step1 PoC 완료(색 ROI, 정상 100%·스침 오탐 0).
 - ✅ 폴더 정리·구조 재편·정본 모델 네이밍 3단계화.
-- ✅ **console_v1.hef 빌드 완료**(버튼 5클래스, 학습 mAP 0.993[낙관]·level0 양자화). → `dev/ai_model/`.
+- ✅ **console_v1.hef 빌드 완료**(버튼 5클래스, level0 양자화 — 학습 수치 §10.5). → `dev/ai_model/`.
 - ✅ recipe.json 단계라벨 PM 시퀀스 동기화(Rpi5).
-- ✅ **console_v1 파이 통합·실추론·벤치마크 완료** — B1·B2·B3·EMO 검출 동작 확인. ESP32 TCP ~13fps(하드웨어 상한). **B4 완전 미탐지 확인 → console_v2 재학습 확정**.
+- ✅ **console_v1 파이 통합·실추론·벤치마크 완료** — B1·B2·B3·EMO 검출 동작 확인. ESP32 TCP 수신이 FPS 상한(실측값 §10.6). **B4 완전 미탐지 확인 → console_v2 재학습 확정**.
 - ✅ `Rpi5/Demo/test/bench_detector.py` 작성 + 2회 실측(4종 CSV + 영상). test-artifacts 브랜치 보관.
 - ✅ Hailo-8 드라이버 재빌드(kernel 6.18.29 대응). `/etc/modules-load.d/hailo.conf`로 자동로드 설정.
 - ✅ MediaPipe 호환성 문제 확인: hailo_platform은 Python 3.13 전용, mediapipe는 aarch64/3.13 미지원 → **HOI 검증 보류**(PoC 단계 YOLO 탐지만 확인).
@@ -64,10 +65,10 @@
 - 트랙 A 인터락 코드 ✅완료 → **다음 = 실물 결선 + E2E**(버튼 GPIO·릴레이·타워램프 배선, 사용자). Step3 통합 → 4 E2E → 5 데모·발표.
 
 ## 미해결
-- **입력 해상도**: console_v1은 640 빌드·검증 완료. **결정 규칙(2026-06-13)**: MediaPipe 포함 FPS 실측 후 — 15fps 목표 미달이면 QVGA(320) 고려, 충분하면 640 유지+SW 최적화. console_v2 재학습 시 확정(잠정 640).
+- **입력 해상도**: console_v1은 640 빌드·검증 완료. **결정 규칙(2026-06-13)**: MediaPipe 포함 FPS 실측 후 — 15fps 목표 미달이면 QVGA(320) 고려, 충분하면 640 유지+SW 최적화. console_v2 재학습 시 확정(잠정 640). (상세 §7.1)
 - **B4 미탐지**: level-0 DFC 양자화 + 검정 버튼 저대비 추정 → console_v2 재학습 및 B4 데이터 보강으로 해결 필요.
 - **MediaPipe / HOI 검증**: Python 3.13 aarch64 미지원. hailo_platform과 공존 불가 → console_v2 단계에서 Python 버전 정책 재검토 필요.
-- **FPS**: ✅ **NFR-1 목표 = 15fps로 하향 확정(2026-06-13)**(30fps는 ESP32-S3 경로상 달성 불가). ⚠️ 실측 ~13fps는 **MediaPipe 미포함** 값 → HOI 추가 시 더 낮아질 수 있어 재측정·SW 최적화 필요. 카메라 경로 변경(USB 직결)은 웨어러블 컨셉상 확장과제.
+- **FPS**: ✅ **NFR-1 목표 = 15fps로 하향 확정(2026-06-13)**(30fps는 ESP32-S3 경로상 달성 불가). ⚠️ 실측값(**MediaPipe 미포함**, §10.6)은 HOI 추가 시 더 낮아질 수 있어 재측정·SW 최적화 필요. 카메라 경로 변경(USB 직결)은 웨어러블 컨셉상 확장과제.
 - ✅ 페일세이프/안전 용어 정정 완료(프레이밍 B: 휴먼 에러 예방, 안전은 효과).
 - ✅ **배경 사고사례 §2.1 반영(2026-06-29)** — SK하이닉스 청주 화재(06/01·06/12)·보은 포스핀 누출 3건을 **위험성 배경으로만** 기재(사후시스템 인과·사전예방 필요성과 **연결 안 함** — 사용자 지침).
 
