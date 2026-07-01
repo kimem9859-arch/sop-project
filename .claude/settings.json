@@ -29,12 +29,6 @@
             "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/session-sync-check.sh\"",
             "timeout": 30,
             "statusMessage": "원격 동기화 점검 중…"
-          },
-          {
-            "type": "command",
-            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/doc-consistency-check.sh\"",
-            "timeout": 20,
-            "statusMessage": "문서 정합성 점검 중…"
           }
         ]
       }
