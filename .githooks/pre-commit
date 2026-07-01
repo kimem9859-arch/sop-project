@@ -1,0 +1,88 @@
+#!/usr/bin/env bash
+# pre-commit 훅 — 문서 간 정합성 점검 (LLM · diff 앵커 전문대조, 2026-07-01 도입).
+# 목적: "A 문서를 고치면 B·C도 같이 고쳤어야 하는데 빠뜨려" 생기는 문서 간 모순(drift)을
+#       커밋되는 순간 LLM(claude -p)이 대조해 경고. 옛 doc-consistency(SessionStart grep)의
+#       타이밍·brittle·중복 문제를 pre-commit + LLM + diff앵커로 교정.
+# 성격: 경고만·비차단(항상 exit 0). SKIP_DOCSYNC=1 이면 스킵. claude 없거나 실패해도 커밋 안 막음.
+# 공유: repo 추적 .githooks/ + `git config core.hooksPath .githooks`(클론 후 1회, 양 머신).
+set -uo pipefail
+
+# ── 0. 바이패스 ──
+[ "${SKIP_DOCSYNC:-0}" = "1" ] && exit 0
+
+REPO=$(git rev-parse --show-toplevel 2>/dev/null) || exit 0
+cd "$REPO" 2>/dev/null || exit 0
+
+# ── 1. staged 문서 필터 (CLAUDE.md · README.md · docs/*.md) ──
+mapfile -t STAGED < <(git -c core.quotepath=false diff --cached --name-only --diff-filter=ACM 2>/dev/null \
+  | grep -E '^(CLAUDE\.md|README\.md|docs/.*\.md)$')
+[ "${#STAGED[@]}" -eq 0 ] && exit 0   # 문서 커밋 아님 → 미발동
+
+# claude CLI 없으면 조용히 스킵(커밋 진행)
+command -v claude >/dev/null 2>&1 || exit 0
+
+# ── 2. 참조 문서 목록 (repo 내 상태·설계 문서 전체) ──
+DOCS=()
+for f in CLAUDE.md README.md docs/*.md; do [ -f "$f" ] && DOCS+=("$f"); done
+
+# ── 3. memory 후보 경로 (하드코딩 금지·양 머신 자동·이 프로젝트만) ──
+enc=$(printf '%s' "$REPO" | tr '/' '-')
+MEMDIR=""
+for d in "${DOCSYNC_MEMORY_DIR:-}" "$HOME/.claude/projects/$enc/memory" "$HOME/memory"; do
+  [ -n "$d" ] && [ -d "$d" ] && { MEMDIR="$d"; break; }
+done
+
+# ── 4. 페이로드 구성 (지시 + diff앵커 + 문서 전문 + memory) ──
+PAYLOAD=$(mktemp "${TMPDIR:-/tmp}/docsync.XXXXXX") || exit 0
+trap 'rm -f "$PAYLOAD"' EXIT
+{
+  cat <<'EOF'
+당신은 문서 정합성 점검기다. 아래는 한 git 커밋의 변경(=DIFF, 앵커)과 이 저장소 문서들의 현재 전문,
+그리고 선택적으로 memory(저장소를 가리키는 포인터 메모)다.
+
+판정 규칙:
+- 이 DIFF의 변경을 반영했을 때, 다른 문서/섹션에 (a) 지금 사실이 서로 모순되는 곳, 또는
+  (b) 이 변경과 함께 당연히 같이 고쳤어야 하는데 아직 옛 내용으로 남은 곳 만 지적하라.
+- 高신뢰만. 애매·추측성은 제외(없으면 넘겨라).
+- memory는 repo를 가리키는 얇은 포인터라 "더 적게 말함/생략"은 모순이 아니다.
+- 문제가 전혀 없으면 정확히 `OK` 한 단어만 출력하라.
+- 있으면 각 항목을 아래 형식으로(항목당 최대 3줄):
+    - [파일:섹션] 문제: <무엇이 어긋났나>
+      근거: <DIFF의 무엇 때문에>
+
+===== DIFF (이번 커밋 변경 = 앵커) =====
+EOF
+  git diff --cached -- "${STAGED[@]}" 2>/dev/null
+  echo
+  echo "===== 저장소 문서 전문 ====="
+  for f in "${DOCS[@]}"; do
+    echo "----- FILE: $f -----"
+    cat "$f"
+    echo
+  done
+  if [ -n "$MEMDIR" ]; then
+    echo "===== memory (포인터·참조용) [$MEMDIR] ====="
+    for m in "$MEMDIR"/*.md; do
+      [ -f "$m" ] || continue
+      echo "----- MEM: $(basename "$m") -----"
+      cat "$m"
+      echo
+    done
+  fi
+} > "$PAYLOAD"
+
+# ── 5. LLM 판독 (Haiku·타임아웃·실패해도 비차단) ──
+OUT=$(timeout 90 claude -p --model haiku < "$PAYLOAD" 2>/dev/null) || exit 0
+CLEAN=$(printf '%s' "$OUT" | tr -d '[:space:]')
+
+# ── 6. 결과 출력 (항상 exit 0) ──
+if [ -z "$CLEAN" ] || [ "$CLEAN" = "OK" ]; then
+  echo "[문서 정합성 점검] ✓ 이상 없음 ($(IFS=,; echo "${STAGED[*]}"))"
+else
+  echo "───────────────────────────────────────────────"
+  echo "[문서 정합성 점검] ⚠ 문서 간 모순 가능성 (경고만·커밋은 진행됨)"
+  printf '%s\n' "$OUT"
+  echo "· 무시하고 커밋하려면 그대로 두면 됩니다. 다음부터 건너뛰려면 SKIP_DOCSYNC=1 git commit"
+  echo "───────────────────────────────────────────────"
+fi
+exit 0
