@@ -44,7 +44,8 @@
 
 ## 작업·커밋 규칙
 - **⭐ 세션 시작 = 원격 먼저**: 양 머신이 같은 repo를 편집하므로, 로컬이 최신이라 가정 금지. 작업 전 `git fetch`로 ahead/behind 확인 후 필요시 `git pull`. (SessionStart 훅 `.claude/hooks/session-sync-check.sh`가 sop-project·Rpi5 양쪽을 자동 점검·보고 — 훅이 안 돌면 수동으로.)
-- **자동 점검 인프라(SessionStart 훅)**: `session-sync-check.sh`(git 원격 ahead/behind·로컬변경 보고). 문서 drift 방지는 훅이 아니라 **아래 단일정본 규칙 + 편집 시 규율**로 담보한다(구 `doc-consistency-check.sh`는 타이밍이 세션시작이라 예방 못 하고 CLAUDE.md와 중복이라 2026-07-01 제거 — 필요 시 pre-commit으로 부활). 권한 허용목록(읽기전용 자동허용)은 `.claude/settings.json`. **둘 다 repo 공유**(양 머신 동일).
+- **자동 점검 인프라(훅)**: SessionStart ① `session-sync-check.sh`(git 원격 ahead/behind·로컬변경 보고) ② `session-worklog-brief.sh`(작업로그 ⏸중단·▶다음 이어하기 브리핑 + 현재 session_id 주입). SessionEnd ③ `session-worklog-commit.sh`(그 세션이 만든 커밋을 `docs/작업로그.md`에 자동 매핑). 문서 drift 방지는 훅이 아니라 **아래 단일정본 규칙 + 편집 시 규율**로 담보한다(구 `doc-consistency-check.sh`는 타이밍이 세션시작이라 예방 못 하고 CLAUDE.md와 중복이라 2026-07-01 제거 — 필요 시 pre-commit으로 부활). 권한 허용목록은 `.claude/settings.json`. **전부 repo 공유**(양 머신 동일).
+- **⭐ "오늘 마무리"/"세션 정리" 의식**: 사용자가 이렇게 말하면 이번 세션 작업을 4분류(✅완료/⏸중단/▶다음/🔗커밋)로 정리해 **현재 session_id 태그와 함께 `docs/작업로그.md` 최신 블록으로 기록**한다(브리핑 훅이 알려준 ID 사용). 작업로그=시간순·세션태그 저널이라 CLAUDE.md「현재 상태」(현재 스냅샷)와 **역할 분리·공존**(상세 규약은 `docs/작업로그.md` 헤더).
 - 사양은 통합문서에만(README/CLAUDE 복붙 금지 → drift). 폴더·경로 바꾸면 README·CLAUDE 같이 갱신.
 - **⭐ 측정·사양 수치 = 통합문서 단일 정본**: mAP·FPS·해상도 등 측정값은 통합문서 §10(설계값은 해당 §)에만 두고, 운영문서(CLAUDE·기준문서 제외 dev/README)는 **"§X 참조" 포인터만**(복제 금지). 수치가 바뀌면 통합문서만 고친다. (기준문서는 나침반이라 요약 보유 허용)
 - **⭐ 큰/되돌리기 어려운 변경 전 = 계획·확인 먼저**: 다중 파일 수정·구조(번호·파일명) 변경·삭제·외부 전송은 곧장 실행하지 말고, 계획(EnterPlanMode) 또는 A/B 선택지로 **먼저 확인**받는다. 단순·국소 수정은 바로 진행.

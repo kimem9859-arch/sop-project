@@ -26,6 +26,9 @@ media/*.mp4
 dev/interlock/ref/
 Rpi5/
 
+# 작업로그 훅 temp (세션 시작 HEAD 기록 — SessionEnd가 소비 후 삭제)
+.claude/.worklog-head-*
+
 # 윈도우 / OS 정크
 *Zone.Identifier
 .DS_Store

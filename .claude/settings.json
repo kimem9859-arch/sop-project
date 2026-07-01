@@ -29,6 +29,23 @@
             "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/session-sync-check.sh\"",
             "timeout": 30,
             "statusMessage": "원격 동기화 점검 중…"
+          },
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/session-worklog-brief.sh\"",
+            "timeout": 15,
+            "statusMessage": "작업로그 브리핑 중…"
+          }
+        ]
+      }
+    ],
+    "SessionEnd": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/session-worklog-commit.sh\"",
+            "timeout": 15
           }
         ]
       }
