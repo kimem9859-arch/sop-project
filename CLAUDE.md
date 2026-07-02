@@ -2,7 +2,7 @@
 
 > 데스크톱·라즈베리파이 양쪽 Claude Code가 자동 로드하는 **공유 두뇌**.
 > 설계 사양은 여기서 정의하지 않는다 — 정본은 `docs/통합수행설계문서_전체_섹션1-15.md`.
-> Claude Code 자체 활용·인프라(훅·도구·작업방식) 기록은 `docs/cc작업기록.md`에 모은다 — 프로젝트 사양(통합문서)·시간순 저널(작업로그)과 구분.
+> Claude Code 작업은 프로젝트 작업과 분리 기록: `docs/claude-code-작업로그.md`(CC 시간순 로그) + `docs/claude-code-작업문서.md`(CC 설명서·원칙). 프로젝트 작업 로그는 `docs/작업로그.md`.
 
 ## 프로젝트
 **1인칭 Vision AI × 웨어러블 기반 작업자 SOP 순서 위반 실시간 감지·차단 시스템.** PECVD 정비(PM)에서 작업자의 순서 위반(휴먼 에러)을 버튼 누르기 직전에 사전 감지·차단. 콘솔은 **시연용 모조품**(실제 PECVD 기능 없음·타워램프 시각화는 부차적) — 핵심은 **비전 AI 순서위반 감지·차단**. (안전은 효과 → 프레이밍 B)
@@ -46,7 +46,7 @@
 ## 작업·커밋 규칙
 - **⭐ 세션 시작 = 원격 먼저**: 양 머신이 같은 repo를 편집하므로, 로컬이 최신이라 가정 금지. 작업 전 `git fetch`로 ahead/behind 확인 후 필요시 `git pull`. (SessionStart 훅 `.claude/hooks/session-sync-check.sh`가 sop-project·Rpi5 양쪽을 자동 점검·보고 — 훅이 안 돌면 수동으로.)
 - **자동 점검 인프라(훅)**: SessionStart ① `session-sync-check.sh`(git 원격 ahead/behind·로컬변경 보고) ② `session-worklog-brief.sh`(작업로그 ⏸중단·▶다음 이어하기 브리핑 + 현재 session_id 주입). SessionEnd ③ `session-worklog-commit.sh`(그 세션이 만든 커밋을 `docs/작업로그.md`에 자동 매핑). **pre-commit ④ `.githooks/pre-commit`**(문서 간 정합성 — `CLAUDE.md`·`README.md`·`docs/*.md` 커밋 시 diff를 앵커로 다른 문서·memory와의 모순을 `claude -p`(Haiku)가 대조·경고. **warn-only·비차단**, `SKIP_DOCSYNC=1`로 스킵). ①②③은 `.claude/settings.json` 등록, ④는 **클론 후 1회 `git config core.hooksPath .githooks` 필요**(`.githooks/README.md`). ④는 구 `doc-consistency-check.sh`(SessionStart grep·2026-07-01 제거)를 **다른 설계로 대체** — 타이밍(세션시작→커밋시점)·LLM 의미대조·diff앵커로 교정. 문서 drift의 1차 방어는 여전히 **아래 단일정본 규칙 + 편집 규율**, ④는 그 안전망. 권한 허용목록은 `.claude/settings.json`. **전부 repo 공유**(양 머신 동일).
-- **⭐ "오늘 마무리"/"세션 정리" 의식**: 사용자가 이렇게 말하면 이번 세션 작업을 4분류(✅완료/⏸중단/▶다음/🔗커밋)로 정리해 **현재 session_id 태그와 함께 `docs/작업로그.md` 최신 블록으로 기록**한다(브리핑 훅이 알려준 ID 사용). 작업로그=시간순·세션태그 저널이라 CLAUDE.md「현재 상태」(현재 스냅샷)와 **역할 분리·공존**(상세 규약은 `docs/작업로그.md` 헤더).
+- **⭐ "오늘 마무리"/"세션 정리" 의식**: 사용자가 이렇게 말하면 이번 세션 작업을 4분류(✅완료/⏸중단/▶다음/🔗커밋)로 정리해 **현재 session_id 태그와 함께** 기록한다(브리핑 훅 ID 사용). **프로젝트 작업 → `docs/작업로그.md`, Claude Code 작업(훅·도구·인프라) → `docs/claude-code-작업로그.md`** 로 나눠 적는다. (SessionEnd 자동 커밋매핑은 성격 구분 못 해 `작업로그.md` 하단에 전체 무분류로 쌓임 — 사람 기록만 분리.) 로그=시간순 저널이라 CLAUDE.md「현재 상태」(스냅샷)와 역할 분리·공존.
 - 사양은 통합문서에만(README/CLAUDE 복붙 금지 → drift). 폴더·경로 바꾸면 README·CLAUDE 같이 갱신.
 - **⭐ 측정·사양 수치 = 통합문서 단일 정본**: mAP·FPS·해상도 등 측정값은 통합문서 §10(설계값은 해당 §)에만 두고, 운영문서(CLAUDE·기준문서 제외 dev/README)는 **"§X 참조" 포인터만**(복제 금지). 수치가 바뀌면 통합문서만 고친다. (기준문서는 나침반이라 요약 보유 허용)
 - **⭐ 큰/되돌리기 어려운 변경 전 = 계획·확인 먼저**: 다중 파일 수정·구조(번호·파일명) 변경·삭제·외부 전송은 곧장 실행하지 말고, 계획(EnterPlanMode) 또는 A/B 선택지로 **먼저 확인**받는다. 단순·국소 수정은 바로 진행.
