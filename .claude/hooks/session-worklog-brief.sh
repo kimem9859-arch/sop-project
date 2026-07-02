@@ -20,7 +20,7 @@ fi
 echo "[작업로그 — 이어하기 브리핑]"
 if [ -f "$LOG" ]; then
   # 최신 사람 블록(첫 '## ' ~ 다음 '## ')에서 ⏸중단·▶다음만 추출. '(없음)'은 제외.
-  open=$(awk '/^## /{c++} c==1{print} c>=2{exit}' "$LOG" | grep -E '⏸|▶' | grep -vE '\(없음\)')
+  open=$(awk '/^## /{c++} c==1{print} c>=2{exit}' "$LOG" | grep -E '^-? *(⏸|▶)' | grep -vE '\(없음\)')
   if [ -n "$open" ]; then
     echo "  이전 세션에서 이어갈 작업:"
     printf '%s\n' "$open" | sed 's/^-\{0,1\} */    /'
