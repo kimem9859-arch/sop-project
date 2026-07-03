@@ -35,6 +35,12 @@
             "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/session-worklog-brief.sh\"",
             "timeout": 15,
             "statusMessage": "작업로그 브리핑 중…"
+          },
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/session-prune-stubs.sh\"",
+            "timeout": 15,
+            "statusMessage": "resume 목록 정리 중…"
           }
         ]
       }
