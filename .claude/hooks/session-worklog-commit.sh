@@ -2,7 +2,7 @@
 # SessionEnd 훅 — 이 세션이 만든 커밋을 작업로그 하단에 자동 매핑 append (2026-07-01 도입).
 # 목적: "어떤 세션(ID)에서 어떤 커밋을 했나"를 손 안 대고 남긴다(짝: session-worklog-brief.sh).
 # 시작 HEAD(.worklog-head-<id>)와 현재 HEAD를 비교해 그 사이 커밋을 기록.
-# ⚠ best-effort — 강제종료 등으로 SessionEnd가 미발동하면 이번 세션분은 누락(의미 요약은 '오늘 마무리' 수동 의식이 담보).
+# ⚠ best-effort — 강제종료 등으로 SessionEnd가 미발동하면 이번 세션분은 누락(의미 요약은 '세션 마무리' 수동 의식이 담보).
 # jq 비의존. 차단 불가(로깅용).
 set -uo pipefail
 

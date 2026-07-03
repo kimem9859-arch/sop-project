@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # SessionStart 훅 — 작업로그 이어하기 브리핑 + 세션ID 주입 + 시작 HEAD 기록 (2026-07-01 도입).
 # 목적: 이전 세션에서 ⏸중단·▶다음으로 남은 작업을 세션 시작 시 브리핑하고,
-#       현재 session_id를 모델 컨텍스트에 주입해 "오늘 마무리" 기록·resume 대상 식별을 돕는다.
+#       현재 session_id를 모델 컨텍스트에 주입해 "세션 마무리" 기록·resume 대상 식별을 돕는다.
 #       또 커밋 매핑용으로 시작 HEAD를 기록(짝: session-worklog-commit.sh).
 # 출력(stdout)은 SessionStart 훅 규약상 모델 컨텍스트에 주입된다. 경고만·차단 없음. jq 비의존.
 set -uo pipefail
@@ -28,7 +28,7 @@ if [ -f "$LOG" ]; then
     echo "  이어할 미완 작업 없음 (최신 블록 기준)."
   fi
 else
-  echo "  작업로그 파일 없음 — 첫 기록은 '오늘 마무리' 시 생성."
+  echo "  작업로그 파일 없음 — 첫 기록은 '세션 마무리' 시 생성."
 fi
 [ -n "$SID" ] && echo "  현재 session_id: $SID  (작업 기록·resume 식별용)"
 

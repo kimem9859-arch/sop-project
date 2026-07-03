@@ -26,7 +26,7 @@
 ## 2. 작업 방식 (how I work with Claude Code)
 
 - **세션 시작**: 브리핑 훅의 "이어갈 작업 + session_id" + 원격 동기화 상태 먼저 확인. behind면 pull 먼저.
-- **세션 마무리**: **"오늘 마무리"/"세션 정리"** 라고 하면 이번 세션 작업을 4분류(✅완료/⏸중단/▶다음/🔗커밋)로 기록 — **프로젝트 작업은 `작업로그.md`, CC 작업은 `claude-code-작업로그.md`** 로 나눠서(전체 UUID 태그).
+- **세션 마무리** (스킬 `/session-wrap`): **"세션 마무리"/"세션 정리"** 라고 하면 이번 세션 작업을 4분류(✅완료/⏸중단/▶다음/🔗커밋)로 기록 — **프로젝트 작업은 `작업로그.md`, CC 작업은 `claude-code-작업로그.md`** 로 나눠서(전체 UUID 태그). ※정의 = 하루 끝이 아니라 **한 작업 단위(A작업)가 끝난 시점**(하루 여러 번 가능).
 - **문서 커밋**: pre-commit 정합성 훅이 자동 대조(경고만). 무시하려면 `SKIP_DOCSYNC=1`.
 - **큰/되돌리기 어려운 변경**: 계획(plan mode) 또는 A/B 선택지로 먼저 확인.
 - **세션 이어가기**: 로그의 `session <UUID>`를 `claude --resume`에 사용.
@@ -56,7 +56,7 @@
 - **배포/공유**: 범용은 전역 `~/.claude/`(모든 폴더 자동) / 프로젝트 전용은 그 repo `.claude/`. git 훅은 `.githooks/`+`core.hooksPath`.
 
 ### 3.5 워크로그(세션 추적) 3종 조합
-- SessionStart brief(브리핑+session_id+시작 HEAD 기록) / SessionEnd commit(시작HEAD..현재 커밋 자동매핑) / **"오늘 마무리" 수동 요약**(의미 기록=진짜 안전판).
+- SessionStart brief(브리핑+session_id+시작 HEAD 기록) / SessionEnd commit(시작HEAD..현재 커밋 자동매핑) / **"세션 마무리" 수동 요약**(스킬 `/session-wrap`, 의미 기록=진짜 안전판).
 - 마커 추출은 **줄 맨 앞에서만**(`^-? *(⏸|▶)`) — 본문 속 글자 오탐 방지.
 
 ### 3.6 실전 함정
