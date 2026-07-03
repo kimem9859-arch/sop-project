@@ -6,6 +6,15 @@
 
 ---
 
+## 2026-07-03 · session 22149442-a0c0-4789-810a-26dcb8c5f91c (Roboflow·Drive MCP 연동)
+- ✅ **Roboflow MCP 연동** — `claude mcp add -s user roboflow --transport http https://mcp.roboflow.com/mcp` (OAuth). 30+ 툴 로드, 워크스페이스 `eung-min` 접근 확인. console_v2용 데이터셋(`object-detection-ycjp6`) 조회에 활용.
+  - ⚠️ 세션 도중 추가한 MCP는 `/mcp` 패널에 안 보임 → **세션 재시작 후** 인증해야 함(등록은 user config `~/.claude.json`에 즉시 반영).
+- ✅ **Google Drive MCP 활용** — 기연결됨(claude.ai). `button_dataset.zip`·학습결과(`results.csv`·`.pt`·`.onnx`·`.hef`) 조회로 B4 원인 재분석 근거 수집.
+- 💡 Roboflow MCP는 학습·라벨링까지만 — 최종 배포는 Hailo .hef(DFC 별도 파이프라인). 파이 인계: user config라 `~/.claude.json`에 있음(머신별 재인증 필요).
+- ▶ 다음: (필요 시 Roboflow autolabel·재학습에 MCP 활용)
+- 🔗 커밋: (MCP 설정은 로컬 `~/.claude.json` — repo 커밋 아님)
+- ※ 이 세션의 프로젝트 작업(B4 원인 재분석·문서 정정)은 `docs/작업로그.md` 참조
+
 ## 2026-07-03 · session 02e16ca9-3c02-4bdb-9d6b-9424b83b2fac (클로드 코드 세션 관리)
 - ✅ **resume 목록 오염 원인 규명** — 원격제어(웹/모바일 앱) 접속 시 Claude Code가 `bridge-session`·`queue-operation`·`ai-title` 등 **껍데기 세션파일**을 남기는 게 "복사된 세션"의 실체. (마커 타입은 정상 세션에도 다 있어 무의미 → 판별자는 **실제 대화수 ua**뿐: 쓰레기 ua≤3 vs 정상 ua≥40, 넓은 마진)
 - ✅ 원격제어 스텁 6개 수동 삭제(백업 후). 포크쌍 `75243594↔f9d862eb`(55메시지 공유 후 분기, f9d862eb가 최신 본류) 확인·보존.
