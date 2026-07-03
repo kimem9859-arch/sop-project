@@ -52,7 +52,12 @@ done
 # 오래된 .trash 항목 자동 비움
 find "$trash_dir" -name '*.jsonl' -type f -mtime +"$TRASH_RETAIN_DAYS" -delete 2>/dev/null
 
+# 옮긴 게 있을 때만 출력. Claude Code는 stdout이 순수 JSON이면 필드를 해석:
+#   systemMessage    → 사용자에게 보이는 배너(강조 알림)
+#   additionalContext → 모델 컨텍스트 주입
+# (평문을 섞으면 JSON 파싱이 깨져 systemMessage가 배너로 안 뜬다 → moved=0이면 무출력.)
 if [ "$moved" -gt 0 ]; then
-  echo "[resume 정리] tiny 세션 ${moved}개를 .trash로 이동(복구 가능, ${TRASH_RETAIN_DAYS}일 후 자동삭제)."
+  msg="🧹 resume 정리: tiny 세션 ${moved}개 → .trash (복구 가능, ${TRASH_RETAIN_DAYS}일 후 자동삭제)"
+  printf '{"systemMessage":"%s","hookSpecificOutput":{"hookEventName":"SessionStart","additionalContext":"%s"}}\n' "$msg" "$msg"
 fi
 exit 0
