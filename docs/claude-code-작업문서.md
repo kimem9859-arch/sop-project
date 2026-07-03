@@ -56,7 +56,7 @@
 - **배포/공유**: 범용은 전역 `~/.claude/`(모든 폴더 자동) / 프로젝트 전용은 그 repo `.claude/`. git 훅은 `.githooks/`+`core.hooksPath`.
 
 ### 3.5 워크로그(세션 추적) 3종 조합
-- SessionStart brief(브리핑+session_id+시작 HEAD 기록) / SessionEnd commit(시작HEAD..현재 커밋 자동매핑) / **"세션 마무리" 수동 요약**(스킬 `/session-wrap`, 의미 기록=진짜 안전판).
+- SessionStart brief(원격동기화+이어하기+session_id를 **표 배너**로; 내부에서 sync-check 순차호출·`_banner.py` 렌더·시작 HEAD 기록) / prune-stubs(resume 정리 배너) / SessionEnd commit(시작HEAD..현재 커밋 자동매핑) / **"세션 마무리" 수동 요약**(스킬 `/session-wrap`, 의미 기록=진짜 안전판).
 - 마커 추출은 **줄 맨 앞에서만**(`^-? *(⏸|▶)`) — 본문 속 글자 오탐 방지.
 
 ### 3.6 실전 함정

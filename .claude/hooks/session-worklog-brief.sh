@@ -19,6 +19,10 @@ if [ -z "$SID" ]; then
         | head -1 | sed 's/.*"\([^"]*\)"$/\1/')
 fi
 
+# 동기화 점검을 직접(순차) 호출 — Claude Code가 SessionStart 훅을 병렬 실행하므로
+# 별도 훅으로 두면 tmp 핸드오프에 경쟁이 생긴다. 여기서 직접 부르면 순서 보장.
+bash "$PROJ/.claude/hooks/session-sync-check.sh" 2>/dev/null || true
+
 # 이어하기: 최신 사람 블록(첫 '## ' ~ 다음 '## ')에서 ⏸중단·▶다음만 추출. '(없음)' 제외.
 open=""
 if [ -f "$LOG" ]; then
