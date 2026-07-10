@@ -73,7 +73,9 @@
 ## 미해결
 - **입력 해상도**: console_v1은 640 빌드·검증 완료. **결정 규칙(2026-06-13)**: MediaPipe 포함 FPS 실측 후 — 15fps 목표 미달이면 QVGA(320) 고려, 충분하면 640 유지+SW 최적화. console_v2 재학습 시 확정(잠정 640). (상세 §7.1)
 - ✅ **B4 미탐지 원인 확정(2026-07-10, §10.9)** — 양자화 반증(§10.7) → 통제된 2차 대조 측정(각 400프레임, 정지장면·노출고정)에서 **B1·B2·B3·EMO는 양쪽 97~100% 동일, B4만 ESP32 0% / USB 100%**. **이중 가설 둘 다 참**: ①**주가설=카메라 입력 품질 확정**(ESP32 저해상도+JPEG) ②**부가설=모델 B4 취약 실증** — B4 표현이 고주파 경계에만 의존해 **σ0.8 블러·JPEG q≤50·5% 리샘플**로 붕괴(q90에서도 median 0.629 < 임계 0.65). 근본 원인 = **검은 버튼 on 검은 패널**(대비 ~15/255). → console_v2에 **블러·압축·저해상도 증강 필수**.
-- ✅ **raw 저장·재분석 도구 완비(2026-07-10)** — `bench_detector.py --save-raw`(무손실 PNG + manifest.json) + `test/replay_raw.py`(임의 `.hef` 재생·`--ablation` 열화 재현·`--conf-high` 임계값 튜닝). ※ bench의 mp4는 **검출 오버레이본**이라 재분석 금지. **▶ 남은 것**: 실측 raw를 `test-artifacts` 브랜치 보관.
+- ✅ **raw 저장·재분석 도구 완비(2026-07-10)** — `bench_detector.py --save-raw`(무손실 PNG + manifest.json) + `test/replay_raw.py`(임의 `.hef` 재생·`--ablation` 열화 재현·`--conf-high` 임계값 튜닝). ※ bench의 mp4는 **검출 오버레이본**이라 재분석 금지.
+- ✅ **raw 4세션 확보 + 입력품질 직접 측정(§10.10)** — ESP32·USB 각 2세션 ×200프레임(166MB). replay가 라이브 CSV와 **20/20 정확 일치**(충실성 검증). **선명도(Laplacian 분산) ESP32 16.3 vs USB 984 = 60배**. USB에 블러 σ1.2만 걸어도 **'B4만 0, 나머지 정상'인 ESP32 서명이 완전 재현**. 열화 메커니즘 2종(블러=경계 삭제·Lap↓ / JPEG=블로킹 노이즈 오염·Lap 유지)이 별개이며 ESP32는 둘 다 겪음. → **console_v2 시험대 확보**: `replay_raw.py test/raw/<esp32세션> --hef console_v2.hef`.
+- **▶ 남은 것**: raw 166MB를 `test-artifacts` 브랜치 보관(용량 → `--raw-every`·ESP32만·git-lfs 중 택).
 - **🔴 정반사 → B1·B3가 B2로 오분류(2026-07-10 신규, §10.8)**: B1·B2·B3는 형태 동일·**색으로만 구분**되는데 버튼 광택면 정반사로 색이 날아가면 전부 B2가 됨(USB confirmed의 94%가 B2, B1·B3 0%). **B4 미탐지와 별개 원인** — B4는 해상도 부족, B1·B3는 색 충실도 부족. 대응 2축: ①촬영/입력(AE·AWB 수동고정 `--lock-exposure`, 조명 측면·확산) ②console_v2 학습데이터에 정반사 조건 포함·색 외 특징 학습.
 - **MediaPipe / HOI 검증**: Python 3.13 aarch64 미지원. hailo_platform과 공존 불가 → console_v2 단계에서 Python 버전 정책 재검토 필요.
 - **FPS**: ✅ **NFR-1 목표 = 15fps로 하향 확정(2026-06-13)**(30fps는 ESP32-S3 경로상 달성 불가). ⚠️ 실측값(**MediaPipe 미포함**, §10.6)은 HOI 추가 시 더 낮아질 수 있어 재측정·SW 최적화 필요. 카메라 경로 변경(USB 직결)은 웨어러블 컨셉상 확장과제.
