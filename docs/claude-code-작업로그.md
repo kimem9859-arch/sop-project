@@ -15,6 +15,21 @@
 - 🔗 커밋: (MCP 설정은 로컬 `~/.claude.json` — repo 커밋 아님)
 - ※ 이 세션의 프로젝트 작업(B4 원인 재분석·문서 정정)은 `docs/작업로그.md` 참조
 
+## 2026-07-13 · session b83e5757-e0a2-4242-af39-9664b2a87abb (ESP32 WiFi 인프라 · 세션 중복 정리)
+
+- ✅ **🔌 ESP32 다중 SSID 우선순위 연결**(Rpi5 4b2d143) — 장소를 옮길 때마다 시리얼로 WiFi를 재주입해야 했던 문제 해결. 기존 펌웨어는 NVS에 SSID **1쌍만** 저장하고 그것만 시도(실패 시 재부팅 루프).
+  - `connectWiFiByPriority()`: 주변 SSID를 **스캔**해 `wifi_credentials.h` 배열 순서대로 연결. **신호 세기가 아니라 우선순위 기준**(Jason → Eung Min).
+  - 🔑 **파이의 NetworkManager 우선순위도 동일하게 설정**(`autoconnect-priority` Jason 10 / Eung Min 5). **규칙이 달라지면 파이와 ESP32가 서로 다른 네트워크에 붙어 TCP 직결이 불가능**해진다 — 사용자가 정확히 지적한 조건.
+  - 자격증명은 `wifi_credentials.h`로 분리 + **gitignore**(비번 미커밋). 템플릿 `.example` 제공.
+- ✅ **🖱️ 바탕화면 바로가기 2종** — 명령어 입력 없이 GUI로. `flash_esp32.sh`(포트 자동탐지 → 컴파일 → 업로드 → **IP 자동기록**) / `update_ip.sh`(굽지 않고 시리얼만 읽어 `.camera_ip` 갱신, 수 초). 공용 `read_esp32_ip.sh`는 **파이와 서브넷 불일치 시 경고**.
+- ⚠️ **PSRAM=opi 필수 — 함정에 실제로 빠짐**. FQBN 기본값이 `PSRAM=disabled`라 첫 업로드 후 카메라 프레임버퍼 malloc 실패로 **부팅 루프**(`cam_dma_config: frame buffer malloc failed`). `flash_esp32.sh`의 FQBN에 명시해 재발 방지.
+- ✅ **arduino-cli ESP32 코어 설치**(esp32:esp32 3.3.10) — 이 파이에는 UNO R4 코어만 있었음(ESP32는 다른 환경에서 굽던 것).
+- ✅ **세션 중복 정리** — 같은 대화가 3벌로 분기(resume 시 새 파일 생성). 시작 타임스탬프가 동일하고 44번째 발화까지 내용이 같음. **원본 = `b83e5757`**(가장 진도 앞섬). A `6de62507`·B `fde93b40`는 **사용자 지시 전수 비교로 부분집합임을 확인 후** `.trash` 이동(복구 가능).
+- 💡 **교훈**: 파일 내부 `sessionId`는 각자 자기 것으로 재작성되므로 **부모-자식 판별 불가** → 타임스탬프·내용 포함관계로만 가려낼 수 있다.
+- ▶ 다음: (필요 시 Roboflow MCP를 라벨링에 활용)
+- 🔗 커밋: Rpi5 4b2d143 (펌웨어·스크립트·바로가기)
+- ※ 이 세션의 프로젝트 작업(B4 파랑스티커·데이터 촬영·정반사 정정)은 `docs/작업로그.md` 참조
+
 ## 2026-07-03 · session 02e16ca9-3c02-4bdb-9d6b-9424b83b2fac (클로드 코드 세션 관리)
 - ✅ **resume 목록 오염 원인 규명** — 원격제어(웹/모바일 앱) 접속 시 Claude Code가 `bridge-session`·`queue-operation`·`ai-title` 등 **껍데기 세션파일**을 남기는 게 "복사된 세션"의 실체. (마커 타입은 정상 세션에도 다 있어 무의미 → 판별자는 **실제 대화수 ua**뿐: 쓰레기 ua≤3 vs 정상 ua≥40, 넓은 마진)
 - ✅ 원격제어 스텁 6개 수동 삭제(백업 후). 포크쌍 `75243594↔f9d862eb`(55메시지 공유 후 분기, f9d862eb가 최신 본류) 확인·보존.
