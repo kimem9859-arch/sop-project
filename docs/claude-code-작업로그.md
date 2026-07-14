@@ -26,7 +26,8 @@
 - ✅ **Antigravity CLI 1.1.2 설치**(Pi#1) — 공식 스크립트 `curl -fsSL https://antigravity.google/cli/install.sh | bash`. linux_arm64 자동 감지·체크섬 검증 통과. 바이너리 `~/.local/bin/agy`, PATH는 스크립트가 `~/.bashrc`·`~/.profile`에 자동 추가.
 - ✅ Google 계정 로그인 + 대화 동작 확인(사용자 직접, 실행 경로 sop-project).
 - ⚠️ `sop-project` 안에서 `agy` 실행 시 Antigravity 에이전트도 repo 파일을 수정할 수 있음 — Claude Code와 병행 시 같은 파일 동시 편집 주의.
-- 🔗 커밋: (설치는 로컬 `~/.local/bin` — repo 커밋 아님)
+- ✅ 양 repo 푸시 상태 점검 — sop-project·Rpi5 모두 원격과 동기화 확인(병행 Fable 점검 세션이 이 세션의 `4df284f` 포함 전부 푸시 완료, 추가 푸시 불요).
+- 🔗 커밋: 4df284f(이 기록. 설치 자체는 로컬 `~/.local/bin` — repo 반영 없음)
 
 ## 2026-07-03 · session 22149442-a0c0-4789-810a-26dcb8c5f91c (Roboflow·Drive MCP 연동)
 - ✅ **Roboflow MCP 연동** — `claude mcp add -s user roboflow --transport http https://mcp.roboflow.com/mcp` (OAuth). 30+ 툴 로드, 워크스페이스 `eung-min` 접근 확인. console_v2용 데이터셋(`object-detection-ycjp6`) 조회에 활용.
