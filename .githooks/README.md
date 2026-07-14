@@ -12,11 +12,11 @@ git config core.hooksPath .githooks
 
 ## 훅 목록
 
-### `pre-commit` — 문서 간 정합성 점검 (LLM · diff 앵커)
+### `pre-commit` — 문서 정합성 점검 (LLM · diff-only)
 - **언제**: `CLAUDE.md`·`README.md`·`docs/*.md` 중 하나라도 staged로 커밋할 때만 발동(코드·기타 커밋엔 미발동).
-- **무엇**: 이번 변경(diff)을 앵커로, 다른 문서에 지금 모순되거나 함께 고쳤어야 하는데 빠진 곳을 `claude -p`(Haiku)가 보수적으로 대조·경고. "역반영 완료인데 다른 문서엔 ▶미완" 같은 의미적 drift 포착용.
+- **무엇**: 이번 변경의 **diff만**(-U20 넓은 컨텍스트) `claude -p`(Haiku)에 보내, diff 안에서 보이는 문장끼리의 직접 모순을 보수적으로 경고.
 - **성격**: **경고만·비차단**(항상 커밋 진행). 오탐이 나도 커밋을 막지 않는다.
-- **memory 참조**: `git rev-parse --show-toplevel` 기반으로 이 프로젝트의 memory 디렉터리를 자동 계산해 존재하면 대조에 포함(없으면 스킵). `DOCSYNC_MEMORY_DIR`로 오버라이드 가능. ⚠ memory는 데스크톱 로컬이라 파이 등에선 대개 부재 → 그 머신에선 memory 대조 생략(정상).
+- **범위 축소 이력**(2026-07-14 Fable 점검): 원래는 문서 전문 전체+memory를 매 커밋 전송했으나 **diff-only로 축소** — ①비용·지연(매번 corpus 토큰) ②프롬프트 인젝션 면적(문서 전문이 통째 유입) 때문. 대가로 **diff에 안 보이는 다른 문서와의 교차 대조는 불가**(얕은 안전망) — 교차 모순 1차 방어는 CLAUDE.md 단일정본 규칙 + 편집 규율.
 - **끄기**: `SKIP_DOCSYNC=1 git commit ...` / claude 미설치·오프라인이면 자동 스킵.
 
 ## 배경
