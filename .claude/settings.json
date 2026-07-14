@@ -12,7 +12,6 @@
       "Bash(git add:*)",
       "Bash(grep:*)",
       "Bash(rg:*)",
-      "Bash(find:*)",
       "Bash(ls:*)",
       "Bash(cat:*)",
       "Bash(head:*)",

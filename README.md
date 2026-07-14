@@ -14,12 +14,12 @@
 ├─ docs/                  📄 문서
 │  ├─ 통합수행설계문서_전체_섹션1-15.md   ★ 단일 정본
 │  ├─ 프로젝트_기준문서_v*.md          ★ 정본 = 버전 번호가 가장 높은 본
-│  └─ 기말발표_5장.pdf
+│  └─ 작업로그.md · claude-code-작업로그.md 등 (발표자료는 데스크톱 보관, repo 미포함)
 ├─ dev/                   💻 개발
 │  ├─ poc/                Step1 PoC — MediaPipe 손 + 색 ROI + dwell (검증 완료)
 │  ├─ interlock/          트랙 A — 물리 인터록 (ref/ = ESP/Arduino 참고자산)
 │  ├─ fsm/                순서위반 상태머신 (정본 코드는 Rpi5/Demo/fsm.py)
-│  └─ ai_model/           트랙 B — console_v1 YOLO 버튼 동적검출
+│  └─ ai_model/           트랙 B — YOLO 버튼 동적검출 (console_v1 완료 → v2 재학습 진행 중)
 ├─ media/                 🎬 overlay 영상 (정상·스침만 git 추적)
 └─ Rpi5/                  🍓 RPi 데모 (별도 git repo)
 

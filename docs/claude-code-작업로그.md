@@ -6,6 +6,20 @@
 
 ---
 
+## 2026-07-14 · session 00c0fb24-7af3-4000-8668-2fbdb19e57aa (Fable 점검 — CC 인프라 버그 수정)
+
+> ※ **Fable 5 모델** 세션. 이번 점검부터 커밋 트레일러 = **실제 작업 모델명**(CLAUDE.md 규칙 갱신).
+
+- ✅ **`session-prune-stubs.sh` 버그 3건** (가짜 세션 dry-run으로 전부 검증):
+  - 🔴 `.trash` 30일 보존 약속이 거짓 — `mv`가 mtime 보존 → 31일+ 방치 스텁은 **이동 직후 같은 실행에서 즉시 영구삭제**(복구 창 0). 이동 후 `touch`로 진입 시각 기록.
+  - 현재 세션 보호 무효 — `CLAUDE_SESSION_ID`(오타)를 읽어 `cur=""` 상시. `CLAUDE_CODE_SESSION_ID` + stdin 폴백(다른 훅과 동일 규약)으로 교정.
+  - `grep -c || echo 0` 이중값(`"0\n0"`) → 정수비교 에러로 **ua=0 빈 스텁이 영원히 정리 안 됨**. `|| true`로 교정.
+- ✅ **`session-worklog-commit.sh` fork 중복 기록 해소** — fork/resume 세션 쌍이 같은 시작 HEAD를 공유해 동일 커밋을 2~3벌 기록하던 문제(작업로그 하단 🔧 섹션에서 실증) → 이미 로그에 있는 해시는 스킵. + head 파일 해시 검증·`--` 추가(옵션 해석 방지). 임시 repo fork 시나리오로 검증.
+- ✅ **권한 축소** — `settings.json`에서 `Bash(find:*)` 자동승인 제거(`find -delete`·`-exec rm`이 무확인 통과하던 구멍).
+- ✅ `.gitignore` 보강 — 루트 `.env`/`*.env`(비밀키 유출 방지, `!*.env.example`) + `.claude/.startup-sync.tmp`.
+- 🔗 커밋: sop-project (이 커밋)
+- ※ 이 세션의 프로젝트 수정(인터락·EMO·QImage·문서 정합성)은 `docs/작업로그.md` 참조
+
 ## 2026-07-14 · session efc6fc8b-d6e9-4420-a76f-a5c3480f49f0 (Antigravity CLI 설치)
 - ✅ **Antigravity CLI 1.1.2 설치**(Pi#1) — 공식 스크립트 `curl -fsSL https://antigravity.google/cli/install.sh | bash`. linux_arm64 자동 감지·체크섬 검증 통과. 바이너리 `~/.local/bin/agy`, PATH는 스크립트가 `~/.bashrc`·`~/.profile`에 자동 추가.
 - ✅ Google 계정 로그인 + 대화 동작 확인(사용자 직접, 실행 경로 sop-project).

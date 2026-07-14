@@ -27,7 +27,13 @@ sess_dir="$HOME/.claude/projects/${proj_slug}"
 trash_dir="$sess_dir/.trash"
 mkdir -p "$trash_dir" 2>/dev/null || exit 0
 
-cur="${CLAUDE_SESSION_ID:-}"
+# 현재 세션ID: env var 우선, 없으면 stdin JSON의 session_id fallback (brief 훅과 동일 규약)
+cur="${CLAUDE_CODE_SESSION_ID:-}"
+if [ -z "$cur" ]; then
+  cur=$(cat 2>/dev/null \
+        | grep -o '"session_id"[[:space:]]*:[[:space:]]*"[^"]*"' \
+        | head -1 | sed 's/.*"\([^"]*\)"$/\1/')
+fi
 now=$(date +%s)
 moved=0
 
@@ -42,11 +48,15 @@ for f in "$sess_dir"/*.jsonl; do
   age=$(( (now - mt) / 60 ))
   [ "$age" -gt "$AGE_MIN" ] || continue
 
-  # 실제 대화 메시지 수
-  ua=$(grep -cE '"type":"(user|assistant)"' "$f" 2>/dev/null || echo 0)
-  [ "$ua" -le "$MAX_UA" ] || continue
+  # 실제 대화 메시지 수 (grep -c는 0건이면 exit 1 — || echo 0 쓰면 "0\n0" 이중값이 되므로 || true)
+  ua=$(grep -cE '"type":"(user|assistant)"' "$f" 2>/dev/null) || true
+  [ "${ua:-0}" -le "$MAX_UA" ] 2>/dev/null || continue
 
-  mv "$f" "$trash_dir/" 2>/dev/null && moved=$((moved+1))
+  # mv는 mtime 보존 → touch로 '.trash 진입 시각'을 기록해야 30일 보존 약속이 지켜진다
+  if mv "$f" "$trash_dir/" 2>/dev/null; then
+    touch "$trash_dir/$base" 2>/dev/null
+    moved=$((moved+1))
+  fi
 done
 
 # 오래된 .trash 항목 자동 비움
