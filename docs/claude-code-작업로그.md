@@ -17,6 +17,8 @@
 - ✅ **`session-worklog-commit.sh` fork 중복 기록 해소** — fork/resume 세션 쌍이 같은 시작 HEAD를 공유해 동일 커밋을 2~3벌 기록하던 문제(작업로그 하단 🔧 섹션에서 실증) → 이미 로그에 있는 해시는 스킵. + head 파일 해시 검증·`--` 추가(옵션 해석 방지). 임시 repo fork 시나리오로 검증.
 - ✅ **권한 축소** — `settings.json`에서 `Bash(find:*)` 자동승인 제거(`find -delete`·`-exec rm`이 무확인 통과하던 구멍).
 - ✅ `.gitignore` 보강 — 루트 `.env`/`*.env`(비밀키 유출 방지, `!*.env.example`) + `.claude/.startup-sync.tmp`.
+- ✅ **pre-commit 전송 범위 축소(diff-only)** — 매 커밋 문서 전문+memory 전체를 API 전송하던 것을 **diff(-U20)만**으로(비용·지연·인젝션 면적↓). 대가 = 교차 문서 대조 불가(얕은 안전망 강등, 1차 방어는 단일정본 규칙). 임시 repo 모순 diff로 실검증(경고 출력·exit 0 확인).
+- 🔴 **이 파이(Pi#1)에 `core.hooksPath` 미설정 발견** — pre-commit 훅이 **지금까지 이 머신에서 한 번도 안 돌고 있었음**(클론 후 1회 설정 누락). `git config core.hooksPath .githooks` 설정 완료. ⚠️ **sop-pi-2·데스크톱도 각자 확인 필요**(로컬 config라 머신마다).
 - 🔗 커밋: sop-project (이 커밋)
 - ※ 이 세션의 프로젝트 수정(인터락·EMO·QImage·문서 정합성)은 `docs/작업로그.md` 참조
 
