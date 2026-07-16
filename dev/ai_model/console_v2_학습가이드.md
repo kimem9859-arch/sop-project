@@ -190,14 +190,26 @@ hailomz compile yolov8n --ckpt <경로>/console_v2.onnx --calib-path <경로>/ca
 | NMS | `nms_postprocess(meta_arch=yolov8, engine=cpu)` 포함, 출력 `[-1, 5, 5, 100]` |
 | 클래스 수 | **5** (nms config `"classes": 5` + 출력 shape 이중 확인) |
 
-## ⑤ 파이 replay 평가
+## ⑤ 파이 replay 평가 — **판정 기준 정본 = 통합문서 §10.16**
 ```bash
-# .hef를 Rpi5/Demo/models/ 로 옮긴 뒤 (파이에서)
-python3 test/replay_raw.py test/raw/20260713_180016 --hef console_v2.hef   # 저조도 — B3·B4 살아났나
-python3 test/replay_raw.py test/raw/20260713_175129 --hef console_v2.hef   # 정반사 — B2 중복 회귀 없나
+# .hef는 Rpi5/Demo/models/ 에 배포됨 (파이에서 git pull 후)
+python3 test/replay_raw.py test/raw/20260713_180016 --hef models/console_v2.hef   # 저조도
+python3 test/replay_raw.py test/raw/20260713_175129 --hef models/console_v2.hef   # 정반사
 ```
-- **판정 기준**: v1 대비 저조도 B3·B4 검출률 상승, 정반사 B2 중복 오분류 무회귀.
-- ⚠️ **저조도 파랑 B4 생존은 여기서 처음 측정**됨(§10.13 미측정 플래그).
+> `--hef`가 런타임에 `config.HEF_MODEL_PATH`를 덮어쓰므로 **config 수정 불필요**.
+
+### 🔴 "v1 대비 검출률 상승"을 기준으로 쓰지 말 것 (2026-07-16 정정)
+**`test/raw/<세션>`이 곧 652장 학습 데이터의 출처다**(`dataset_pipeline.md`). 즉 **학습에 쓴 이미지로 시험을 본다.** 게다가 v1은 **파랑 스티커를 학습한 적이 없어**(§10.12 "v1으론 여전히 0% — 학습 분포 밖, 당연") 0%가 예정돼 있고, v2는 이 프레임으로 학습했으니 잘 나오는 게 예정돼 있다. → **"v1 0회 → v2 N회"는 자동으로 나오고 아무것도 증명하지 않는다.**
+
+### ✅ 대신 이것만 본다
+1. **하한선** — v2가 **자기 학습 데이터에서조차** B4를 못 잡으면 → **즉시 중단·원인 재분석**. (실패 = 강한 증거 / 통과 = 약한 증거인 **비대칭 테스트**)
+2. **⭐ 세션 간 비교** — 누출이 4세션에 **균등**해 상쇄된다. **저조도(`180016`)만 다른 세션 대비 무너지면 = 조명 탓**(진짜 신호). §10.13 "저조도 파랑 B4 생존 미측정"에 답하는 유일한 경로.
+3. **`.hef` vs `.pt` 대조** — 같은 프레임에 둘 다 돌려 **양자화 손실만** 분리(변인 통제). 라벨 있는 valid 130장에 돌리면 정답 기준 측정도 가능.
+
+### ❌ ⑤로 답할 수 없는 것
+- **`replay_raw.py`엔 정답이 없다** — 출력은 검출 수·프레임율·median/max confidence뿐(precision/recall/mAP 없음). **"B4 검출"이 올바른 위치·클래스인지 알 수 없다.**
+- 실전 성능·일반화 — 같은 날·조명·모조 콘솔 2세션, 실시간 AE·움직임 없음.
+- **최종 판정의 유일한 근거 = 미촬영 `test` 세션**(다른 날·조명·실콘솔, 파랑 스티커 동일 사양 필수).
 
 ---
 ## 절대 규칙 요약
