@@ -124,8 +124,71 @@ Roboflow export의 `data.yaml`은 `train: ../train/images`로 나오는데 **실
 
 ## ④ DFC 변환 (.pt → .hef)
 - 규격(반드시 준수, `dev/ai_model/README.md`): **DFC 3.33.1 / HailoRT 4.x / uint8 640×640 / NMS on-chip**. HailoRT 5.x 금지.
-- 절차 참고: `참고/YOLOv8n_Hailo8_변환_작업기록.md`.
-- **캘리브 1024+장** (v1은 64장 level0 → 정밀도 하락, §10.5 주). 캘리브 세트는 **라벨 불필요·입력 분포만 대표**하면 되므로: dedup 전 raw에서 추출하거나 train 이미지 재사용 가능(§10.13 캘리브 항목).
+- v1 절차 원본(환경 구축 난관 포함): `참고/YOLOv8n_Hailo8_변환_작업기록.md`. **환경은 v1 때 구축된 것을 그대로 재사용**(`~/hailo-venv`, model zoo `v2.18` 체크아웃 + 패치 4개, editable → `/mnt/d/Hailo_DFC/hailo_model_zoo`). 재구축 금지 — 그 기록의 난관을 다시 겪는다.
+
+### 🔴 GPU는 쓸 수 없다 — RTX 5060(Blackwell)은 DFC와 비호환 (2026-07-16 확정)
+**DFC 3.33.1이 번들한 TensorFlow 2.18에 sm_120(Blackwell) CUDA 커널이 없다.** TF 2.18은 Pascal(6.0)~**Ada(8.9)**까지만 커널을 싣는다(공식 릴리스 노트). Hailo 커뮤니티에도 동일 사례가 보고돼 있고(RTX 5090/sm_120, `CUDA_ERROR_INVALID_PTX`) **Hailo 공식 지원·일정 발표는 없다**.
+- **쓸 수 있는 GPU** = RTX 40 시리즈(Ada 8.9, TF 2.18이 전용 커널 탑재)·30 시리즈·20 시리즈/T4·GTX 10 시리즈. **RTX 50 시리즈 ❌**.
+- ⚠️ **GPU를 구하지 말 것** — GPU는 level 2+(finetune·adaround)에만 쓰이고, **양자화는 §10.7에서 B4 미탐지 원인에서 배제**됐다. 파이의 Hailo-8 추론에는 CUDA가 아예 무관하다. **RTX 5060은 학습(③)엔 정상 사용**된다(torch cu128). DFC만 못 쓴다.
+- ※ hailo-venv의 TF엔 CUDA 라이브러리가 없어 깔끔히 CPU로 떨어진다. **누군가 그 venv에 CUDA를 설치하면 `INVALID_PTX`로 깨진다** — 설치하지 말 것(정 필요하면 `CUDA_VISIBLE_DEVICES=-1`).
+
+### 🔴 캘리브 "1024장" 계획은 무효 — DFC 소스 확인 결과 (2026-07-16 정정)
+§10.13이 남긴 "캘리브 1024+장 확보" 과제는 **전제가 둘 다 틀렸다**. `mo_config.py` 실측:
+1. **GPU가 없으면 장수와 무관하게 level 0** — `if dataset_length < 1024: optimization = 1` **다음에** `if not has_gpu: optimization = 0`이 와서 덮어쓴다. 1024장을 채워도 소용없다.
+2. **`calibset_size` 기본값은 64** (`CalibrationConfig`) — `min(calibset_size, dataset_length)`이라 **이미지를 더 넣어도 64장만 쓴다**. v1이 122장 넣고 64장만 쓴 것은 버그가 아니라 이 기본값 때문이다.
+
+**→ 해법: 레벨을 명시해 자동 축소를 우회한다.** `get_flavor_config`가 `if self.optimization_level is not None`이면 사용자 값을 그대로 쓴다.
+| level | 알고리즘 | GPU |
+|---|---|---|
+| 0 (v1) | equalization | 불필요 |
+| **1 (v2 채택)** | **+ bias_correction** | **불필요** — 경사학습 코드 0건(`GradientTape`/`optimizer` 미사용) |
+| 2 | + finetune | 필요 |
+| 3~4 | + adaround | 필요 |
+- level 1이면 **압축도 0으로 유지**된다(`if optimization > 1`일 때만 4bit 압축 → 정확도 손실). 안전.
+
+### 캘리브 데이터 — **학습 이미지 652장 그대로** (raw 불필요·증강본 금지)
+- **`console_v2-1/{train,valid}/images` 652장을 한 폴더로 복사**해 사용. 라벨 불필요(양자화 범위 산정용).
+- **왜 652인가**: ①이미 **640×640 Stretch** = 파이 추론 입력과 정확히 같은 형식(raw를 쓰면 파이의 stretch 리사이즈를 직접 재현해야 하고, 어긋나면 **조용히** 캘리브가 틀어진다) ②중복 제거되어 같은 장수로 커버리지가 넓다 ③4세션(저조도 포함) 전부 포함.
+- **흔들림 프레임 제외는 안전하다** — 캘리브는 활성값 범위를 재는 것인데 **선명한 이미지가 더 큰 활성값**을 만들어 범위가 넓게(보수적으로) 잡히고, 흐린 입력은 그 안에 들어온다. 반대로 흐린 것만 쓰면 선명한 입력이 clipping된다.
+- ❌ **오프라인 증강본 금지** — 캘리브는 **실제 배포 입력 분포**를 대표해야 한다. 합성 저조도·플레어를 넣으면 양자화 범위가 비현실적 입력 쪽으로 벌어져 진짜 입력의 정밀도를 깎는다. 실제 저조도는 이미 652장 안에 있다(180016 세션).
+- ⚠️ 652장엔 **버튼 없는 프레임이 0장**이다(학습 로그 `0 backgrounds`). 실전엔 있다. ⑤에서 **배경 오탐이 문제로 드러나면** 그때 raw에서 배경 프레임을 섞어 재변환한다(현재는 근거 없음).
+
+### 실행 절차
+```bash
+# 1) ONNX 내보내기 (학습 venv에서 — onnx 패키지 필요)
+python -c "from ultralytics import YOLO; YOLO('console_v2.pt').export(format='onnx', opset=11, imgsz=640, simplify=False, dynamic=False)"
+#    검산: opset 11 / 입력 [1,3,640,640] / 출력 [1,9,8400]  ← 9 = 4(bbox)+5(클래스). 14클래스였다면 18.
+
+# 2) 캘리브 폴더
+mkdir -p calib_v2 && cp console_v2-1/train/images/*.jpg console_v2-1/valid/images/*.jpg calib_v2/
+
+# 3) 커스텀 alls  →  cfg/alls/generic/console_v2.alls
+#    🔴 --model-script는 기본 alls를 "대체"한다(main_driver.py `_extract_model_script_path`)
+#       → 원본 yolov8n.alls 내용을 전부 포함해야 한다.
+#    🔴 alls 안의 nms_postprocess 경로가 상대경로("../../postprocess_config/...")라
+#       반드시 원본과 같은 폴더(cfg/alls/generic/)에 둘 것.
+#    원본 + 아래 2줄:
+#       model_optimization_flavor(optimization_level=1)
+#       model_optimization_config(calibration, calibset_size=652)
+
+# 4) 컴파일 (hailo-venv에서, cwd = /mnt/d/Hailo_DFC)
+hailomz compile yolov8n --ckpt <경로>/console_v2.onnx --calib-path <경로>/calib_v2/ \
+  --classes 5 --hw-arch hailo8 \
+  --model-script <경로>/cfg/alls/generic/console_v2.alls \
+  --end-node-names /model.22/cv2.0/cv2.0.2/Conv /model.22/cv3.0/cv3.0.2/Conv \
+                   /model.22/cv2.1/cv2.1.2/Conv /model.22/cv3.1/cv3.1.2/Conv \
+                   /model.22/cv2.2/cv2.2.2/Conv /model.22/cv3.2/cv3.2.2/Conv
+```
+- **`--end-node-names`가 왜 필요한가**: Ultralytics 풀 익스포트는 출력이 `[1,9,8400]` 하나로 합쳐져 있어(DFL+concat 포함) Hailo가 자체 NMS를 못 붙인다. **헤드 conv 6개 지점**(reg 64ch / cls 5ch × 3 stride)에서 잘라야 한다. v1과 동일 구조(yolov8n·5클래스)라 **노드 이름도 동일** — 내보낸 뒤 존재를 확인할 것.
+- **설정이 먹었는지 로그로 확인**: `Reducing compression level to 0 because requested optimization level equal or less than 1`(= level 1 강제 성공) · `Using dataset with 652 entries for calibration`. 🔴 **`Reducing optimization level to 0 ... no available GPU`가 뜨면 실패** — 그건 v1이 받던 경고다.
+- **소요 시간**: bias_correction이 CPU라 **블록당 ~25초 × 73블록 ≈ 30분**, 전체 **35~45분**(v1은 level 0이라 이 단계가 없어 훨씬 빨랐다).
+
+### HAR 검증 (§10.6의 3대 미탐지 원인 차단 — 반드시 수행)
+| 항목 | 기대값 |
+|---|---|
+| 입력 형식 | **uint8** — `normalization([0,0,0],[255,255,255])`이 **네트워크 내부**에 있어야 함(파이에서 float 정규화하면 실패) |
+| NMS | `nms_postprocess(meta_arch=yolov8, engine=cpu)` 포함, 출력 `[-1, 5, 5, 100]` |
+| 클래스 수 | **5** (nms config `"classes": 5` + 출력 shape 이중 확인) |
 
 ## ⑤ 파이 replay 평가
 ```bash

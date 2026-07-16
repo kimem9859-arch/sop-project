@@ -42,6 +42,10 @@ dev/ai_model/console_v2.pt
 dev/ai_model/runs/
 dev/ai_model/console_v2-*/
 
+# DFC 변환 중간산출물 (download_dataset.py + export + cp 로 재현 가능)
+dev/ai_model/console_v2.onnx
+dev/ai_model/calib_v2/
+
 # 작업로그 훅 temp (세션 시작 HEAD 기록 — SessionEnd가 소비 후 삭제)
 .claude/.worklog-head-*
 .claude/.startup-sync.tmp

@@ -247,8 +247,16 @@ COMPILE_EXIT=0
 ## 10. 남은 과제 / 권장사항
 
 ### 정확도 개선(선택)
-정밀도가 부족하면 → **GPU 호스트 + 캘리브 이미지 1024장 이상**으로 재최적화하면
-optimization level이 올라가 양자화 품질 향상 (특히 약한 B4 클래스).
+~~정밀도가 부족하면 → **GPU 호스트 + 캘리브 이미지 1024장 이상**으로 재최적화하면
+optimization level이 올라가 양자화 품질 향상 (특히 약한 B4 클래스).~~
+
+> 🔴 **2026-07-16 정정 (이 처방은 틀렸다 — v2 변환 시 DFC 소스 확인)**
+> - **"캘리브 1024장"만으로는 아무 효과가 없다.** `mo_config.py`: `if dataset_length < 1024: opt=1` **다음에** `if not has_gpu: opt=0`이 와서 덮어쓴다 → **GPU가 없으면 장수와 무관하게 level 0**.
+> - **위 §6에서 "122장을 준비했는데 64장만 쓰더라"는 것도 버그가 아니었다** — `CalibrationConfig.calibset_size` **기본값이 64**이고 `min(calibset_size, dataset_length)`이라 더 넣어도 안 쓴다. **명시해야 한다.**
+> - **"약한 B4 클래스" 부분도 반증됐다** — B4 미탐지는 양자화 탓이 아니다(§10.7: 에뮬레이션서 int8 .hef가 B4 0.95 검출). 실제 원인 = 카메라 입력 품질(§10.9).
+> - **실제 해법** = alls에 `model_optimization_flavor(optimization_level=1)` + `model_optimization_config(calibration, calibset_size=N)` 명시. level 1의 `bias_correction`은 경사학습을 쓰지 않아 **GPU 없이 CPU로 돌아간다**(level 2 finetune부터 GPU 필요).
+> - **GPU를 구할 거면 RTX 40 시리즈 이하** — DFC 3.33.1의 TF 2.18엔 sm_120(Blackwell/RTX 50) 커널이 없다. **다만 구할 이유가 없다**(B4와 무관).
+> - 최신 절차 정본 = `dev/ai_model/console_v2_학습가이드.md` §④.
 
 ### Pi 추론 코드 점검 (과거 실패 재발 방지)
 - 입력은 **uint8 640×640 RGB 그대로** (float32 정규화 ❌ — 정규화는 칩 내부에서 함)
