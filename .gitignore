@@ -1,5 +1,6 @@
 # 가상환경 / 캐시
 .poc_venv/
+.venv/
 __pycache__/
 *.pyc
 
@@ -30,6 +31,12 @@ Rpi5/
 .env
 *.env
 !*.env.example
+dev/ai_model/Dataset_API_Key/
+
+# 학습 산출물·자동 다운로드 가중치 (ultralytics가 자동 취득 — 커밋 불필요)
+dev/ai_model/yolov8*.pt
+dev/ai_model/runs/
+dev/ai_model/console_v2-*/
 
 # 작업로그 훅 temp (세션 시작 HEAD 기록 — SessionEnd가 소비 후 삭제)
 .claude/.worklog-head-*
@@ -38,3 +45,8 @@ Rpi5/
 # 윈도우 / OS 정크
 *Zone.Identifier
 .DS_Store
+
+# Antigravity CLI(agy) 연동 — 자격증명·로컬 환경 (docs/agy-setup-log.md 참조)
+gcp-oauth.keys.json
+.gdrive-server-credentials.json
+.node-env/

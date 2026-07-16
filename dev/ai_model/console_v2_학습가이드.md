@@ -29,6 +29,18 @@ python -c "import torch; print(torch.cuda.is_available(), torch.cuda.get_device_
 ```
 > ※ `--pre`/cu128은 시점에 따라 안정판으로 바뀔 수 있음. `torch.cuda.is_available()`가 `True`면 됨.
 
+#### ✅ 구축 완료 실적 (2026-07-16, 데스크톱 WSL2)
+`.venv` 위치 = `dev/ai_model/.venv` (gitignore). 검증된 조합:
+`torch 2.11.0+cu128` · `torchvision 0.26.0+cu128` · `ultralytics 8.4.96` · `albumentations 2.0.8` · `roboflow 1.3.13` · `opencv 5.0.0` / Python 3.12.3 · **sm_120 인식·GPU 행렬연산·YOLOv8n GPU 추론 통과**.
+
+#### 🔴 선행 조건 — Windows 페이지 파일 (같은 증상 재발 시 여기부터)
+구축 중 **WSL이 6번 통째로 죽었다.** 원인은 pip·WSL 버그가 아니라 **Windows 페이지 파일 비활성화**:
+커밋 한도 = 물리 RAM(31.75GB)과 **정확히 동일** → 완충 0 → 평소 점유 27GB + 설치 중 vmmem 팽창이 천장을 치면 Windows가 `wslservice.exe`를 죽여 **VM 통째로 사망**(`setsid`로도 못 버팀).
+- **증상 식별**: 이벤트뷰어 System 로그에 `Resource-Exhaustion-Detector ID=2004`(가상 메모리 부족)가 WSL 사망 **직전**에 뜬다. `wslservice.exe` 스택 오버플로(`0xc00000fd`)는 **원인이 아니라 결과** — WSL 업데이트는 헛수고다.
+- **조치**: 페이지 파일 자동관리 ON → **재부팅**. 커밋 한도 31.75 → 41.25GB, 여유 4.39 → 29.5GB로 회복. 이후 설치 중 vmmem이 **10.98GB**까지 커져도 무사 완주(= 원래 8GB 이상 필요했는데 7.8GB 천장에 막혀 죽던 것).
+- ⚠️ **중단된 설치는 venv를 오염시킨다** — `버전 None`짜리 유령 dist-info가 남아 pip이 "설치됨"으로 오인하고 **CUDA 런타임 패키지를 건너뛴다**(`libcudart.so.12 없음`). 고치지 말고 **venv를 지우고 재생성**할 것.
+- 학습(200 epoch·수 시간)은 설치보다 고부하다. 페이지 파일 없이는 반드시 중간에 날아간다.
+
 ## ② 데이터셋 download (Roboflow SDK)
 API 키는 **환경변수**로(커밋 금지):
 ```bash
@@ -82,6 +94,9 @@ model.train(
 
 ### ⚠️ 커스텀 Albumentations (선택·권장) — 기본값의 ToGray 제거 + 색손실 증강 추가
 Ultralytics는 albumentations 설치 시 **기본 변환에 `ToGray`·`CLAHE`가 들어간다 — 색 기반 클래스엔 유해**(회색화). 또 우리에게 필요한 **저조도·정반사·JPEG**가 없다. 학습 전 아래로 교체:
+
+> 🔴 **albumentations 2.x 필수 주의 (2026-07-16 실측 확인)** — 1.x 인자명(`var_limit`·`quality_lower/upper`·`scale_min/max`)은 2.x에서 **에러 없이 UserWarning만 뜨고 조용히 무시된 뒤 기본값이 적용**된다. 실제 피해: `GaussNoise` std가 의도(≈0.012~0.031)의 **7~16배**(기본 0.2~0.44)로 폭주, `ImageCompression`은 q99~100이라 **사실상 무효**, `Downscale`은 고정 0.25로 **강등 방침과 반대로 과격**해진다. 아래는 2.x 인자명으로 교정된 코드 — **경고가 하나라도 뜨면 그 인자는 안 먹은 것**이니 로그를 확인할 것.
+
 ```python
 # train_console_v2.py 상단 (model.train 호출 전)에 monkeypatch
 import albumentations as A
@@ -93,12 +108,12 @@ def _custom_albu(self, p=1.0):
         # 주력: 저조도(밝기·채도↓ + 노이즈) — §10.13 B3 사멸 방어
         A.RandomBrightnessContrast(brightness_limit=(-0.5, 0.1), contrast_limit=0.2, p=0.5),
         A.HueSaturationValue(hue_shift_limit=0, sat_shift_limit=(-40, 10), val_shift_limit=(-40, 10), p=0.4),
-        A.GaussNoise(var_limit=(10, 60), p=0.3),
+        A.GaussNoise(std_range=(0.012, 0.031), p=0.3),   # 2.x: std 정규화값. 1.x var_limit(10,60) 환산 = sqrt(var)/255
         # 보험(소량): 정반사/글레어
         A.RandomSunFlare(flare_roi=(0, 0, 1, 1), src_radius=80, p=0.1),
         # 강등(약하게): 파랑 무손상이라 일반 견고성 정도만
-        A.ImageCompression(quality_lower=60, quality_upper=100, p=0.2),
-        A.Downscale(scale_min=0.5, scale_max=0.9, p=0.1),
+        A.ImageCompression(quality_range=(60, 100), p=0.2),   # 2.x 인자명
+        A.Downscale(scale_range=(0.5, 0.9), p=0.1),           # 2.x 인자명
     ], bbox_params=A.BboxParams(format="yolo", label_fields=["class_labels"]))
     # ❌ ToGray / CLAHE / 전역 Hue 변환은 넣지 않는다
 
