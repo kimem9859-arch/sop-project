@@ -73,9 +73,9 @@
 - ✅ **Roboflow 업로드 완료(2026-07-13)** — `eung-min/console_v2-mjefr`(무료=public만, MIT). 장수·분할 수치 §10.13. 분할은 **업로드 시점에 명시**(자동 랜덤분할 금지), train/valid는 **세션 내 시간순 80/20**. **⭐ 재현 절차서 = `Rpi5/Demo/dataset_pipeline.md`**(촬영→중복제거→프리라벨→업로드→라벨링 전 과정).
   - 🔴 **Roboflow 함정 2개**(둘 다 물렸음): ①`annotation_labelmap` 없으면 클래스가 **숫자("0","1")로** 올라감 ②`annotation_overwrite=True` 없으면 **이미지 해시 캐시** 때문에 `already annotated`로 스킵되고 **옛 라벨이 남음**(프로젝트를 지워도 캐시 잔존). → **전량 업로드 전 3장 검증 필수**.
   - ❌ **색 기반 자동라벨러 채택 안 함** — 달성률은 오르나 **EMO↔B3 오분류 다발**(Hue 인접, 수치 §10.13). **틀린 라벨은 없는 라벨보다 해롭다** → v1 프리라벨 사용, B4·오분류는 사람이 수정.
-- **▶ 최우선 다음 = 라벨링(7/19까지) → console_v2 재학습** — ⭐**라벨링 기준 = `Rpi5/Demo/labeling_guide.md`**(팀 공유 필수. **일관성이 정확도보다 중요** — 2~4명 분담. 작업량 산정도 가이드 참조).
+- ✅ **라벨링 완료(2026-07-16, 652장)** — 흔들림·잔상 이미지 제거로 848→**652장**, **세션별 시간순 80/20 재분할**(train 522 / valid 130 / test 0·세션별 장수·Preprocessing Stretch640 = §10.13). 라벨링 기준 = `Rpi5/Demo/labeling_guide.md`. **▶ 최우선 다음 = 데이터셋 export(YOLOv8·Download=Jupyter/SDK) → console_v2 GPU 재학습**(데스크톱 RTX5060+WSL2, 절차 = `dev/ai_model/console_v2_학습가이드.md`).
   - **핵심 기준 3가지**: ①정답은 **진짜 버튼 정체**(정반사로 노란버튼이 하얗게 보여도 **B1** — v1이 이걸 틀림) ②**애매하면 그리지 않는다**(틀린 라벨 > 없는 라벨의 해악) ③**가림 = Modal**(보이는 부분만. 손 위에 박스 그리지 말 것 — COCO 표준, 2026-07-14 Amodal에서 정정).
   - 🔴 **B3↔EMO는 위치로 구분**(EMO=중앙 버섯형, B3=우상). **크기는 믿지 말 것**(근거 분포 = labeling_guide).
   - ⚠️ Roboflow **Annotate 배치는 168장뿐**(프리라벨 0개인 것) — 나머지 **680장은 Dataset에** 있어 배정 안 됨. **파일명 필터(`filename:*174153*`)로 분담**.
   - **Roboflow 유료 체험 = 7/13 시작 · 7/27 만료**(14일) — 팀 20명·Review 워크플로 개방. 🔴 **만료 시 2명으로 축소** → 기간 내 완료 필수. ❌ **AI 라벨링(Auto Label) 사용 금지**(8.5크레딧 소모 + B3↔EMO 구분 못 함).
-  - 이후: **②증강 학습**(Albumentations — 블러 σ0~2.0·JPEG q30~100·저해상도·정반사 합성. **Roboflow 증강 아님** — JPEG·저해상도·정반사가 없고 오프라인이라 매 epoch 같은 증강본) **③GPU 재학습·DFC 변환**(캘리브 1024+장) → `replay_raw.py --hef console_v2.hef`로 평가.
+  - 이후: **②GPU 재학습(데스크톱 RTX5060+WSL2)** — ⭐**학습 절차 = `dev/ai_model/console_v2_학습가이드.md`**, **증강 스펙 = `Rpi5/Demo/augmentation_plan.md`**(2026-07-16 검정→파랑 정정: **저조도 주력·정반사 보험·`hsv_h=0`·기하 ±15°**, 블러/JPEG/저해상도는 파랑 무손상이라 **강등**. §10.9/§10.13 정정 반영). 증강은 Roboflow 아닌 **학습 코드(Albumentations)**에서. **③DFC 변환**(캘리브 1024+장) → `replay_raw.py --hef console_v2.hef`로 저조도·정반사 세션 평가.
