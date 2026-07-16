@@ -33,8 +33,12 @@ Rpi5/
 !*.env.example
 dev/ai_model/Dataset_API_Key/
 
-# 학습 산출물·자동 다운로드 가중치 (ultralytics가 자동 취득 — 커밋 불필요)
+# 학습 산출물·자동 다운로드 가중치 (커밋 불필요)
+# - yolov8n/yolo26n.pt = ultralytics가 자동 취득
+# - console_v2.pt = train_console_v2.py로 9.6분 재현 가능(seed 고정). 파이 배포물은 .hef(Rpi5 repo)
 dev/ai_model/yolov8*.pt
+dev/ai_model/yolo26*.pt
+dev/ai_model/console_v2.pt
 dev/ai_model/runs/
 dev/ai_model/console_v2-*/
 

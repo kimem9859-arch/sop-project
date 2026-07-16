@@ -39,6 +39,25 @@ def load_api_key() -> str:
     )
 
 
+def fix_data_yaml(location: str) -> None:
+    """Roboflow가 내보내는 data.yaml은 train/val을 '../train/images'로 적는데,
+    실제 이미지는 '<location>/train/images'에 있어 Ultralytics가 못 찾는다.
+    절대 path + 상대 train/val로 교정한다(재다운로드해도 매번 적용되도록)."""
+    root = Path(location).resolve()
+    y = root / "data.yaml"
+    lines, out = y.read_text(encoding="utf-8").splitlines(), []
+    for line in lines:
+        key = line.split(":", 1)[0].strip()
+        if key in ("train", "val", "test", "path"):
+            continue                      # 기존 경로 줄은 버리고 아래에서 다시 씀
+        out.append(line)
+    out += [f"path: {root}", "train: train/images", "val: valid/images"]
+    if (root / "test" / "images").is_dir():
+        out.append("test: test/images")   # test 세션을 찍으면 그때 자동 반영
+    y.write_text("\n".join(out) + "\n", encoding="utf-8")
+    print(f"   data.yaml 경로 교정 완료 → path: {root}")
+
+
 def main():
     try:
         from roboflow import Roboflow
@@ -50,6 +69,7 @@ def main():
     dataset = project.version(VERSION).download(FORMAT)
 
     print(f"\n✅ 다운로드 완료: {dataset.location}")
+    fix_data_yaml(dataset.location)
     print("   data.yaml 확인 사항:")
     print("   - names: ['B1','B2','B3','B4','EMO']  (숫자 '0'..'4' 아님)")
     print("   - train ≈ 522 / valid ≈ 130 / test 0")

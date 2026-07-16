@@ -77,49 +77,50 @@ print("dataset at:", dataset.location)
 | `flipud` | **0.0** | 상하 뒤집기 금지(정립 배포) |
 | `mosaic` | 1.0 / `close_mosaic` 10 | 위치 편향 완화 |
 
-### 학습 스크립트
-```python
-# train_console_v2.py
-from ultralytics import YOLO
-model = YOLO("yolov8n.pt")
-model.train(
-    data="console_v2-mjefr-N/data.yaml",   # download된 경로
-    epochs=200, patience=40, imgsz=640, batch=16, device=0,
-    hsv_h=0.0, hsv_s=0.3, hsv_v=0.4,
-    degrees=12, translate=0.1, scale=0.5,
-    fliplr=0.5, flipud=0.0, mosaic=1.0, close_mosaic=10,
-    project="runs", name="console_v2",
-)
+### 학습 스크립트 = `dev/ai_model/train_console_v2.py` (작성·검증 완료)
+```bash
+python train_console_v2.py --smoke    # 1 epoch — 경로·증강·GPU 확인 (~7초)
+python train_console_v2.py            # 본 학습 200 epoch (~25~40분, RTX 5060)
 ```
+네이티브 인자는 위 표 그대로 + `workers=2`(WSL2 필수) + `augmentations=AUGS`(아래). 데이터 경로는 `console_v2-1/data.yaml` 고정.
 
-### ⚠️ 커스텀 Albumentations (선택·권장) — 기본값의 ToGray 제거 + 색손실 증강 추가
-Ultralytics는 albumentations 설치 시 **기본 변환에 `ToGray`·`CLAHE`가 들어간다 — 색 기반 클래스엔 유해**(회색화). 또 우리에게 필요한 **저조도·정반사·JPEG**가 없다. 학습 전 아래로 교체:
+> **스모크 테스트를 반드시 먼저** — 2시간(실측 25~40분) 돌린 뒤에 증강이 안 먹었거나 경로가 틀린 걸 알면 늦다. `--smoke`는 1 epoch만 돌려 ①경로 ②`augmentations=` 수용 ③GPU 학습 전 구간을 7초에 검증한다.
 
-> 🔴 **albumentations 2.x 필수 주의 (2026-07-16 실측 확인)** — 1.x 인자명(`var_limit`·`quality_lower/upper`·`scale_min/max`)은 2.x에서 **에러 없이 UserWarning만 뜨고 조용히 무시된 뒤 기본값이 적용**된다. 실제 피해: `GaussNoise` std가 의도(≈0.012~0.031)의 **7~16배**(기본 0.2~0.44)로 폭주, `ImageCompression`은 q99~100이라 **사실상 무효**, `Downscale`은 고정 0.25로 **강등 방침과 반대로 과격**해진다. 아래는 2.x 인자명으로 교정된 코드 — **경고가 하나라도 뜨면 그 인자는 안 먹은 것**이니 로그를 확인할 것.
+### 커스텀 Albumentations — **공식 `augmentations=` 파라미터로** (몽키패치 불필요)
+**⭐ 실행 스크립트 = `dev/ai_model/train_console_v2.py`** (아래 내용이 이미 반영돼 있음. `--smoke`로 1 epoch 검증 후 본 학습).
+
+**왜 커스텀이 필요한가** — 흔히 "Ultralytics 기본 `ToGray`가 색 클래스에 유해하니 제거"라고 하지만 실측하면 **기본값은 `Blur`/`MedianBlur`/`ToGray`/`CLAHE`가 각 `p=0.01`(1%)로 미미**하고, `RandomBrightnessContrast`·`RandomGamma`·`ImageCompression`은 **`p=0.0`(꺼짐)**이다(`augment.py:2107~2113`). 즉 **진짜 이유는 "ToGray 제거"가 아니라 우리가 필요한 저조도(밝기·채도↓) 증강이 Ultralytics에 아예 없다는 것**이다.
+
+> ✅ **몽키패치 하지 말 것 (2026-07-16 정정)** — 구버전 가이드는 `aug.Albumentations.__init__`를 덮어쓰는 몽키패치를 안내했으나, **Ultralytics 8.4.96에는 공식 통로가 있다**: `cfg/__init__.py:609`가 `augmentations`를 `allowed_custom_keys`로 허용하고, `augment.py:2771`이 `Albumentations(p=1.0, transforms=getattr(hyp, "augmentations", None))`로 받는다. → **`model.train(augmentations=[...])`로 그냥 넘기면 된다.** 내부 구조에 의존하지 않아 안전하다.
+
+> 🔴 **albumentations 2.x 인자명 필수 (2026-07-16 실측)** — 1.x 이름(`var_limit`·`quality_lower/upper`·`scale_min/max`)은 2.x에서 **에러 없이 UserWarning만 뜨고 조용히 무시된 뒤 기본값이 적용**된다. 피해: `GaussNoise` std가 의도(≈0.012~0.031)의 **7~16배**(기본 0.2~0.44)로 폭주, `ImageCompression`은 q99~100이라 **무효**, `Downscale`은 고정 0.25로 **강등 방침과 반대로 과격**해진다.
 
 ```python
-# train_console_v2.py 상단 (model.train 호출 전)에 monkeypatch
 import albumentations as A
-import ultralytics.data.augment as aug
+from ultralytics import YOLO
 
-def _custom_albu(self, p=1.0):
-    self.p = p
-    self.transform = A.Compose([
-        # 주력: 저조도(밝기·채도↓ + 노이즈) — §10.13 B3 사멸 방어
-        A.RandomBrightnessContrast(brightness_limit=(-0.5, 0.1), contrast_limit=0.2, p=0.5),
-        A.HueSaturationValue(hue_shift_limit=0, sat_shift_limit=(-40, 10), val_shift_limit=(-40, 10), p=0.4),
-        A.GaussNoise(std_range=(0.012, 0.031), p=0.3),   # 2.x: std 정규화값. 1.x var_limit(10,60) 환산 = sqrt(var)/255
-        # 보험(소량): 정반사/글레어
-        A.RandomSunFlare(flare_roi=(0, 0, 1, 1), src_radius=80, p=0.1),
-        # 강등(약하게): 파랑 무손상이라 일반 견고성 정도만
-        A.ImageCompression(quality_range=(60, 100), p=0.2),   # 2.x 인자명
-        A.Downscale(scale_range=(0.5, 0.9), p=0.1),           # 2.x 인자명
-    ], bbox_params=A.BboxParams(format="yolo", label_fields=["class_labels"]))
-    # ❌ ToGray / CLAHE / 전역 Hue 변환은 넣지 않는다
+AUGS = [
+    # 주력: 저조도 — §10.13 B3 사멸 방어
+    A.RandomBrightnessContrast(brightness_limit=(-0.5, 0.1), contrast_limit=0.2, p=0.5),
+    A.HueSaturationValue(hue_shift_limit=0, sat_shift_limit=(-40, 10), val_shift_limit=(-40, 10), p=0.4),
+    A.GaussNoise(std_range=(0.012, 0.031), p=0.3),   # 2.x: std 정규화. 1.x var_limit(10,60) = sqrt(var)/255
+    # 보험(소량): 정반사·글레어
+    A.RandomSunFlare(flare_roi=(0, 0, 1, 1), src_radius=80, p=0.1),
+    # 강등: 파랑 무손상(§10.12)이라 일반 견고성 정도만
+    A.ImageCompression(quality_range=(60, 100), p=0.2),
+    A.Downscale(scale_range=(0.5, 0.9), p=0.1),
+    # ❌ ToGray / CLAHE / Hue 변경 금지 — 색이 곧 클래스 정의
+]
 
-aug.Albumentations.__init__ = _custom_albu
+YOLO("yolov8n.pt").train(data=..., augmentations=AUGS, workers=2, ...)   # 나머지 인자는 위 표 참조
 ```
-> ※ Ultralytics 버전에 따라 `Albumentations` 내부 구조가 달라질 수 있으니, **학습 로그에 `ToGray`가 안 뜨는지** 확인. 부담되면 이 훅은 생략하고 위 네이티브 하이퍼파라미터만으로 1차 학습해도 된다(그 경우 `hsv_v=0.4`가 저조도 대비를 일부 담당).
+> **검증법**: 학습 로그의 `albumentations:` 줄에 **우리 6개가 지정한 값 그대로** 찍히고 **`ToGray`·`CLAHE`가 없어야** 한다. `hue_shift_limit=(-0.0, 0.0)` 확인 필수.
+
+### 🔴 WSL2 필수 — `workers=2`
+기본 `workers=8`이면 **pin memory 스레드에서 `CUDA error: out of memory`로 즉사**한다(2026-07-16 실측). **모델 자체는 1.92GB밖에 안 쓰므로 배치·모델 문제가 아니다** — WSL2의 page-locked(pinned) 메모리가 빠듯한 탓. 워커를 줄이면 해결된다.
+
+### 🔴 Roboflow data.yaml 경로 함정
+Roboflow export의 `data.yaml`은 `train: ../train/images`로 나오는데 **실제 이미지는 `<location>/train/images`** 라 Ultralytics가 못 찾는다. → **절대 `path:` + 상대 `train:`/`val:`로 교정**해야 한다. `download_dataset.py`가 다운로드 직후 자동 교정하므로 보통은 신경 쓸 필요 없다(재다운로드해도 매번 적용됨).
 
 ## ④ DFC 변환 (.pt → .hef)
 - 규격(반드시 준수, `dev/ai_model/README.md`): **DFC 3.33.1 / HailoRT 4.x / uint8 640×640 / NMS on-chip**. HailoRT 5.x 금지.
