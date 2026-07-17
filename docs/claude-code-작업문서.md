@@ -17,27 +17,36 @@
 |---|---|---|
 | SessionStart 훅 | `session-sync-check.sh` | git 원격 ahead/behind·로컬변경 보고 |
 | SessionStart 훅 | `session-worklog-brief.sh` | 작업로그 ⏸중단·▶다음 이어하기 브리핑 + session_id 주입 |
-| SessionEnd 훅 | `session-worklog-commit.sh` | 그 세션이 만든 커밋을 `docs/작업로그.md`에 자동 매핑 |
-| pre-commit 훅 | `.githooks/pre-commit` | 문서 커밋 시 diff 앵커로 다른 문서·memory와의 모순을 `claude -p`(Haiku)가 대조·경고. warn-only·비차단 |
+| 스킬·커맨드 | `session-wrap` / `/세션마무리` | 세션 작업을 4분류로 정리해 로그에 기록 — **세션 추적의 본체** |
 
-- 등록: SessionStart/End = `.claude/settings.json`(pull하면 자동) / pre-commit = `.githooks/` + `git config core.hooksPath .githooks`(클론 후 1회).
-- 폐기 이력: 구 `doc-consistency-check.sh`(SessionStart grep) = 타이밍상 예방 불가·중복이라 제거 → pre-commit LLM으로 재설계.
+- 등록: SessionStart = `.claude/settings.json`(**pull하면 자동** — 클론 후 수동 설정 불필요).
+- **폐기 이력** (같은 목표에 3번 시도 → 훅으로는 해결 안 된다는 결론):
+  - `doc-consistency-check.sh`(SessionStart grep, 2026-07-01 제거) — 타이밍상 예방 불가·중복.
+  - `.githooks/pre-commit`(LLM diff 대조, **2026-07-17 제거**) — 위 재설계판. **12회 실행·적발 0건**. 매 호출이 세션 스텁을 흘려 prune 훅이 뒤처리하는 닫힌 루프까지 형성. → 문서 정합성은 **단일정본 규칙 + 편집 규율**이 전담(원래도 1차 방어는 이것).
+  - `session-worklog-commit.sh`(SessionEnd 커밋 자동매핑, **2026-07-17 제거**) — 산출 45건 중 고유정보 6건뿐. **세션마무리 누락을 구제한 사례 0건** → 역할을 「세션 마무리」가 이미 전부 수행. 자기참조 증식(기록 커밋이 다음 매핑 대상이 됨)도 구조적 결함.
 
 ## 2. 작업 방식 (how I work with Claude Code)
 
 - **세션 시작**: 브리핑 훅의 "이어갈 작업 + session_id" + 원격 동기화 상태 먼저 확인. behind면 pull 먼저.
 - **세션 마무리** (슬래시 `/세션마무리` = 커스텀 커맨드, 또는 스킬 `session-wrap` = 말로 트리거): **`/세션마무리`** 를 치거나 **"세션 마무리"/"세션 정리"** 라고 하면 이번 세션 작업을 4분류(✅완료/⏸중단/▶다음/🔗커밋)로 기록 — **프로젝트 작업은 `작업로그.md`, CC 작업은 `claude-code-작업로그.md`** 로 나눠서(전체 UUID 태그). ※정의 = 하루 끝이 아니라 **한 작업 단위(A작업)가 끝난 시점**(하루 여러 번 가능).
-- **문서 커밋**: pre-commit 정합성 훅이 자동 대조(경고만). 무시하려면 `SKIP_DOCSYNC=1`.
+- **문서 커밋**: 자동 점검 없음(2026-07-17 pre-commit 폐기). **단일정본 규칙 + 편집 규율**이 유일한 방어 — 사양·수치는 통합문서에만 두고 운영문서는 포인터만.
 - **큰/되돌리기 어려운 변경**: 계획(plan mode) 또는 A/B 선택지로 먼저 확인.
 - **세션 이어가기**: 로그의 `session <UUID>`를 `claude --resume`에 사용.
 
 ## 3. 범용 훅 설계 원칙 (재사용 지식)
 
+### 3.0 ⭐ 제1원칙 — **훅을 만들기 전에 "사람 규율로 이미 되는 일인가"를 묻는다**
+2026-07-17 전수 검증의 결론. 폐기한 훅 3개는 **타이밍·구현이 틀려서가 아니라, 사람 규율(세션마무리·단일정본)이 이미 하던 일을 기계로 중복한 것**이라 죽었다.
+- **값을 한 것** = 사람이 **못 하는** 일을 하는 훅: 세션 시작 시점의 원격 동기화 상태 조회(brief), 앱이 흘린 스텁 청소(prune). 사람이 매번 못 하거나 안 보이는 정보.
+- **죽은 것** = 사람이 **이미 하는** 일을 하는 훅: 커밋 매핑(세션마무리가 함), 문서 모순 점검(편집 규율이 함).
+- 판별 질문: **"이 훅이 없으면 실제로 무엇을 잃나?"** 답이 "사람이 잊었을 때의 보험"이면 → **보험이 지급된 실적을 먼저 측정**하라. 실적 0이면 만들지 마라.
+- 훅에도 **유지비가 있다**(중복 산출물·자기증식·스텁 쓰레기·양 머신 설정 마찰). 값을 못 하면 순손실.
+
 ### 3.1 이벤트별 타이밍 — "무엇을 막고 싶은가"의 시점에 건다
 - **SessionStart**: 브리핑·컨텍스트 주입용. stdout이 모델 컨텍스트에 주입됨. **drift 예방엔 부적합**(이미 벌어진 뒤).
-- **SessionEnd**: 로깅·정리용. **best-effort**(강제종료 시 미발동)·차단 불가.
+- **SessionEnd**: 로깅·정리용. **best-effort**·차단 불가. **발동 조건이 넓다** — `/exit`뿐 아니라 `clear`·`resume`·`logout`·`prompt_input_exit`·`bypass_permissions_disabled`·`other` 전부(matcher 미지정 시 전부 수신). `/clear` 한 번에도 돈다.
 - **Stop**: 매 응답 종료 — 너무 잦음.
-- **pre-commit(git)**: 변경이 **커밋되는 순간** = 예방·검증의 올바른 타이밍. warn-only(exit 0)면 안 막음.
+- **pre-commit(git)**: 변경이 **커밋되는 순간** = 예방·검증의 올바른 타이밍. warn-only(exit 0)면 안 막음. ⚠️ **타이밍이 맞아도 탐지할 게 없으면 무의미**(2026-07-17 폐기: 12회 0적발).
 
 ### 3.2 탐지: grep vs LLM
 - 하드코딩 grep = brittle·의미 모순 못 잡음·감시값을 박으면 훅 자신이 stale.
@@ -53,15 +62,18 @@
 - **한글/비ASCII 경로**: `git -c core.quotepath=false`(안 하면 이스케이프로 매칭 실패).
 - **세션ID**: `$CLAUDE_CODE_SESSION_ID` 우선 + stdin JSON fallback.
 - **경로 이식**: 하드코딩 금지 → `git rev-parse --show-toplevel`·`$HOME`·env override.
-- **배포/공유**: 범용은 전역 `~/.claude/`(모든 폴더 자동) / 프로젝트 전용은 그 repo `.claude/`. git 훅은 `.githooks/`+`core.hooksPath`.
+- **배포/공유**: 범용은 전역 `~/.claude/`(모든 폴더 자동) / 프로젝트 전용은 그 repo `.claude/`(**pull하면 자동 적용** — 마찰 없음). git 훅은 `.githooks/`+`core.hooksPath`지만 **머신마다 수동 1회**가 필요해 마찰이 크다(실제로 Pi#1은 설정 누락으로 훅이 2주간 안 돌았다) → **같은 값이면 `.claude/` 쪽을 택하라.**
 
-### 3.5 워크로그(세션 추적) 3종 조합
-- SessionStart brief(원격동기화+이어하기+session_id를 **표 배너**로; 내부에서 sync-check 순차호출·`_banner.py` 렌더·시작 HEAD 기록) / prune-stubs(resume 정리 배너) / SessionEnd commit(시작HEAD..현재 커밋 자동매핑) / **"세션 마무리" 수동 요약**(스킬 `/session-wrap`, 의미 기록=진짜 안전판).
+### 3.5 워크로그(세션 추적) — 현재 2종 + 사람 규율
+- SessionStart brief(원격동기화+이어하기+session_id를 **표 배너**로; 내부에서 sync-check 순차호출·`_banner.py` 렌더) / prune-stubs(resume 정리 배너) / **「세션 마무리」 수동 요약**(스킬 `session-wrap`·`/세션마무리`).
+- ⭐ **세션 추적의 본체는 「세션 마무리」다** — 기계 매핑(구 SessionEnd commit 훅)은 2026-07-17 폐기. 실측: 사람 블록 17개가 프로젝트 서사를 전부 생산한 반면, 기계 45건 중 고유정보는 6건. **의미 없는 색인보다 의미 있는 요약**.
 - 마커 추출은 **줄 맨 앞에서만**(`^-? *(⏸|▶)`) — 본문 속 글자 오탐 방지.
 
 ### 3.6 실전 함정
-- SessionStart는 예방 못 함(타이밍) → pre-commit으로 재설계.
+- SessionStart는 예방 못 함(타이밍) → pre-commit으로 재설계 → **그것도 0적발로 폐기**(§3.0).
 - 측정값·네이밍 하드코딩 → 훅 자신이 stale.
 - 마커 grep이 본문 속 `▶`/`⏸` 오탐 → 줄 앞 앵커링.
-- best-effort 이벤트(SessionEnd)는 강제종료 시 누락 → 수동 안전판 병행.
-- pre-commit LLM 첫 실사용서 "빠진 언급" 오탐 → 직접모순+인용으로 엄격화.
+- best-effort 이벤트(SessionEnd)는 강제종료 시 누락 → 수동 안전판 병행. **※ 실측 결과 "누락 세션"은 애초에 커밋이 없어 훅도 무력했다** — 보험이 필요한 상황에서 작동 안 하는 보험.
+- pre-commit LLM 첫 실사용서 "빠진 언급" 오탐 → 직접모순+인용으로 엄격화 → **엄격화한 뒤엔 아무것도 안 잡음**(오탐 억제와 탐지력의 트레이드오프에서 탐지력이 0으로 수렴).
+- **훅이 훅의 쓰레기를 치우는 루프**: pre-commit이 `claude -p` 호출마다 세션 스텁을 남기고 prune-stubs가 그걸 청소 — 자동 프룬 9건이 전부 자기 집 뒤처리였다. **인프라끼리 일감을 만들면 바깥에서 값이 안 보인다.**
+- **자기참조 증식**: 기록 훅의 산출물을 커밋하면 그 커밋이 다음 매핑 대상이 되어 영원히 안 끝난다.
