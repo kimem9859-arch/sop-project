@@ -6,6 +6,19 @@
 
 ---
 
+## 2026-07-14~18 · session 7f54ae1f-ed68-48ba-8463-c8df4d912c64 (폰↔파이 Claude Code 연동 구성 → 제거, tmux 선택적 유지)
+
+**발단**: "핸드폰에서 파이 Claude Code 세션을 이어 작업하고 싶다"(RC 말고 Cowork·웹·SSH 방식). 조사·구성 후 **실사용 빈도가 낮다고 판단해 폰 연동은 제거**하되, 노트북·데스크톱 SSH 작업용 tmux는 선택적으로 남김. ※7/17 로그(session 25178c04)에서 "진짜 미기록·기록 불요"로 남았던 그 세션이 이어져 여기서 매듭 → 미기록 해소.
+
+- ✅ **방식 조사**(웹검색) — 폰에서 로컬 세션 잇는 공식 수단은 **Remote Control 하나뿐**. Claude Code on the web(클라우드 샌드박스=Hailo·ESP32·GPIO 접근 불가), Cowork(비개발 지식작업·Max 전용)는 이 프로젝트 부적합. 결론: **하드웨어가 걸린 작업은 SSH+tmux만이 실효**.
+- ✅ **Tailscale SSH 실험 → 롤백** — `tailscale up --ssh`로 키리스 접속(길 A) 시도 후 사용자 선택으로 **키 방식(길 B)**로 전환. `tailscale up --ssh=false --hostname=pi1`로 SSH서버 비활성(Tailscale 네트워크 자체는 유지, `pi1`=100.97.0.91).
+- ✅ **키 인증 구성** — 폰 Termius ED25519 공개키를 `~/.ssh/authorized_keys`에 등록(기존 Galaxy Book 키 보존). 폰 Tailscale 켜두기 권장(exit node만 끄면 배터리·속도 영향 미미).
+- ✅ **tmux 도입** — 미설치라 `apt install tmux`(3.5a). 세션명 `cc`, 별칭 `alias acc='tmux attach -t cc 2>/dev/null || tmux new -s cc'`를 `.bashrc`에 추가.
+- 🗑️ **폰 연동(SSH 자동 attach) 제거** — `.bashrc`의 `if [[ ... $SSH_CONNECTION ... ]]; then tmux attach ...` 5줄 삭제. 이제 어느 기기든 `ssh pi1`은 일반 셸이 뜨고, tmux는 `acc`로 **선택적** 사용.
+- ✅ **유지(무해·재사용 가능)**: `acc` 별칭·tmux 패키지·폰 공개키·Tailscale 네트워크. tmux의 실효는 "긴 벤치마크·평가를 걸어두고 연결 끊겨도 파이 안에서 계속 돌게 / 기기간 세션 이어받기" — 노트북·데스크톱 SSH 작업에 값을 함.
+- 💡 **교훈**: "폰 연동"의 실체는 `.bashrc` 자동 attach 5줄뿐. tmux 인프라는 폰과 무관하게 남겨도 방해 없음(안 쓰면 발동 안 함). 파이 인계: `.bashrc`는 로컬 파일 — repo 반영 없음.
+- 🔗 커밋: (없음 — 전부 로컬 `~/.bashrc`·`~/.ssh`·apt. repo 변경은 이 로그 기입뿐)
+
 ## 2026-07-18 · session 5ffb1a95-93ab-4870-8be9-f217d967a578 (세션마무리 스킬 개선 — 미기록 커밋 소급 점검 신설)
 
 **발단**: 사용자 질문 "이전 세션이 마무리 없이 끝났으면 다음 세션 마무리 때 그 커밋도 기록되나?" → 답 = 안 됨(자동매핑 훅은 7/17 폐기, 새 세션은 이전 대화 컨텍스트 없음) → **사용자 제안으로 스킬에 안전망 신설**.
