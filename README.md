@@ -19,7 +19,7 @@
 │  ├─ poc/                Step1 PoC — MediaPipe 손 + 색 ROI + dwell (검증 완료)
 │  ├─ interlock/          트랙 A — 물리 인터록 (ref/ = ESP/Arduino 참고자산)
 │  ├─ fsm/                순서위반 상태머신 (정본 코드는 Rpi5/Demo/fsm.py)
-│  └─ ai_model/           트랙 B — YOLO 버튼 동적검출 (console_v1 완료 → v2 재학습 진행 중)
+│  └─ ai_model/           트랙 B — YOLO 버튼 동적검출 (console_v2 학습·.hef·⑤replay 완료 — 최종 판정 = test 세션 대기)
 ├─ media/                 🎬 overlay 영상 (정상·스침만 git 추적)
 └─ Rpi5/                  🍓 RPi 데모 (별도 git repo)
 
