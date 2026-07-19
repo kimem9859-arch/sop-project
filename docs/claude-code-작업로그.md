@@ -6,6 +6,18 @@
 
 ---
 
+## 2026-07-19 · session 5ffb1a95-93ab-4870-8be9-f217d967a578 (작업방식 전환 brainstorming-first + CLAUDE.md 정비 + 플러그인 도입 평가)
+
+> 같은 세션의 후속 작업 단위(앞선 마무리들 = 데이터셋·replay·문서정합화·소급점검). 이번 단위 = **작업 방식·문서 체계 전환**.
+
+- ✅ **⭐ 작업 방식 전환 — brainstorming-first 채택**(사용자 지시): 이전 "즉각·바로 구현" 습관이 계획 없이 기능을 만들어 부작용을 낳던 것 교정. **비자명 작업(구현·기능·스킬·훅·코드·다중파일·구조 변경)은 설계→승인→구현**, 자명한 것(오타·해시·로그 기입)만 바로. CLAUDE.md 작업규칙 교체 + memory `brainstorm-first-workflow.md` 신설. 구 "단순·국소 수정은 바로" 규칙 대체.
+- ✅ **CLAUDE.md 정비 (94→77행)** — Karpathy·Boris CLAUDE.md(둘 다 유명·검증된 워크플로 템플릿)에서 **우리 환경에 맞는 것만 선별 흡수**(수술적·최소구현·근본원인·"더 우아한 방법?" 자기검열·재계획) + **명시적 거부**(subagent 남용·auto mode·자동 버그수정 즉시착수·`tasks/todo.md`·`lessons.md` 신설 — 비용규율·brainstorming-first·기존 memory·작업로그와 충돌). 「(이전) 시점 기록」 블록(파일 40%)을 포인터로 슬림화 — **gotcha 8종 전부 정본/가이드에 원본 존재**(grep 확인 → 손실 0), CLAUDE.md 자신의 복제금지 규칙 준수.
+- ✅ **설계문서 체계 신설** — brainstorming-first 산출물로 `docs/superpowers/specs/*-design.md` 도입, 첫 문서(`2026-07-19-claude-md-정비-design.md`) 작성. **역할경계 지도(작업로그 헤더)에 등재** — specs=하기 전 근거 / 작업로그=하고 나서 이력 / CLAUDE 현재상태=지금 / §10=확정 수치. ※병행 세션 `388cc50`이 같은 등재를 1분 먼저 커밋 → `15170f6`으로 문구 다듬음(충돌·중복 없음, 최종 1줄).
+- ✅ **플러그인 도입·선별 평가** — 공식 마켓 7종(superpowers·skill-creator·code-review·claude-md-management·code-simplifier·ralph-loop·claude-code-setup) + hookify 설치 확인. **원칙: 플러그인은 참고 도구함, 프로젝트 규칙이 우선**(superpowers "1%라도 스킬 강제"·brainstorming HARD-GATE는 선별 적용). `andrej-karpathy-skills`는 파이 불필요 판정(brainstorming과 중복·"Simplicity First↔brainstorming" 충돌). ralph-loop 상태파일 `.claude/*.local.md` gitignore 차단.
+- ⏸ 중단 없음.
+- ▶ 다음: 프로젝트 ▶는 CLAUDE.md 현재상태 유지(HOI 해결·실테스트·모조 test 촬영). CC 후속 없음.
+- 🔗 커밋: sop-project `b2ce8a9`(gitignore)·`f3cb1fb`(brainstorming-first)·`77cb36d`(CLAUDE.md 정비+설계문서)·`388cc50`·`15170f6`(역할경계 등재)
+
 ## 2026-07-19 · session 53ded0ed-b600-4a14-9b4e-c3ebdf10b8c7 (statusline 하단 상태바 도입 + 공식문서 참조 원칙 메모리화)
 
 **발단**: "CC 인프라 개선 — 세션 대화창 하단 커스텀 설정이 뭔지"에서 출발 → statusLine 확인 → 공식 문서(`code.claude.com/docs/ko/statusline`) 원문을 WebFetch로 읽고 그 계약대로 구현. 사용자 요구를 반복 반영해 커스텀.
