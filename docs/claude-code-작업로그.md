@@ -6,6 +6,20 @@
 
 ---
 
+## 2026-07-19 · session 53ded0ed-b600-4a14-9b4e-c3ebdf10b8c7 (statusline 하단 상태바 도입 + 공식문서 참조 원칙 메모리화)
+
+**발단**: "CC 인프라 개선 — 세션 대화창 하단 커스텀 설정이 뭔지"에서 출발 → statusLine 확인 → 공식 문서(`code.claude.com/docs/ko/statusline`) 원문을 WebFetch로 읽고 그 계약대로 구현. 사용자 요구를 반복 반영해 커스텀.
+
+- ✅ **statusline 신설**(`.claude/hooks/statusline.py`, python3·jq 비의존 — 이 환경 관행). `settings.json`에 `statusLine` 등록(**프로젝트 공유** → 3대 자동 적용). 절차·필드명·rate_limits 주의사항은 공식 문서 원문 기준.
+  - **1줄**: `🤖 [모델] | 📁 폴더 | 🌿 브랜치 + git상태 | 세션마무리`. **git상태 3계열**: ✎N(미커밋·노랑)·⬆N(미푸시·마젠타)·✓(완전 깨끗+동기화·희미)·생략(추적원격 없음). ✓는 커밋도 푸시도 다 됐을 때만 → "커밋·푸시 안 하고 넘어가는" 맹점 차단.
+  - **세션마무리 표시기**: 워크로그 헤딩의 현재 session_id로 블록 수 판정, **3상태**(⚪미마무리/✅마무리/🔵마무리 후 새 작업). 한 세션 다회 마무리 대응 — 마무리 뒤 코드변경(총 add+del 델타) 발생 시 🔵, 세션별 상태파일 `/tmp/claude-statusline-wrap-<sid>` 기준선. 아이콘만(글자 없음).
+  - **2줄**: `Context 진행바 % | Usage(플랜한도) 진행바 % 🕐 5h(리셋) 📅 7d(리셋) | ⏱️ 경과`. 진행바 임계색(70/90%). 💰(비용)는 구독 사용이라 제거. rate_limits 없으면 `Usage —`·타이머 생략.
+  - git상태(✎⬆✓)와 마무리(⚪✅🔵)는 **위치·모양·색** 3축으로 구분(연필/화살표 vs 원형).
+  - 모의 입력(`echo '{...}' | python3 statusline.py`)으로 전 상태 검증 + ✎→⬆→✓ 실전이 커밋·푸시로 실제 전환됨 확인.
+- ✅ **공식문서 참조 원칙 메모리화** — CC 인프라 작업은 `code.claude.com` **원문(llms.txt 인덱스 + URL 끝 `.md`)** 참조, 기억·추측 금지. CC 문서 전용 공식 MCP/플러그인은 **없음**(llms.txt·WebSearch로 확인) → llms.txt+`.md`가 공식·최선, 교차확인은 `claude-code-guide` 에이전트. 메모리 `cc-infra-official-docs-first.md` 저장(MEMORY.md 인덱스 등록).
+- ▶ 다음: statusline은 **다음 세션부터 실제 렌더**(현 대화는 설정 적용 전 시작). 필요 시 `refreshInterval`(초단위 타이머 갱신)·⏱️ 제거·Usage 창(5h↔7d) 전환은 상단 상수/설정으로 조정.
+- 🔗 커밋: 681fec1 (statusline 도입·푸시 완료)
+
 ## 2026-07-14~18 · session 7f54ae1f-ed68-48ba-8463-c8df4d912c64 (폰↔파이 Claude Code 연동 구성 → 제거, tmux 선택적 유지)
 
 **발단**: "핸드폰에서 파이 Claude Code 세션을 이어 작업하고 싶다"(RC 말고 Cowork·웹·SSH 방식). 조사·구성 후 **실사용 빈도가 낮다고 판단해 폰 연동은 제거**하되, 노트북·데스크톱 SSH 작업용 tmux는 선택적으로 남김. ※7/17 로그(session 25178c04)에서 "진짜 미기록·기록 불요"로 남았던 그 세션이 이어져 여기서 매듭 → 미기록 해소.
