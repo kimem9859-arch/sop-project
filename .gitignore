@@ -58,3 +58,4 @@ dev/ai_model/calib_v2/
 gcp-oauth.keys.json
 .gdrive-server-credentials.json
 .node-env/
+.claude/*.local.md
