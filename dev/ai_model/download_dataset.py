@@ -59,6 +59,15 @@ def fix_data_yaml(location: str) -> None:
 
 
 def main():
+    import argparse
+
+    ap = argparse.ArgumentParser(description="Roboflow 데이터셋 다운로드")
+    ap.add_argument("--version", type=int, default=VERSION,
+                    help=f"Roboflow 버전 번호 (기본 {VERSION}). 2 = console_v3(test 113 포함)")
+    ap.add_argument("--out", default=None,
+                    help="다운로드 위치 (기본: 현재 디렉터리 밑 Roboflow 기본 경로)")
+    args = ap.parse_args()
+
     try:
         from roboflow import Roboflow
     except ImportError:
@@ -66,13 +75,14 @@ def main():
 
     rf = Roboflow(api_key=load_api_key())
     project = rf.workspace(WORKSPACE).project(PROJECT)
-    dataset = project.version(VERSION).download(FORMAT)
+    ver = project.version(args.version)
+    dataset = ver.download(FORMAT, location=args.out) if args.out else ver.download(FORMAT)
 
-    print(f"\n✅ 다운로드 완료: {dataset.location}")
+    print(f"\n✅ 다운로드 완료 (버전 {args.version}): {dataset.location}")
     fix_data_yaml(dataset.location)
     print("   data.yaml 확인 사항:")
     print("   - names: ['B1','B2','B3','B4','EMO']  (숫자 '0'..'4' 아님)")
-    print("   - train ≈ 522 / valid ≈ 130 / test 0")
+    print("   - split 장수가 Roboflow 버전과 일치하는지")
 
 
 if __name__ == "__main__":
