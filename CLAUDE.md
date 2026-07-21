@@ -74,7 +74,13 @@
   - ⭐ **안전 설계**: 모델·소스가 없거나 `HAND_ENABLED=False`면 **조용히 비활성**되고 `detect()`가 None을 반환 → 손 검출이 없던 종전과 **정확히 동일 동작**. 두 비활성 경로 모두 실측 확인.
   - 기존 테스트 **15개 전부 통과**(`test_fsm`·`test_hoi_sim`).
   - 🔴 **모델·blaze 소스가 repo 밖(`~/hoi_probe/`)** — 클론·sop-pi-2에선 자동 비활성된다. **vendoring 여부는 별도 결정 사항**(모델 7MB·소스 228K).
-- **▶ 다음 = ①시연 경로 GUI 검증(카메라 필요·최우선 — VDevice 공유 + 손검출 둘 다 미검증) ②버튼 누르는 동작 촬영 → 접촉 임계(§9.4 재측정) ③실콘솔 2차 test(§10.16 최종 판정) ④손 모델·소스 vendoring 결정 ⑤저조도·자연광 조건 ⑥실시간 FPS 재측정(§10.6).**
+- **▶ 다음 = HOI 측정 + 카메라 테스트를 한 세팅에서 (상세 절차서 = `docs/작업로그.md` 2026-07-22 블록)**
+  - **Phase 0 (지금 가능·코드만)**: ①`bench_detector`에 `--hand` 추가 — 🔴**§10.6의 "HOI 포함 FPS"를 잴 도구가 현재 없다**(bench_detector는 손검출 미포함·camera_thread는 FPS 미기록) ②`run_bench_test.sh` ping 가드 수정(라우팅 경유도 통과시켜 헛촬영을 부름)
+  - **Phase 1 (HW 직후)**: ⭐**`run_demo.sh` GUI 검증 최우선** — VDevice 공유·손검출 둘 다 카메라 없이 검증됨 / 카메라에 보이는 버튼 = GPIO 버튼인지 / 망 확인
+  - **Phase 2 (촬영, 반드시 분리)**: ②-A **FPS 측정은 `--save-raw` 없이**(🔴 raw 저장이 FPS를 3fps 왜곡 — 실측 `raw-every 5`:12.5 vs `raw-every 1`:8.1~11.2, 추론시간은 동일) → ②-B HOI 시뮬 촬영(raw+`--gpio`)
+  - **Phase 3**: 체류 분석(`dwell_probe`) / NFR-1 판정 / ⭐**§10.11 "ESP32 부적합" 재판단** — 근거 둘 중 ~~B4 0%~~는 이미 무효(§10.20 mAP50 0.992), FPS만 남았다
+  - **Phase 4**: A7(웹캠 polling) · 체류 임계 확정 + **갭메우기 0.3초 구현**(미구현) + **코드-정본 불일치 해소**(`FSM_DWELL_THRESHOLD_SEC=1.0` vs §9.4 0.5+0.3)
+  - **별도 축**: 실콘솔 2차 test(§10.16 최종 판정) · 손 모델·소스 vendoring 결정(현재 repo 밖) · 저조도·자연광 조건
 
 ### (이전) 2026-07-20 시점
 - 🔴 **test 1차(모조) 실행 — 옐로우등에서 실패, 중단(2026-07-20, 수치 정본 §10.18)**. 12세션 촬영(`fluorescent` 2 · `cleanroom-fluorescent` 5 · `cleanroom-yellow` 5).
