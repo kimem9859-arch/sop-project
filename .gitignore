@@ -59,3 +59,6 @@ gcp-oauth.keys.json
 .gdrive-server-credentials.json
 .node-env/
 .claude/*.local.md
+
+# superpowers SDD 작업공간 — 계획 실행 중 스크래치(원장·브리프·리뷰패키지)
+.superpowers/
