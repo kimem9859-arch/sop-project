@@ -1,7 +1,7 @@
 # console_v2 학습 가이드 — 데스크톱(RTX 5060 + WSL2 Ubuntu)
 
 > 데스크톱에서 **학습(.pt) → DFC 변환(.hef)**을 실행하기 위한 절차서. 파이가 아니라 **x86 GPU 머신**에서 수행한다.
-> - **증강 근거·스펙** = `Rpi5/Demo/augmentation_plan.md` (검정→파랑 전환 반영)
+> - **증강 근거·스펙** = `Rpi5/Demo/docs/augmentation_plan.md` (검정→파랑 전환 반영)
 > - **측정 수치 정본** = 통합문서 §10 (여기 복제 금지)
 > - **.hef 규격·DFC 절차** = `dev/ai_model/README.md` + `참고/YOLOv8n_Hailo8_변환_작업기록.md`
 > - v1 학습 설정 = §10.5 (Ultralytics 8.4.63, `hsv_h0/s0.2/v0.3`, best ep38)

@@ -3,7 +3,7 @@
   python train_console_v2.py --smoke    # 1 epoch 연기테스트 (증강이 먹는지 확인)
   python train_console_v2.py            # 본 학습 (200 epoch)
 
-증강 근거·스펙 = Rpi5/Demo/augmentation_plan.md  (저조도 주력 · 정반사 보험 · Hue 금지)
+증강 근거·스펙 = Rpi5/Demo/docs/augmentation_plan.md  (저조도 주력 · 정반사 보험 · Hue 금지)
 절차·주의     = dev/ai_model/console_v2_학습가이드.md
 ※ 측정 수치 정본은 통합문서 §10 — 결과 수치를 이 파일에 적지 말 것.
 """

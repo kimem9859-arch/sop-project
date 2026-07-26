@@ -217,9 +217,9 @@
 
 ### 지난 이력·세부 함정 = 각 원본 참조 (2026-07-19 슬림화 — 복제 제거)
 완료 이력은 시간순 저널 `docs/작업로그.md`에, 살아있는 규칙·함정(gotcha)은 각 정본/가이드에 있다(CLAUDE.md "복제 금지 → drift" 규칙 준수 — 아래는 포인터만):
-- 라벨링 기준(진짜 버튼 정체·애매하면 안 그림·Modal)·B3↔EMO 위치 구분·색기반 자동라벨러 배제 = `Rpi5/Demo/labeling_guide.md`
-- 데이터 파이프라인·Roboflow 함정 2개(`annotation_labelmap`·`annotation_overwrite` 캐시) = `Rpi5/Demo/dataset_pipeline.md`
-- 증강 스펙(파랑=저조도 주력·정반사 보험·`hsv_h=0`·기하 ±15°) = `Rpi5/Demo/augmentation_plan.md`
+- 라벨링 기준(진짜 버튼 정체·애매하면 안 그림·Modal)·B3↔EMO 위치 구분·색기반 자동라벨러 배제 = `Rpi5/Demo/docs/labeling_guide.md`
+- 데이터 파이프라인·Roboflow 함정 2개(`annotation_labelmap`·`annotation_overwrite` 캐시) = `Rpi5/Demo/docs/dataset_pipeline.md`
+- 증강 스펙(파랑=저조도 주력·정반사 보험·`hsv_h=0`·기하 ±15°) = `Rpi5/Demo/docs/augmentation_plan.md`
 - 학습 절차·DFC 변환·albumentations 2.x 인자 함정 = `dev/ai_model/console_v2_학습가이드.md`
 - 측정·원인 분석(B4 미탐지·정반사·저조도 B3 사멸·파랑 스티커) = 통합문서 §10.5~§10.17
 - 트랙 A 인터락 코드·전장 E2E·EMO 해제 결함 = §12 · Rpi5 `feature/fsm-interlock` · `dev/interlock/README.md`
