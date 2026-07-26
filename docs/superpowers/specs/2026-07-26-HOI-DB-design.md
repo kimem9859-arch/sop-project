@@ -1,0 +1,196 @@
+# HOI 분석 DB (`hoi.db`) 설계 (2026-07-26)
+
+> **한 줄**: HOI 데이터를 **"눌림 1회 = 1행"** 구조의 SQLite로 모아, 2026-07-24에 파이썬으로 재조립하던 분석이 **SQL 질의로 재현**되게 한다.
+> ※ 이 문서는 **논의·결정·미결**만 담는다. 확정 측정 수치는 **통합문서 §10**에만 기재한다(단일정본 규칙).
+
+---
+
+## 1. 왜 만드나
+
+### 발단
+2026-07-24 하루에 §10.24~§10.29 여섯 절을 만들었는데, **그 모든 수치의 원천이 세션 임시 폴더(`/tmp/.../scratchpad`)의 CSV 26개**다. 세션이 끝나면 사라지고 문서에는 결론만 남는다.
+
+### 그날 실제로 겪은 비용 3건
+1. **재계산이 비쌌다** — `stage_probe`가 세션당 3~10분인데, 같은 세션을 **팜 임계 0.5/0.2로 두 번씩** 돌렸고 조건을 바꿀 때마다 처음부터 다시 돌렸다.
+2. **통합 분석을 매번 재조립했다** — "49조합 y 곡선"(§10.27)·"18세션 365건 속도 곡선"(§10.29⑥)을 **CSV 13~18개를 파이썬으로 이어붙여** 만들었다. SQL 한 줄이면 될 일이다.
+3. **지표 혼동이 두 번 발생했다** — 손 검출률↔사전 감지율(§10.24 정정), 팜 검출률↔프로젝트 지표(§10.28 보강). **스키마가 이름을 강제하면 구조적으로 막힌다.**
+
+### 기존 `bench.db`와 분리하는 이유 (사용자 결정)
+| | `bench.db` (기존) | `hoi.db` (신설) |
+|---|---|---|
+| 대상 | 버튼 검출 성능 | **손 검출 + 눌림 + ROI 판정** |
+| 분석 단위 | 프레임별 박스 | **눌림 이벤트** |
+| 파라미터 축 | 없음 | **팜 임계·링 폭** (다중 실행이 본질) |
+
+- **분석 단위가 다르다.** 버튼 DB는 "프레임", HOI는 "눌림 1회".
+- `db_import.py`의 INSERT가 **컬럼 수에 고정**돼 있어(§10.21에 기록) 손대면 기존 DB 재구축이 깨진다.
+- **독립 원칙** — `hoi.db`는 `bench.db`를 참조(ATTACH)하지 않고 필요한 것을 CSV에서 직접 읽는다. 두 DB의 재구축 시점이 어긋나도 깨지지 않는다.
+
+---
+
+## 2. 결정 사항 (brainstorming, 사용자 결정 4건 + 설계 정정 1건)
+
+| # | 결정 | 이유 |
+|---|---|---|
+| 1 | scratchpad CSV는 **재생성**한다(임포트 안 함) | 재현 경로를 하나로 유지. 임포트하면 "이 행이 어떻게 나왔나"가 불분명해진다 |
+| 2 | 지표는 **저장하지 않고 질의로 계산** | 판정 생산(링 25px·체류 0.3초)이 바뀌어도 DB가 stale이 안 된다. `bench.db` 원칙과 동일 |
+| 3 | 팜 임계는 **행 안의 열**로 | 0.5/0.2가 한 테이블에 공존 → `GROUP BY palm_thresh` 한 줄로 대조 |
+| 4 | 범위는 **DB만**(리포트 없음) | 질의 패턴이 숙성되기 전에 리포트를 만들면 무엇을 보여줄지 모른다 |
+| 5 | 🔴 **ROI 판정은 적재 시에 계산** (정정) | 아래 §3 |
+
+### 🔴 정정 — ROI 판정을 SQL에 쓰지 않는다
+brainstorming 중 *"ROI 판정도 질의에서 계산"* 으로 제시했다가 **철회**했다.
+
+링 규칙(25px 테두리 + 안쪽/바깥 2단계)을 SQL에 쓰면 **복제**가 된다. 그런데 `Demo/roi_zones.py`가 **판정 규칙의 단일 출처**이고, 그 모듈 주석이 이미 못박고 있다:
+
+> 🔴 **이 규칙을 바꿀 때는 여기만 고친다. 다른 곳에 같은 판정을 다시 쓰지 말 것.**
+
+SQL에 복제하면 `roi_zones.py`를 고쳤을 때 질의는 그대로 남아 **조용히 틀린 값**을 낸다. 2026-07-22에 같은 성격의 사고를 **4번** 겪었다(도구 기본값이 config를 안 따라 물림 — §10.22·§10.23).
+
+→ **`hoi_probe_batch.py`가 `roi_zones.zone_at_point()`를 import해 계산**하고, `zone_label`·`zone_level`·**쓴 링 폭(`ring_px`)** 을 행에 저장한다. `palm_thresh`와 같은 패턴이다. tip 좌표도 함께 보존해 다른 링 폭을 사후 재계산할 수 있게 둔다.
+
+---
+
+## 3. 대상 데이터
+
+**22세션** — GPIO 눌림 로그 + raw PNG를 모두 보유한 세션 전량(확인 완료).
+
+| 묶음 | 세션 | 성격 |
+|---|---|---|
+| 7/22 누움 | 8 | `press-sim*` · `falsealarm-clean`×2 · `violation-press*` |
+| 7/24 세움 | 4 | `upright-normal/violation/falsealarm/holdout` |
+| 7/24 자세변화 | 5 | `ypos1~5` |
+| 7/24 원거리 | 2 | `far-high` · `far-low` |
+| 7/24 재현성 | 3 | `far-high-r1~r3` |
+
+---
+
+## 4. 스키마
+
+```sql
+CREATE TABLE sessions (
+    id           TEXT PRIMARY KEY,  -- raw 폴더명 = '20260724_193521_esp32_far-high_console_v2'
+    date TEXT, time TEXT,
+    condition    TEXT,              -- 'far-high' | 'upright-violation' | 'ypos1-high-diag' ...
+    posture      TEXT,              -- 'flat' | 'upright'  (파일명에 없어 수동 매핑)
+    model        TEXT,
+    frames INTEGER, duration_sec REAL, fps REAL,
+    emo_width    REAL,              -- 근접도 대리지표 (§10.28)
+    top_y REAL, bottom_y REAL       -- 윗줄/아랫줄 버튼 median y (§10.26)
+);
+
+CREATE TABLE button_boxes (         -- 눌림 ±15프레임 구간만 (전량이 아니라 필요 구간)
+    session_id TEXT, frame INTEGER, cls_name TEXT,
+    x1 INTEGER, y1 INTEGER, x2 INTEGER, y2 INTEGER
+);
+
+CREATE TABLE presses (              -- ⭐ 눌림 1회 = 1행
+    session_id TEXT, frame INTEGER, button TEXT,
+    ts REAL,                        -- 세션 시작 기준 초
+    gap_frames INTEGER,             -- 직전 눌림과의 간격 (첫 눌림 NULL) — §10.29⑥의 축
+    gap_sec REAL,
+    button_y REAL,                  -- 그 버튼의 세션 median y — §10.26 절벽 판정의 축
+    is_violation INTEGER            -- 오답인가 (규칙 미정 세션은 NULL)
+);
+
+CREATE TABLE palm_frames (          -- ⭐ 팜 임계·링을 행 안에
+    session_id TEXT, frame INTEGER,
+    palm_thresh REAL,               -- 0.5 | 0.2
+    ring_px     INTEGER,            -- zone 계산에 쓴 링 폭
+    n_palm INTEGER,
+    flag REAL,                      -- 랜드마크 존재 신뢰도 (NULL 가능)
+    tip_x REAL, tip_y REAL,         -- 검지끝 (다른 링 폭 사후 재계산용)
+    palm_cx REAL, palm_cy REAL, palm_size REAL,
+    zone_label TEXT,                -- roi_zones.zone_at_point() 결과
+    zone_level INTEGER              -- 2=박스 안 / 1=링 / NULL=밖
+);
+```
+
+### ⭐ `presses`가 핵심이다
+오른쪽 두 열(**`gap_frames`**, **`button_y`**)이 **7/24에 발견한 두 지배 변수**다(§10.26 절벽 y≈337 / §10.29⑥ 경계 5프레임). 미리 계산해 두면 그날 파이썬으로 만든 곡선이 SQL 한 줄이 된다.
+
+⚠️ 둘 다 **파생값**이라 "원천만 담는다" 원칙에 살짝 걸린다. 다만 GPIO 로그·rawdet에서 **결정론적으로** 나오고 규칙이 바뀔 일이 없어 안전하다고 판단했다.
+
+---
+
+## 5. 신설 파일 2개 (`Rpi5` repo)
+
+### `Demo/test/hoi_probe_batch.py` — 팜 추론 배치 (무겁다)
+```bash
+python3 test/hoi_probe_batch.py --thresh 0.5      # 전 세션 → palm_cache/
+python3 test/hoi_probe_batch.py --thresh 0.2
+```
+- 세션당 3~10분 × 22세션 × 2임계 = **1~2시간**. 백그라운드 전제.
+- 산출: `test/palm_cache/<세션>_t{임계}_ring{링}.csv` (gitignore)
+- **재사용**: `test/hoi_probe.py`의 `load_hand_models()`·`run_hand()` · `roi_zones.zone_at_point()`
+- 🔴 임계는 `det.min_score_thresh`에 **런타임 대입**한다 — **사후 필터링이 아니라 파이프라인을 임계별로 다시 돌린다.** (§10.25 함정: 게이트를 열고 내부 점수를 읽으면 **가중 NMS가 저점수 앵커를 섞어** 반대 결론이 난다)
+- ⚠️ `--thresh`는 **필수 인자**로 둔다. 이 임계는 `blaze_app_python` 안에 있어 `config.py`에 없다(§10.25) — 기본값을 두면 어디서 온 값인지 추적이 끊긴다.
+- 이미 있는 캐시는 스킵(`--force`로 재생성). **중단·재개 가능**해야 1~2시간 작업이 실용적이다.
+
+### `Demo/test/hoi_import.py` — DB 재구축 (가볍다)
+```bash
+python3 test/hoi_import.py                        # → test/hoi.db, 수 초
+```
+- **`bench.db` 원칙 그대로**: 매 실행 = drop & rebuild, 원천만 담고 요약은 질의.
+- 입력: `logs/*_gpio_log.csv` · `logs/*_rawdet_log.csv` · `logs/*_perf_log.csv` · `palm_cache/*.csv`
+- **재사용**: `dwell_probe.py`의 `_parse_ts()` · `db_import.py`의 `_read_rows()`·재구축 구조
+- 캐시가 없는 세션은 **조용히 스킵하고 목록을 보고**한다(팜 없이도 `presses`는 쌓인다).
+- **docstring에 예시 질의 3~4개**를 넣는다 — `queries.sql`을 안 만들기로 했으니 여기가 유일한 재사용 지점이다.
+
+### 왜 두 단계로 나누나
+팜 추론은 **1~2시간이지만 raw가 정본이라 바뀔 일이 없다.** 반면 `presses`·`sessions`는 규칙이 바뀌면 다시 만들고 싶다. **묶어두면 재구축에 매번 1~2시간이 붙어 아무도 재구축하지 않게 된다.**
+
+### 수동 매핑 표 2개 (코드 상수)
+`db_import.py`의 `_CONDITIONS`와 같은 방식. 근거 포인터를 주석으로 단다.
+- **`_POSTURE`** — 세션 접두사 → `flat`/`upright`. 파일명에 자세가 없다(§10.26에서 처음 변수로 잡힌 축인데 촬영 시엔 기록되지 않았다).
+- **`_VIOLATION_RULE`** — 세션 → 판정 규칙.
+  - `violation-*` · `ypos*` 후반 · `far-*` 후반 = **기대단계 `B1` 고정** → `B1`이 아니면 위반
+  - `normal` · `falsealarm` · `holdout` = 정상 순서 반복 → 전부 정답
+  - 🔴 **`recipe.json`을 돌려 자동 판정하지 않는다** — 촬영 의도가 세션마다 달라 코드가 추측하면 틀린다. 규칙 없는 세션은 `NULL`(질의에서 제외 가능).
+
+---
+
+## 6. 검증 — 오늘 값과 대조
+
+DB에서 SQL로 뽑은 값이 §10.26~§10.29의 값과 일치해야 한다. **어긋나면 판정 규칙을 잘못 옮긴 것**이라 즉시 드러난다.
+
+| # | 대조 | 기대값 |
+|---|---|---|
+| 1 | 눌림 행 수 = GPIO CSV 원본 합계 | 22세션 전부 일치 |
+| 2 | `far-high-r1` 사전 감지율 | **86% (36/42)** (§10.29①) |
+| 3 | `far-low` B4 팜 검출률 임계 대조 | **0.5 → 20.5% / 0.2 → 77.3%** (§10.28) |
+| 4 | §10.29⑥ 속도 구간표 | 0~5프레임 58% / 5~8 93% / 8~10 93% |
+
+**이것이 이 설계의 가장 중요한 안전장치다** — 코드가 아니라 **결과가 같은지**로 검증한다.
+
+---
+
+## 7. 범위에서 빼는 것 (YAGNI)
+
+| 뺌 | 이유 |
+|---|---|
+| HTML 리포트 | 사용자 결정 — 질의 패턴이 숙성된 뒤 |
+| 지표 테이블(`press_eval`) | 사용자 결정 — 판정 규칙 바뀌면 stale |
+| `bench.db` 연동/ATTACH | 독립 원칙 |
+| 전체 프레임 버튼 박스 | 눌림 ±15만. 필요해지면 범위를 늘린다 |
+| scratchpad CSV 임포트 | 사용자 결정 — 재생성으로 재현 경로 단일화 |
+| `confusion` 로그 | 전 세션 0행 (`bench.db`와 동일 판단) |
+
+---
+
+## 8. 위험·미결
+
+- 🔴 **팜 배치가 1~2시간**이다. 캐시 스킵(중단·재개)을 만들지 않으면 실용성이 없다.
+- ⚠️ **수동 표 2개**가 세션이 늘 때 갱신 부담이 된다. `_CONDITIONS`가 이미 같은 부담을 지고 있어 패턴은 일관되나, **표에 없는 세션이 조용히 NULL이 되는 것**을 임포터가 반드시 보고해야 한다.
+- ⚠️ scratchpad 산출물은 **재생성 완료·검증 통과 후까지 남겨둔다** — §6 대조에 필요하다.
+- **`sessions.posture`가 2값뿐**이다. 실콘솔이 오면 세 번째 값이 생길 수 있다(각도가 기록돼 있지 않다 — §10.26 미결).
+- **E2E 오경보는 이 DB로도 못 잰다** — 팜 오검출이 flag→ROI/링→**체류 0.3초**를 지나 실제 경고가 되는 비율은 시계열 시뮬레이션이 필요하다. `dwell_probe`의 영역이고, 이 DB는 그 입력을 제공할 뿐이다.
+
+---
+
+## 9. 거부한 대안
+
+- **`bench.db` 확장** — `db_import.py`의 INSERT가 컬럼 수에 고정돼 있어 손대면 기존 재구축이 깨진다(§10.21). 사용자도 분리를 요청했다.
+- **순수 원천만 담기**(간격·y를 질의에서 계산) — 원칙에는 충실하나 **오늘 만든 곡선을 매번 window 함수로 재조립**해야 하고, 버튼 y는 rawdet에 있어 DB를 넘나드는 조인이 필요해진다.
+- **임계별 별도 DB 파일**(`hoi_t05.db`/`hoi_t02.db`) — 대조할 때마다 ATTACH하거나 스크립트를 짜야 한다.
+- **ROI 판정을 SQL로** — §2 정정 참조(단일 출처 위반).
