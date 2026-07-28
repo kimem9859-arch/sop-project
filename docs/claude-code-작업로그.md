@@ -42,7 +42,7 @@
 - `plan mode` 중심안(B)은 **기각** — spec 문서가 안 남아 `docs/superpowers/specs/`를 참조하는 CLAUDE.md·§10 연결이 끊긴다.
 
 ### 🔗 커밋
-- 🔗 sop-project: (이 블록 커밋)
+- 🔗 sop-project `8ed1c6c`(CLAUDE.md 작업규칙 + 이 블록)
 
 ## 2026-07-26 · session c1abfd49-936b-4ec0-bab8-2809a9856462 (작업 단위 2 — ⭐ 답변 방식 규칙 신설, "이해하기 쉽게 다시"를 없앤다)
 
