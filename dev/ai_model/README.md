@@ -2,7 +2,7 @@
 
 > 버튼을 1인칭 글래스 영상에서 **동적 검출**하는 YOLO 모델 트랙.
 > Step1 PoC([`../poc`](../poc))는 색 ROI로 대체했고, 여기서 ROI를 YOLO 검출로 교체한다.
-> 설계 정본: [`docs/통합수행설계문서_전체_섹션1-15.md`](../../docs/통합수행설계문서_전체_섹션1-15.md) §7·§10.
+> 설계 정본: [`docs/통합문서.md`](../../docs/통합문서.md) §7·§10.
 > 데이터·학습·변환 전 과정 기록(다른 머신 세션): [`참고/세션_작업정리.md`](참고/세션_작업정리.md) · [`참고/YOLOv8n_Hailo8_변환_작업기록.md`](참고/YOLOv8n_Hailo8_변환_작업기록.md).
 > **console_v2 산출물**: 학습 스크립트 [`train_console_v2.py`](train_console_v2.py)(증강 AUGS·`--smoke`) · 데이터셋 [`download_dataset.py`](download_dataset.py)(data.yaml 경로 자동교정) · 절차서 [`console_v2_학습가이드.md`](console_v2_학습가이드.md)(환경준비~DFC~⑤replay).
 

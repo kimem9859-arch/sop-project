@@ -2,7 +2,7 @@
 
 > **정본 코드는 별도 git repo `Rpi5/Demo/fsm.py`** (현 repo에선 gitignore된 `../../Rpi5/`).
 > 이 폴더는 통합 시 연동 지점·메모를 둔다. 설계 정본은
-> [`docs/통합수행설계문서_전체_섹션1-15.md`](../../docs/통합수행설계문서_전체_섹션1-15.md) §9.
+> [`docs/통합문서.md`](../../docs/통합문서.md) §9.
 
 ## 현황 (Rpi5/Demo/fsm.py) — 2026-07-18 현행화
 - 6상태: IDLE / READY / PROCESS_RUN / MONITOR / WARNING / BLOCK.
