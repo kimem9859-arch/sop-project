@@ -100,3 +100,33 @@ def test_filter_block_list_format(tmp_path):
     assert r["kept"]["wrench"] == 1
     assert r["images"] == 3
     assert r["empty"] == 0
+
+def test_drop_empty_excludes_background_images(tmp_path):
+    """drop_empty=True 면 남은 라벨이 없는 배경 이미지를 제외한다."""
+    src = tmp_path / "src"; dst = tmp_path / "dst"
+    _write(str(src/"data.yaml"),
+        "nc: 5\nnames: ['Hammer','Adjustable Spanner','ScrewDriver','Wrench','Plier']\n")
+    # A: spanner(1) → 유지
+    _write(str(src/"train/images/a.jpg"), "x")
+    _write(str(src/"train/labels/a.txt"), "1 0.5 0.5 0.2 0.2\n")
+    # B: plier(4)만 → 배경 → drop_empty 로 제외
+    _write(str(src/"train/images/b.jpg"), "x")
+    _write(str(src/"train/labels/b.txt"), "4 0.5 0.5 0.2 0.2\n")
+    # C: hammer(0)만 → 배경 → 제외
+    _write(str(src/"train/images/c.jpg"), "x")
+    _write(str(src/"train/labels/c.txt"), "0 0.3 0.3 0.1 0.1\n")
+
+    r = filter_dataset(str(src), str(dst),
+                       keep_names=['Adjustable Spanner','ScrewDriver','Wrench'],
+                       new_names=['spanner','driver','wrench'],
+                       drop_empty=True)
+
+    # A만 남고 B·C 는 이미지·라벨 모두 제외
+    assert (dst/"train/images/a.jpg").exists()
+    assert not (dst/"train/images/b.jpg").exists()
+    assert not (dst/"train/labels/b.txt").exists()
+    assert not (dst/"train/images/c.jpg").exists()
+    # 카운트: 쓰인 이미지 1, 배경 2 감지
+    assert r["images"] == 1
+    assert r["empty"] == 2
+    assert r["kept"]["spanner"] == 1

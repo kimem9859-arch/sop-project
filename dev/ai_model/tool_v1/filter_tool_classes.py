@@ -1,5 +1,6 @@
 """ARCAD 등 다클래스 YOLOv8 export를 지정 클래스만 남기고 인덱스 리맵.
-없어진 라벨의 이미지는 네거티브(빈 라벨)로 유지한다."""
+없어진 라벨의 이미지는 기본적으로 네거티브(빈 라벨)로 유지한다.
+drop_empty=True 면 남은 라벨이 하나도 없는 이미지(배경만)를 아예 제외한다."""
 import os, re, shutil, glob
 
 def _load_names(data_yaml):
@@ -19,7 +20,7 @@ def _load_names(data_yaml):
             else: break
     return names
 
-def filter_dataset(src_dir, dst_dir, keep_names, new_names):
+def filter_dataset(src_dir, dst_dir, keep_names, new_names, drop_empty=False):
     if len(keep_names) != len(new_names):
         raise ValueError(f"keep_names and new_names must have same length: {len(keep_names)} vs {len(new_names)}")
     src_names = _load_names(os.path.join(src_dir, "data.yaml"))
@@ -55,6 +56,11 @@ def filter_dataset(src_dir, dst_dir, keep_names, new_names):
                         ni = remap[ci]
                         out_lines.append(" ".join([str(ni)] + parts[1:]))
                         kept[new_names[ni]] += 1
+            # 남은 라벨이 없으면 배경 이미지. drop_empty 면 제외, 아니면 네거티브로 유지.
+            if not out_lines:
+                n_empty += 1
+                if drop_empty:
+                    continue
             # 이미지·라벨 복제(라벨 없으면 빈 파일 = 네거티브)
             d_img = os.path.join(dst_dir, split, "images"); os.makedirs(d_img, exist_ok=True)
             d_lbl = os.path.join(dst_dir, split, "labels"); os.makedirs(d_lbl, exist_ok=True)
@@ -62,8 +68,6 @@ def filter_dataset(src_dir, dst_dir, keep_names, new_names):
             with open(os.path.join(d_lbl, base + ".txt"), "w") as f:
                 f.write("\n".join(out_lines) + ("\n" if out_lines else ""))
             n_img += 1
-            if not out_lines:
-                n_empty += 1
             if split == "test":
                 has_test = True
     # data.yaml 재작성 (Roboflow format: names before nc, correct path references)

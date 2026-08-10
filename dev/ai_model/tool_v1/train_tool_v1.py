@@ -18,7 +18,8 @@ def main():
     dst = "/content/tool_v1_data"
     stat = filter_dataset(src, dst,
         keep_names=['Adjustable Spanner', 'ScrewDriver', 'Wrench'],
-        new_names=['spanner', 'driver', 'wrench'])
+        new_names=['spanner', 'driver', 'wrench'],
+        drop_empty=True)   # 배경만 있는 이미지(다른 공구) 제외 — 92% 배경 방지
     print("[filter]", stat)
 
     from ultralytics import YOLO
