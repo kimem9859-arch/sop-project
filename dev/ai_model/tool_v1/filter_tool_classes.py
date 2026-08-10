@@ -20,7 +20,8 @@ def _load_names(data_yaml):
     return names
 
 def filter_dataset(src_dir, dst_dir, keep_names, new_names):
-    assert len(keep_names) == len(new_names)
+    if len(keep_names) != len(new_names):
+        raise ValueError(f"keep_names and new_names must have same length: {len(keep_names)} vs {len(new_names)}")
     src_names = _load_names(os.path.join(src_dir, "data.yaml"))
     # 원본 인덱스 → 새 인덱스
     remap = {}
@@ -30,11 +31,17 @@ def filter_dataset(src_dir, dst_dir, keep_names, new_names):
         remap[src_names.index(kn)] = new_i
     kept = {n: 0 for n in new_names}
     n_img, n_empty = 0, 0
+    has_test = False
+    # Valid image extensions (case-insensitive)
+    valid_exts = {'.jpg', '.jpeg', '.png', '.bmp', '.webp'}
     for split in ("train", "valid", "test"):
         img_dir = os.path.join(src_dir, split, "images")
         if not os.path.isdir(img_dir):
             continue
-        for img in glob.glob(os.path.join(img_dir, "*")):
+        for img in sorted(glob.glob(os.path.join(img_dir, "*"))):
+            # Only process files with valid image extensions
+            if os.path.splitext(img)[1].lower() not in valid_exts:
+                continue
             base = os.path.splitext(os.path.basename(img))[0]
             src_lbl = os.path.join(src_dir, split, "labels", base + ".txt")
             out_lines = []
@@ -57,9 +64,18 @@ def filter_dataset(src_dir, dst_dir, keep_names, new_names):
             n_img += 1
             if not out_lines:
                 n_empty += 1
-    # data.yaml 재작성
+            if split == "test":
+                has_test = True
+    # data.yaml 재작성 (Roboflow format: names before nc, correct path references)
+    dst_abs = os.path.abspath(dst_dir)
     with open(os.path.join(dst_dir, "data.yaml"), "w") as f:
-        f.write("train: ../train/images\nval: ../valid/images\ntest: ../test/images\n")
+        f.write("names:\n")
+        for n in new_names:
+            f.write(f"- {n}\n")
         f.write(f"nc: {len(new_names)}\n")
-        f.write("names: [" + ", ".join(f"'{n}'" for n in new_names) + "]\n")
+        f.write(f"path: {dst_abs}\n")
+        f.write("train: train/images\n")
+        f.write("val: valid/images\n")
+        if has_test:
+            f.write("test: test/images\n")
     return {"kept": kept, "images": n_img, "empty": n_empty}
