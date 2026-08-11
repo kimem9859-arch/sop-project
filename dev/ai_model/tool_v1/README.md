@@ -4,9 +4,14 @@
 콘솔 버튼(`console_v2`)과 **별도 모델**이다(버튼은 색이 클래스라 색 증강 금지 / 공구는 색 증강 필수 — 정면 충돌).
 
 ## 상태 (2026-08-11)
-- ✅ 학습(.pt) 완료 — `yolov8n`@640, ARCAD 3클래스. **수치·판정 = 통합문서 §10.36 참조**(여기 복제 금지).
-- 🔴 판정 보류 — ARCAD valid 점수는 우리 카메라 성능이 아니다. **진짜 판정 = 파이 눈확인(대기)**.
-- ⏳ 다음 세션 = ONNX→DFC(.hef)→파이 4번째 모델 배포.
+- ✅ 학습(.pt) 완료 — `yolov8n`@640, ARCAD 3클래스. **수치 = 통합문서 §10.36**(여기 복제 금지).
+- 🔴 **판정 = 미달** (파이 눈확인 완료, **§10.37**). 현 상태로 **시연 사용 불가** — 재현율 6.9%(conf 0.65)·`spanner`↔`wrench` 구분 실패.
+  - 단 **폐기가 아니라 재학습 대상**: ARCAD 원본 대조군 3/3 통과라 모델·파이프라인 자체는 건강하다.
+- ⏳ 다음 = **증강 줄여 재학습**(아래) → 재판정 → ONNX→DFC(.hef)→파이 4번째 모델 배포.
+
+## ⚠️ 클래스 이름 주의 — 우리 실물 스패너는 `wrench`다
+`spanner` = **몽키**(조절식), `wrench` = **조합·오픈엔드**. 보유 실물은 오픈엔드이므로 **정답은 `wrench`**이고 몽키는 없다.
+→ §10.36의 `spanner` AP50 0.704는 **우리가 갖고 있지도 않은 공구 점수**다. 인용 금지(§10.37-(1)).
 
 ## 클래스 (3종, `recipe.json` 정합)
 `spanner`(←ARCAD Adjustable Spanner) · `driver`(←ScrewDriver) · `wrench`(←Wrench).
@@ -19,22 +24,32 @@
 1. `sop-project` clone → `dev/ai_model/tool_v1` → `pip install roboflow ultralytics` → `ROBOFLOW_API_KEY` 설정.
 2. `python train_tool_v1.py` → 끝에 ARCAD valid mAP 자동 출력. **best.pt를 즉시 Drive/다운로드로 저장**(Colab `/content`는 런타임 리셋 시 소멸).
 
-## 파이에서 이어하기 — 눈확인 (다음 작업)
+## ✅ 파이 눈확인 — 완료 (2026-08-11)
 
-🔴 **`tool_v1.pt`는 git에 없다** — Colab이 **Google Drive `MyDrive/tool_v1.pt`** 에 저장했다(repo 밖). 파이에서 repo만 pull하면 모델이 없으니 **Drive에서 먼저 받아야** 한다.
+`tool_v1.pt`는 `Rpi5/Demo/models/tool_v1.pt`에 있다(**미커밋** — Drive에서 받아 옮긴 것). 재현 명령:
 
-1. Drive의 `MyDrive/tool_v1.pt`를 파이 `~/tool_v1.pt`로 다운로드.
-2. 파이에 `ultralytics` 설치(없으면). **CPU 추론 — Hailo 불필요.**
-3. `tools-baseline` 촬영본(360장, 파이 로컬·gitignore, §10.35)에 돌려 오버레이 생성:
-   ```bash
-   yolo predict model=~/tool_v1.pt \
-     source=~/sop-project/Rpi5/Demo/test/raw/20260810_154055_esp32_tools-baseline_console_v2/ \
-     conf=0.65 save=True project=~/tool_eyeball name=v1
-   ```
-4. `~/tool_eyeball/v1/`의 오버레이에서 **스패너·(미니)드라이버가 옳게 잡히는지 눈으로** 확인(렌치는 이 영상에 없음). = §10.36의 **진짜 판정**.
-5. 결과에 따라: 잘 잡히면 §10.36 판정 보류 해제 방향 / 약하면 개선 레버(§10.36-(5): 증강↓·yolov8s).
+```bash
+# rfenv = uv venv --python 3.12 + uv pip install --torch-backend cpu ultralytics
+#   ⚠️ 파이 기본 Python 3.13 에는 못 깐다(§10.35-(7) 함정과 동일)
+yolo predict model=Rpi5/Demo/models/tool_v1.pt \
+  source=Rpi5/Demo/test/raw/20260810_154055_esp32_tools-baseline_console_v2/ \
+  conf=0.65 save=True project=~/tool_eyeball name=v1
+```
 
-> ⚠️ ARCAD valid 점수(0.591)는 우리 카메라 성능이 아니다 — 이 눈확인이 우리 도메인 첫 확인이다.
+**결과 = 미달**(수치·해석 정본 = §10.37). 요약: 재현율 6.9%(conf 0.65, 25/360) · 오픈엔드 스패너를 `spanner`로 일관 오분류(정답 0/7) · **위치 검출은 정상** · 드라이버 분류는 정상.
+⛔ 히스토그램 평활화 가설은 **기각**(걸수록 나빠짐, §10.37-(5)).
+
+## ▶ 다음 — 증강 줄여 재학습
+
+`train_tool_v1.py`에서 2줄만 바꾼다. **v9에 이미 증강이 구워져 있는데 그 위에 또 얹은 것**이 유력 원인(§10.37-(6)①).
+
+| 항목 | 현재 | 바꿀 값 | 이유 |
+|---|---|---|---|
+| `degrees` | 30.0 | **10.0** | v9가 이미 rotate 10° 구움 |
+| `flipud` | 0.5 | **0.0** | 1인칭 카메라에서 공구가 상하로 뒤집힐 일이 없다 |
+
+> 🔴 **이것만으로 `spanner`↔`wrench` 오분류가 고쳐질 것으로 기대하지 말 것.** valid에 `wrench`가 0장이라 그 구분은 학습 내내 채점된 적이 없다 — **valid 재분할이 별도로 필요**하다(§10.37-(6)④).
+> ℹ️ Colab은 **파이 브라우저로도 실행 가능**하다 — 데스크톱이 없어도 재학습할 수 있다.
 
 ## 데이터 귀속
 ARCAD `tools-detection-b2xjk` (Roboflow Universe, **CC BY 4.0**). 출처 표기 의무.
