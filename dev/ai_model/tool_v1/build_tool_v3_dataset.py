@@ -182,6 +182,15 @@ def build(roots, out_dir, neg_ratio=0.15, valid_ratio=0.10, seed=0):
     items = sample_negatives(items, ratio=neg_ratio, seed=seed)
     assign = split_by_source(items, valid_ratio=valid_ratio, seed=seed)
 
+    # 🔴 디스크에 아무것도 쓰기 전에 확인한다 — 나중에 검사하면 가드가
+    # 터졌을 때 절반만 복사된 산출물이 out_dir 에 남아 재시도를 오염시킨다.
+    if sum(1 for it in items if assign[it.source] == 'valid') == 0:
+        raise ValueError(
+            'valid 가 0장이다 — 거대출처 규칙(valid 목표의 50% 초과 출처는 '
+            'train 행) 때문에 모든 출처가 train 으로 갔을 수 있다. '
+            'roots 구성(출처 다양성)을 늘리거나 valid_ratio 를 조정할 것.'
+        )
+
     for split in ('train', 'valid'):
         os.makedirs(os.path.join(out_dir, split, 'images'), exist_ok=True)
         os.makedirs(os.path.join(out_dir, split, 'labels'), exist_ok=True)
@@ -224,13 +233,6 @@ def build(roots, out_dir, neg_ratio=0.15, valid_ratio=0.10, seed=0):
             negatives += 1
         manifest.append(f'{split}/{out_name}')
 
-    if splits['valid'] == 0:
-        raise ValueError(
-            'valid 가 0장이다 — 거대출처 규칙(valid 목표의 50% 초과 출처는 '
-            'train 행) 때문에 모든 출처가 train 으로 갔을 수 있다. '
-            'roots 구성(출처 다양성)을 늘리거나 valid_ratio 를 조정할 것.'
-        )
-
     out_abs = os.path.abspath(out_dir)
     with open(os.path.join(out_dir, 'data.yaml'), 'w') as f:
         f.write('names:\n')
@@ -241,10 +243,14 @@ def build(roots, out_dir, neg_ratio=0.15, valid_ratio=0.10, seed=0):
         f.write('train: train/images\n')
         f.write('val: valid/images\n')
 
-    # 누출 재확인 — 설계상 0 이어야 하지만 산출물에서 직접 센다.
+    # 누출 재확인 — 설계상 0 이어야 하지만 `assign` 을 다시 읽는 건 무의미하다
+    # (dict 라 값이 구조적으로 하나뿐이라 절대 안 걸린다). 복사·명명 경로의
+    # 진짜 버그를 잡으려면 디스크에 실제로 쓰인 파일명으로 출처를 다시
+    # 계산해야 한다 — test_build_has_no_source_leak 이 하는 것과 같은 방식.
     seen = collections.defaultdict(set)
-    for it in items:
-        seen[it.source].add(assign[it.source])
+    for split in ('train', 'valid'):
+        for f in os.listdir(os.path.join(out_dir, split, 'images')):
+            seen[source_key(group_key(f))].add(split)
     leaks = sum(1 for v in seen.values() if len(v) > 1)
 
     checksum = hashlib.sha256('\n'.join(sorted(manifest)).encode()).hexdigest()[:16]
