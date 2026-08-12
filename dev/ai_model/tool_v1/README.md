@@ -57,19 +57,31 @@ ARCAD 5,203장은 실질적으로 **출처 118개**였다 — 3클래스가 **�
 
 ⛔ **`valid` 재분할도 철회.** 프레임 단위로 나누면 누출, 영상 단위로 나누면 valid 가 단일 장면이 된다. **시험지를 고쳐도 교재가 얇은 건 그대로다.**
 
-## ▶ 다음 — 새 데이터셋으로 `tool_v3`
+## ✅ `tool_v3` 데이터셋 병합 완료 (2026-08-12)
 
 | 항목 | 내용 |
 |---|---|
 | **공구 3종** | **드라이버 · 렌치/스패너 · 플라이어/펜치** (몽키 별도 구분 포기 — 큰 데이터셋은 모든 렌치를 `wrench` 하나로 묶는다) |
 | **데이터셋** | **`6-tool-dataset-bb0ug` v3 + `mechanical-tools-83ynn` v2 병합** (출처 5,762·4,026 = 1·2위 / 우리 스패너 7장에서 7/7·6/7) |
-| 보강 후보 | `tools-vsisj` v5 (164클래스를 3종으로 병합 필요) |
+| 보강 후보(미사용) | `tools-vsisj` v5 (164클래스를 3종으로 병합 필요 — 이번 병합엔 안 넣음) |
 | 제외 | `mmmxd`(출처 537), ARCAD |
 
-**절차**: ①클래스명 정규화·3종 병합 ②재분할(누출 제거) ③중복 제거 ④학습 ⑤**파이 실시간 눈확인으로 판정**.
+**절차**: ①클래스명 정규화·3종 병합 ②네거티브(공구 없는 배경) 15% 혼합 ③**출처 단위 재분할**(누출 제거) ④산출물 기준 누출 재계산·체크섬 ⑤`dataset_diversity.py` 관문 통과 확인 ⑥라벨 눈확인(`preview_labels.py`).
+
+`build_tool_v3_dataset.py`(도구)로 실행 — `~/ds_tool_v3`(약 3만 장, train/valid 분할)가 결과물이다. 학습은 아직 **미실행**(`train_tool_v3.py` 는 작성만 됨). 규모·관문 통과 여부의 정확한 수치는 통합문서 §10 참조.
+
+### 🔴 병합 과정에서 새로 밝혀진 함정
+
+- **`.rf.` 앞 파일 stem 이 같다고 「같은 사진」이 아니다.** `6-tool`·`mech83` 두 데이터셋 모두 `000001.jpg` 처럼 흔한 원본 파일명을 여러 업로더가 그대로 썼고, 같은 stem 아래 플라이어·렌치세트·망치·밧줄처럼 **전혀 다른 사진**이 섞여 있음을 육안으로 확인했다. 각 데이터셋의 Roboflow README 도 이를 뒷받침한다 — `6-tool` v3 은 *"2 versions of each source image"*(배수가 균일), `mech83` v2 는 ***"No image augmentation techniques were applied"***(증강 자체가 없음). 따라서 **이름 기반 중복 제거를 하면 서로 다른 사진이 지워진다** — `build()` 에는 `pick_one_per_group` 함수가 남아 있지만 이 이유로 **미사용**이다.
+- **출처(source) 판정 전에 접두어를 붙이면 안 된다.** `source_key` 는 "뒤 일련번호를 떼되 남는 부분이 3글자 이상일 때만 자른다"는 규칙인데, 파일명 앞에 데이터셋 접두어가 붙으면 판정이 달라진다(`m0`→`m0` vs `mech83_m0`→`mech83_m`). 실데이터에서는 이 순서를 반대로 하면 `mech83` 출처 4,026개가 하나로 뭉개진다. 그래서 **출력 파일명의 접두어는 `.rf.` 뒤에 붙인다**(예: `m0_jpg.rf.mech83_h0.jpg`) — 원본 stem 이 앞쪽에 그대로 남아 출처 판정에 영향을 안 준다.
+- **`dataset_diversity.py` 가 세는 「출처 수」는 실제 장면 다양성의 하한선이다.** 위 첫 번째 함정 때문에 같은 stem 아래 다른 사진이 섞여 있어도 하나의 출처로 세어진다. 과대평가될 위험은 없지만(오히려 보수적으로 낮게 나옴), 이 수치를 곧 "실제 서로 다른 장면 수"로 읽어서는 안 된다.
+
+## ▶ 다음 — 학습 실행 → 파이 실시간 눈확인 판정
+
+병합은 끝났고 **학습이 남았다**. `train_tool_v3.py`(Colab 스크립트, 아래 「Colab CLI」절 참조)로 학습 → `best.pt` 회수 → `Rpi5/Demo/models/`에 배치 → `tool_live.py`로 **파이 실시간 눈확인**. 판정 기준·절차는 `tool_v1`/`tool_v2` 때와 동일(위 절 참조).
 
 > 🔴 **학습 전 반드시 `dataset_diversity.py` 관문을 통과시킬 것.** 이 도구가 없었다면 `tools-hmqnl`(31,119장으로 보이나 실제 v2 는 3,160장·`screwdriver` 없음)에 며칠을 버렸을 것이다.
-> ℹ️ Colab 은 **파이 브라우저로도 실행 가능**하다 — 데스크톱이 없어도 재학습할 수 있다.
+> ℹ️ Colab 은 **파이 브라우저로도 실행 가능**하다 — 데스크톱이 없어도 재학습할 수 있다. 이제 **터미널만으로도 가능**하다(아래 「Colab CLI」절).
 
 ## 🗂 파이 로컬 자산 (repo 밖 — 새 세션에서도 그대로 쓴다)
 
@@ -77,7 +89,9 @@ ARCAD 5,203장은 실질적으로 **출처 118개**였다 — 3클래스가 **�
 |---|---|
 | **`~/rfenv`** | **Python 3.12 + torch(CPU) + ultralytics + inference.** 파이 기본 3.13 엔 못 깔아서 만든 것(§10.35-(7)). `~/rfenv/bin/python <스크립트>` 로 쓴다 |
 | `~/ds_6tool` · `~/ds_mech83` | **주력 데이터셋 2종** (출처 5,762 · 4,026) |
-| `~/ds_vsisj` | 3순위 보강재 (164클래스 → 3종 병합 필요) |
+| `~/ds_vsisj` | 3순위 보강재 (164클래스 → 3종 병합 필요, 미사용) |
+| **`~/ds_tool_v3`** | **`6-tool` + `mech83` 병합본**(약 3만 장, train/valid 분할, 관문 통과·체크섬 기록됨) — 학습 입력 |
+| `~/tool_v3_preview` | `preview_labels.py` 눈확인 오버레이(20장) — 병합본 라벨 육안 검수용 |
 | `~/tool_research/` | `classes.json`(**23개 데이터셋 클래스 원자료**) · `preds_*.json`(측정 기록 9종) |
 | `~/tool_eyeball*` · `~/tool_live_shots*` | §10.37·§10.38 판정 근거 오버레이 |
 | `Rpi5/Demo/models/tool_v1.pt`·`tool_v2.pt` | 폐기된 모델(gitignore) — 비교 기준선으로 보존 |
@@ -88,9 +102,28 @@ ARCAD 5,203장은 실질적으로 **출처 118개**였다 — 3클래스가 **�
 
 - **`dataset_diversity.py`** — 학습 전 관문. 「출처 수」를 센다. 클래스별로 잰다.
 - **`div_merged.py`** — 3종으로 **병합한 뒤** 잰다. 과세분화된 데이터셋(`tools-vsisj` 164클래스)은 이쪽으로 봐야 실제 학습 조건을 대표한다.
+- **`build_tool_v3_dataset.py`** — 클래스 3종 매핑·네거티브 혼합·출처 단위 재분할·산출물 기준 누출 재계산·체크섬까지 한 번에 처리하는 병합 도구. `python build_tool_v3_dataset.py <출력경로> <데이터셋:접두어> ...` 형태로 실행. 테스트 = `test_build_tool_v3_dataset.py`.
+- **`preview_labels.py`** — 병합 결과 라벨을 박스로 그려 눈으로 확인한다. `python preview_labels.py <데이터셋> <출력폴더> [장수] [seed]`.
 
 ## 🎥 실시간 눈확인 도구
 `Rpi5/Demo/test/tool_live.py` — ESP32 스트림에 모델을 얹어 **공구를 손에 들고 즉시 확인**한다. 자동 캡처(검출된 프레임만), `1`/`2` 로 모델 전환. 이것이 §10.38-(3)(4) 판정의 근거다.
+
+## 🚀 Colab CLI — 파이 터미널에서 학습 (2026-08-12 검증)
+
+브라우저·Drive 경유 없이 파이에서 바로 GPU 학습을 돌린다. T4 할당·원격 실행·파일 회수 전부 실측 확인됨.
+
+```bash
+uv tool install google-colab-cli --with "jupyter-kernel-client<1.0"
+colab sessions          # 최초 1회 브라우저 OAuth (대화형 터미널 필요)
+```
+
+🔴 **`jupyter-kernel-client<1.0` 고정 필수** — colab-cli 0.6.0 이 버전을 안 고정해서, 최신 1.0.x 가 딸려오면 `colab exec` 가 `AttributeError: KernelClient` 로 죽는다(1.0 에서 개명).
+
+⚠️ `--keep` 없으면 스크립트 종료 즉시 VM 반납 → `best.pt` 회수 불가.
+⚠️ `--timeout` 기본값 30초. 학습엔 반드시 크게.
+⚠️ `colab stop` 누락 = 크레딧 소모.
+
+🔴 **`colab run` 은 스크립트 한 파일의 내용만 VM 으로 보낸다** — 같은 폴더의 다른 모듈(`build_tool_v3_dataset.py` 등)은 따라가지 않는다. 그래서 `train_tool_v3.py` 는 VM 에서 자기 자신이 `sop-project` 를 얕게(shallow) clone 해 필요한 파일을 스스로 확보하도록 짜여 있다.
 
 ## 데이터 귀속
 ARCAD `tools-detection-b2xjk` (Roboflow Universe, **CC BY 4.0**). 출처 표기 의무.
