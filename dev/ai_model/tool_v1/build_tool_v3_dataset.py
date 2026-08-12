@@ -37,13 +37,31 @@ CLASS_MAP = {
 
 
 def build_remap(src_names):
-    """원본 인덱스 → 새 인덱스. 매핑에 없는 클래스는 아예 빠진다."""
+    """원본 인덱스 → 새 인덱스, 그리고 매핑에 없던 원본 이름 목록.
+
+    반환: (remap, unmapped_names). 매핑에 없는 클래스는 remap 에서 빠지고
+    unmapped_names 에 담긴다 — 호출부(scan_dataset)가 이걸로 "그 클래스만
+    있던 이미지가 조용히 네거티브가 됐다"를 알 수 있게 한다.
+
+    🔴 한 클래스도 못 붙이면(remap 이 통째로 빈다) 이 데이터셋은 애초에
+    쓸 수 없다는 뜻이므로 여기서 바로 ValueError 를 올린다 — "우연히 valid
+    0장 가드에 걸려 멈추는" 식으로 원인을 오도하지 않기 위해서다.
+    """
     remap = {}
+    unmapped = []
     for i, name in enumerate(src_names):
         new_name = CLASS_MAP.get(name.strip().lower())
         if new_name is not None:
             remap[i] = NEW_NAMES.index(new_name)
-    return remap
+        else:
+            unmapped.append(name)
+    if not remap:
+        raise ValueError(
+            f'클래스 매핑이 하나도 없습니다 — 이 데이터셋의 클래스: {src_names}. '
+            f'CLASS_MAP 이 아는 이름: {sorted(CLASS_MAP)}. '
+            'data.yaml 의 names 표기(철자·대소문자)를 확인할 것.'
+        )
+    return remap, unmapped
 
 
 def remap_label_lines(lines, remap):
@@ -71,9 +89,16 @@ def scan_dataset(root, prefix):
     🔴 그룹·출처에 접두어를 다르게 쓴다(사용자 재정 2026-08-12) —
     산출물 감사(Task 6 관문 `dataset_diversity.py`)가 최종 파일명으로
     출처를 다시 세기 때문에, 내부 판정과 감사 결과가 반드시 일치해야 한다.
+
+    반환: (items, report). report = {'unmapped': [원본 클래스명, ...],
+    'unmapped_negatives': 그것 때문에 라벨이 통째로 빠져 네거티브가 된 장수}.
+    "매핑에 없는 클래스명이 조용히 네거티브가 되는" 상황을 호출부가 알 수
+    있게 한다 — 매핑 자체가 통째로 빈 경우는 build_remap 이 이미 ValueError
+    로 막으므로, 여기서 다루는 건 "일부만 안 맞는" 부분 실패다.
     """
-    remap = build_remap(load_names(os.path.join(root, 'data.yaml')))
+    remap, unmapped = build_remap(load_names(os.path.join(root, 'data.yaml')))
     items = []
+    unmapped_negatives = 0
     for split in ('train', 'valid', 'test'):
         img_dir = os.path.join(root, split, 'images')
         if not os.path.isdir(img_dir):
@@ -84,10 +109,13 @@ def scan_dataset(root, prefix):
             fname = os.path.basename(img)
             base = os.path.splitext(fname)[0]
             lbl = os.path.join(root, split, 'labels', base + '.txt')
-            lines = []
+            raw_lines = []
             if os.path.exists(lbl):
                 with open(lbl) as f:
-                    lines = remap_label_lines(f.read().splitlines(), remap)
+                    raw_lines = f.read().splitlines()
+            lines = remap_label_lines(raw_lines, remap)
+            if any(line.split() for line in raw_lines) and not lines:
+                unmapped_negatives += 1
             gkey = group_key(fname)
             items.append(Item(
                 # 그룹에 접두어를 남긴다 — 두 데이터셋에 우연히 같은 stem 이
@@ -104,11 +132,13 @@ def scan_dataset(root, prefix):
                 positive=bool(lines),
                 dataset=prefix,
             ))
-    return items
+    return items, {'unmapped': unmapped, 'unmapped_negatives': unmapped_negatives}
 
 
 def pick_one_per_group(items):
-    """같은 사진의 증강본 여러 벌 중 **한 장만** 남긴다.
+    """현재 `build()` 에서 미사용 — 사유는 `build()` docstring 참조.
+
+    같은 사진의 증강본 여러 벌 중 **한 장만** 남긴다.
 
     Roboflow 고정 증강은 ultralytics 의 매-epoch 증강과 겹치고, 증강본이 많은
     사진의 가중치만 키운다(ARCAD 와 같은 구조). 출처 수는 줄지 않는다.
@@ -195,9 +225,22 @@ def build(roots, out_dir, neg_ratio=0.15, valid_ratio=0.10, seed=0):
     사진이 stem 을 공유해 함께 묶이는 것은 보수적일 뿐(그 사진들이 어느
     split 에 갈지 함께 결정될 뿐) 누출이 아니다.
     """
+    # 🔴 이전 실행 잔존물과 섞이면 "리포트 장수 == 디스크 장수" 계약이
+    # 깨진다(출력명 충돌 없이도 헌 파일이 남는다). 자동 삭제는 하지 않는다
+    # — 사용자 데이터를 지우는 건 이 도구의 권한이 아니다.
+    if os.path.isdir(out_dir) and os.listdir(out_dir):
+        raise ValueError(
+            f'{out_dir} 가 비어 있지 않습니다 — 이전 실행 산출물이 섞일 수 '
+            '있어 거부합니다. 디렉터리를 비우고 다시 실행할 것.'
+        )
+
     items = []
+    unmapped_report = {}
     for root, prefix in roots:
-        items.extend(scan_dataset(os.path.expanduser(root), prefix))
+        ds_items, ds_report = scan_dataset(os.path.expanduser(root), prefix)
+        items.extend(ds_items)
+        if ds_report['unmapped']:
+            unmapped_report[prefix] = ds_report
 
     items = sample_negatives(items, ratio=neg_ratio, seed=seed)
     assign = split_by_source(items, valid_ratio=valid_ratio, seed=seed)
@@ -211,16 +254,12 @@ def build(roots, out_dir, neg_ratio=0.15, valid_ratio=0.10, seed=0):
             'roots 구성(출처 다양성)을 늘리거나 valid_ratio 를 조정할 것.'
         )
 
-    for split in ('train', 'valid'):
-        os.makedirs(os.path.join(out_dir, split, 'images'), exist_ok=True)
-        os.makedirs(os.path.join(out_dir, split, 'labels'), exist_ok=True)
-
-    instances = {n: 0 for n in NEW_NAMES}
-    class_images = {n: 0 for n in NEW_NAMES}
-    splits = {'train': 0, 'valid': 0}
-    negatives = 0
-    manifest = []
-
+    # 출력명을 미리 계산해 충돌을 검사한다(디스크에 쓰기 전에) — 서로 다른
+    # split 출신인데 같은 basename 을 쓰면 이름이 같아져 뒤엣것이 앞엣것을
+    # 조용히 덮어쓴다. `shutil.copy` 를 부르기 전에 잡아야 산출물이
+    # 오염되지 않는다.
+    planned = []
+    seen_names = {}
     for it in items:
         split = assign[it.source]
         # 🔴 접두어를 파일명 맨 앞이 아니라 `.rf.` 뒤에 넣는다(사용자 재정
@@ -235,6 +274,28 @@ def build(roots, out_dir, neg_ratio=0.15, valid_ratio=0.10, seed=0):
         else:
             stem, ext = os.path.splitext(fname)
             out_name = f'{stem}.rf.{it.dataset}_0{ext}'
+        key = (split, out_name)
+        if key in seen_names:
+            other = seen_names[key]
+            raise ValueError(
+                f'출력 파일명이 충돌합니다: {split}/{out_name} — '
+                f'{other.src_img} 와 {it.src_img} 가 같은 이름으로 씁니다. '
+                '접두어·소스 데이터를 확인할 것.'
+            )
+        seen_names[key] = it
+        planned.append((it, split, out_name))
+
+    for split in ('train', 'valid'):
+        os.makedirs(os.path.join(out_dir, split, 'images'), exist_ok=True)
+        os.makedirs(os.path.join(out_dir, split, 'labels'), exist_ok=True)
+
+    instances = {n: 0 for n in NEW_NAMES}
+    class_images = {n: 0 for n in NEW_NAMES}
+    splits = {'train': 0, 'valid': 0}
+    negatives = 0
+    manifest = []
+
+    for it, split, out_name in planned:
         base = os.path.splitext(out_name)[0]
         shutil.copy(it.src_img, os.path.join(out_dir, split, 'images', out_name))
         with open(os.path.join(out_dir, split, 'labels', base + '.txt'), 'w') as f:
@@ -251,7 +312,10 @@ def build(roots, out_dir, neg_ratio=0.15, valid_ratio=0.10, seed=0):
                 class_images[name] += 1
         else:
             negatives += 1
-        manifest.append(f'{split}/{out_name}')
+        # 체크섬은 파일명뿐 아니라 라벨 내용도 포함한다 — 리맵 버그는
+        # 파일명을 바꾸지 않으므로, 내용이 빠지면 "체크섬이 같다"가 실제
+        # 보증이 되지 못한다.
+        manifest.append(f"{split}/{out_name}\n" + '\n'.join(it.lines))
 
     out_abs = os.path.abspath(out_dir)
     with open(os.path.join(out_dir, 'data.yaml'), 'w') as f:
@@ -283,6 +347,7 @@ def build(roots, out_dir, neg_ratio=0.15, valid_ratio=0.10, seed=0):
         'sources': len(seen),
         'leaks': leaks,
         'checksum': checksum,
+        'unmapped': unmapped_report,
     }
 
 
@@ -295,11 +360,15 @@ def main(argv):
     roots = []
     for spec in argv[2:]:
         path, _, prefix = spec.rpartition(':')
-        if not path:
-            sys.exit(f'형식이 <경로:접두어> 가 아닙니다: {spec}')
+        if not path or not prefix:
+            sys.exit(f'형식이 <경로:접두어> 가 아닙니다(접두어는 비울 수 없음): {spec}')
         roots.append((path, prefix))
 
-    report = build(roots, out_dir)
+    try:
+        report = build(roots, out_dir)
+    except ValueError as e:
+        sys.exit(str(e))
+
     print(f"■ 이미지 {report['images']} "
           f"(train {report['splits']['train']} · valid {report['splits']['valid']})")
     print(f"■ 네거티브 {report['negatives']} · 출처 {report['sources']} "
@@ -307,6 +376,11 @@ def main(argv):
     print(f"   {'클래스':<10}{'이미지':>8}{'인스턴스':>10}")
     for n in NEW_NAMES:
         print(f'   {n:<10}{report["class_images"][n]:>8}{report["instances"][n]:>10}')
+    if report['unmapped']:
+        print('⚠️ 매핑 안 된 클래스명(그 클래스만 있던 이미지는 네거티브로 들어감):')
+        for prefix, info in report['unmapped'].items():
+            print(f"   {prefix}: {info['unmapped']} "
+                  f"→ 네거티브화 {info['unmapped_negatives']}장")
     print(f"■ 체크섬 {report['checksum']}  ← 파이·Colab 에서 같아야 한다")
     if report['leaks']:
         sys.exit('🔴 누출이 있다 — 분할 로직을 확인할 것.')

@@ -52,10 +52,14 @@ def main(argv):
                 cx, cy, w, h = (float(v) for v in p[1:5])
                 box = ((cx - w / 2) * W, (cy - h / 2) * H,
                        (cx + w / 2) * W, (cy + h / 2) * H)
+                # 인덱스가 범위 밖이면(밀림 버그) 죽지 않고 `?<번호>`로 표시하고
+                # 계속 진행한다 — 밀림을 잡으려고 만든 도구가 밀림 때문에
+                # 죽으면 안 된다.
+                label = NEW_NAMES[ci] if 0 <= ci < len(NEW_NAMES) else f'?{ci}'
                 draw.rectangle(box, outline=COLORS.get(ci, (255, 255, 0)), width=3)
-                draw.text((box[0] + 3, box[1] + 3), NEW_NAMES[ci],
+                draw.text((box[0] + 3, box[1] + 3), label,
                           fill=COLORS.get(ci, (255, 255, 0)))
-                counts[NEW_NAMES[ci]] += 1
+                counts[label] = counts.get(label, 0) + 1
                 has_box = True
         if not has_box:
             empty += 1

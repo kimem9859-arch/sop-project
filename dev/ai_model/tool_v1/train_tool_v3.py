@@ -14,9 +14,12 @@
       은 따라오지 않으므로, 이 스크립트가 실행 중에 repo 를 직접 clone 해야 한다.
 """
 import os
+import shutil
 import subprocess
 import sys
 
+if 'ROBOFLOW_API_KEY' not in os.environ:
+    sys.exit('ROBOFLOW_API_KEY 환경변수가 없습니다 — export 후 다시 실행할 것.')
 RF_API_KEY = os.environ['ROBOFLOW_API_KEY']
 DATASETS = [
     # (workspace, project, version, 접두어)
@@ -32,12 +35,15 @@ def main():
                     'roboflow', 'ultralytics'], check=True)
 
     # colab run 은 스크립트 파일만 VM 으로 전송되므로, repo 를 직접 clone 해 병합 모듈을 받는다.
-    # --keep 으로 VM 을 재사용할 때는 이미 clone 돼 있을 수 있으므로 존재 검사.
+    # 🔴 매번 새로 받는다 — `--keep` 재사용 시 존재 검사만 하면 이미 clone 된
+    # 옛 코드를 조용히 재사용해, repo 를 고치고 재실행해도 옛 코드로 학습하게 된다.
+    # repo_path 는 이 스크립트가 만든 것이므로 지워도 안전하다.
     repo_path = '/tmp/sop-project'
-    if not os.path.exists(repo_path):
-        subprocess.run(['git', 'clone', '--depth', '1',
-                        'https://github.com/kimem9859-arch/sop-project.git', repo_path],
-                       check=True)
+    if os.path.exists(repo_path):
+        shutil.rmtree(repo_path)
+    subprocess.run(['git', 'clone', '--depth', '1',
+                    'https://github.com/kimem9859-arch/sop-project.git', repo_path],
+                   check=True)
 
     # clone 한 절대경로를 sys.path 에 추가 (__file__ 은 믿을 수 없음)
     sys.path.insert(0, os.path.join(repo_path, 'dev/ai_model/tool_v1'))
@@ -52,6 +58,7 @@ def main():
 
     report = build(roots, OUT_DIR)
     print('[merge]', report)
+    # ⚠️ 체크섬 산식(파일명+라벨 내용 해시)이 바뀌면 이 기록값도 갱신해야 한다.
     print('[merge] 체크섬', report['checksum'], '← 파이 값과 같아야 한다 (π: 89a178c6c0d0e1ec)')
     if report['leaks']:
         sys.exit('🔴 누출 발생 — 학습 중단')

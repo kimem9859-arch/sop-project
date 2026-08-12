@@ -9,6 +9,7 @@ from build_tool_v3_dataset import (
     NEW_NAMES,
     build,
     build_remap,
+    main,
     pick_one_per_group,
     remap_label_lines,
     sample_negatives,
@@ -25,21 +26,29 @@ def test_new_names_order_is_fixed():
 def test_build_remap_6tool():
     # ds_6tool: bolt-nut, hammer, other tool, plier, screwdriver, wrench
     src = ['bolt-nut', 'hammer', 'other tool', 'plier', 'screwdriver', 'wrench']
-    assert build_remap(src) == {3: 2, 4: 0, 5: 1}
+    remap, unmapped = build_remap(src)
+    assert remap == {3: 2, 4: 0, 5: 1}
+    assert unmapped == ['bolt-nut', 'hammer', 'other tool']
 
 
 def test_build_remap_mech83():
     # ds_mech83: drill, hammer, pliers, screwdriver, wrench
     src = ['drill', 'hammer', 'pliers', 'screwdriver', 'wrench']
-    assert build_remap(src) == {2: 2, 3: 0, 4: 1}
+    remap, unmapped = build_remap(src)
+    assert remap == {2: 2, 3: 0, 4: 1}
+    assert unmapped == ['drill', 'hammer']
 
 
 def test_build_remap_is_case_insensitive():
-    assert build_remap(['ScrewDriver', 'Wrench', 'Plier']) == {0: 0, 1: 1, 2: 2}
+    remap, unmapped = build_remap(['ScrewDriver', 'Wrench', 'Plier'])
+    assert remap == {0: 0, 1: 1, 2: 2}
+    assert unmapped == []
 
 
-def test_build_remap_ignores_unknown_names():
-    assert build_remap(['hammer', 'drill', 'bolt-nut']) == {}
+def test_build_remap_raises_when_nothing_maps():
+    """🔴 한 클래스도 못 붙이면(빈 dict) 조용히 넘기지 않고 바로 ValueError."""
+    with pytest.raises(ValueError):
+        build_remap(['hammer', 'drill', 'bolt-nut'])
 
 
 def test_remap_label_lines_keeps_and_renumbers():
@@ -98,7 +107,7 @@ def test_scan_dataset_classifies_positive_and_negative(tmp_path):
     root = str(tmp_path / 'ds6')
     _make_6tool_like(root)
 
-    items = scan_dataset(root, '6tool')
+    items, _report = scan_dataset(root, '6tool')
 
     assert len(items) == 6
     assert sum(1 for i in items if i.positive) == 4
@@ -109,7 +118,8 @@ def test_scan_dataset_remaps_labels(tmp_path):
     root = str(tmp_path / 'ds6')
     _make_6tool_like(root)
 
-    items = {os.path.basename(i.src_img): i for i in scan_dataset(root, '6tool')}
+    items, _report = scan_dataset(root, '6tool')
+    items = {os.path.basename(i.src_img): i for i in items}
 
     # screwdriver(4) -> driver(0)
     assert items['shot1_jpg.rf.aaa.jpg'].lines == ['0 0.5 0.5 0.2 0.2']
@@ -123,7 +133,8 @@ def test_scan_dataset_groups_augmented_copies(tmp_path):
     root = str(tmp_path / 'ds6')
     _make_6tool_like(root)
 
-    items = {os.path.basename(i.src_img): i for i in scan_dataset(root, '6tool')}
+    items, _report = scan_dataset(root, '6tool')
+    items = {os.path.basename(i.src_img): i for i in items}
 
     # 증강본 2벌은 같은 그룹
     assert items['shot1_jpg.rf.aaa.jpg'].group == items['shot1_jpg.rf.bbb.jpg'].group
@@ -147,8 +158,8 @@ def test_scan_dataset_groups_are_dataset_scoped_but_sources_are_not(tmp_path):
     _make_6tool_like(root_a)
     _make_6tool_like(root_b)
 
-    items_a = scan_dataset(root_a, '6tool')
-    items_b = scan_dataset(root_b, 'mech83')
+    items_a, _report_a = scan_dataset(root_a, '6tool')
+    items_b, _report_b = scan_dataset(root_b, 'mech83')
 
     grp_a = {i.group for i in items_a}
     grp_b = {i.group for i in items_b}
@@ -167,8 +178,8 @@ def test_scan_dataset_is_deterministic(tmp_path):
     root = str(tmp_path / 'ds6')
     _make_6tool_like(root)
 
-    first = [i.src_img for i in scan_dataset(root, '6tool')]
-    second = [i.src_img for i in scan_dataset(root, '6tool')]
+    first = [i.src_img for i in scan_dataset(root, '6tool')[0]]
+    second = [i.src_img for i in scan_dataset(root, '6tool')[0]]
 
     assert first == second
 
@@ -185,7 +196,7 @@ def test_pick_one_per_group_keeps_exactly_one(tmp_path):
     root = str(tmp_path / 'ds6')
     _make_6tool_like(root)
 
-    kept = pick_one_per_group(scan_dataset(root, '6tool'))
+    kept = pick_one_per_group(scan_dataset(root, '6tool')[0])
 
     # 증강본 2벌 → 1장. 나머지 4장은 각자 단독 그룹.
     assert len(kept) == 5
@@ -195,7 +206,7 @@ def test_pick_one_per_group_keeps_exactly_one(tmp_path):
 def test_pick_one_per_group_is_deterministic(tmp_path):
     root = str(tmp_path / 'ds6')
     _make_6tool_like(root)
-    items = scan_dataset(root, '6tool')
+    items, _report = scan_dataset(root, '6tool')
 
     first = [i.src_img for i in pick_one_per_group(items)]
     second = [i.src_img for i in pick_one_per_group(items)]
@@ -478,6 +489,156 @@ def test_build_output_names_dont_collapse_numeric_sources(tmp_path):
         for f in os.listdir(img_dir):
             sources.add(source_key(group_key(f)))
     assert len(sources) == 5
+
+
+def _make_partial_unmapped_dataset(root):
+    """일부 클래스만 매핑되는 데이터셋 — spanner 처럼 CLASS_MAP 밖 이름만 있는
+    이미지는 라벨이 통째로 빠져 조용히 네거티브가 된다."""
+    _write(os.path.join(root, 'data.yaml'),
+           'names:\n- screwdriver\n- spanner\nnc: 2\n')
+    _write(os.path.join(root, 'train/images', 'a_jpg.rf.aaa.jpg'), 'x')
+    _write(os.path.join(root, 'train/labels', 'a_jpg.rf.aaa.txt'),
+           '0 0.5 0.5 0.2 0.2\n')          # screwdriver -> driver, 매핑됨
+    _write(os.path.join(root, 'train/images', 'b_jpg.rf.bbb.jpg'), 'x')
+    _write(os.path.join(root, 'train/labels', 'b_jpg.rf.bbb.txt'),
+           '1 0.5 0.5 0.2 0.2\n')          # spanner -> 매핑 없음, 조용히 네거티브화
+
+
+def test_scan_dataset_reports_unmapped_classes_and_negatives(tmp_path):
+    root = str(tmp_path / 'ds_partial')
+    _make_partial_unmapped_dataset(root)
+
+    items, report = scan_dataset(root, 'p')
+
+    assert report['unmapped'] == ['spanner']
+    assert report['unmapped_negatives'] == 1
+    by_name = {os.path.basename(i.src_img): i for i in items}
+    assert by_name['a_jpg.rf.aaa.jpg'].positive
+    assert not by_name['b_jpg.rf.bbb.jpg'].positive
+
+
+def _make_6tool_like_with_unmapped(root):
+    """`_make_6tool_like` 에 매핑 안 되는 클래스(spanner) 이미지를 하나 더한다."""
+    _make_6tool_like(root)
+    _write(os.path.join(root, 'data.yaml'),
+           'names:\n- bolt-nut\n- hammer\n- other tool\n- plier\n'
+           '- screwdriver\n- wrench\n- spanner\nnc: 7\n')
+    _write(os.path.join(root, 'train/images', 'span1_jpg.rf.fff.jpg'), 'x')
+    _write(os.path.join(root, 'train/labels', 'span1_jpg.rf.fff.txt'),
+           '6 0.5 0.5 0.2 0.2\n')
+
+
+def test_build_reports_unmapped_classes_per_dataset(tmp_path):
+    """🔴 Important 1 — spanner 같은 매핑 밖 이름이 조용히 네거티브가 되는 걸
+    build() 리포트로 드러낸다(데이터셋별로 구분)."""
+    a, b = str(tmp_path / 'ds6'), str(tmp_path / 'dsm')
+    out = str(tmp_path / 'out')
+    _make_6tool_like_with_unmapped(a)
+    _make_mech83_like(b)
+
+    report = build([(a, '6tool'), (b, 'mech83')], out, seed=0)
+
+    assert report['unmapped']['6tool']['unmapped'] == [
+        'bolt-nut', 'hammer', 'other tool', 'spanner']
+    # ham1(hammer 단독) + span1(spanner 단독) = 2장이 매핑 실패로 네거티브화
+    assert report['unmapped']['6tool']['unmapped_negatives'] == 2
+    # mech83 도 drill·hammer 가 안 붙는다(mdrill 1장이 네거티브화)
+    assert report['unmapped']['mech83']['unmapped'] == ['drill', 'hammer']
+    assert report['unmapped']['mech83']['unmapped_negatives'] == 1
+
+
+def test_build_remap_used_alone_raises_for_fully_unmapped_dataset(tmp_path):
+    """단일 데이터셋에서 클래스가 하나도 안 붙으면 "valid 0장" 이 아니라
+    매핑 실패 메시지로 즉시 죽어야 한다 — 원인을 오도하지 않기 위해."""
+    root = str(tmp_path / 'ds_none')
+    out = str(tmp_path / 'out')
+    _write(os.path.join(root, 'data.yaml'),
+           'names:\n- spanner\nnc: 1\n')
+    _write(os.path.join(root, 'train/images', 'a_jpg.rf.aaa.jpg'), 'x')
+    _write(os.path.join(root, 'train/labels', 'a_jpg.rf.aaa.txt'),
+           '0 0.5 0.5 0.2 0.2\n')
+
+    with pytest.raises(ValueError, match='클래스 매핑이 하나도 없습니다'):
+        build([(root, 'p')], out, seed=0)
+
+
+def test_build_raises_on_output_name_collision(tmp_path):
+    """🔴 Important 2 — 서로 다른 split 에 같은 basename 이 있으면 출력명이
+    겹쳐 뒤엣것이 앞엣것을 조용히 덮어쓴다. 쓰기 전에 잡아야 한다."""
+    root = str(tmp_path / 'ds_dup')
+    out = str(tmp_path / 'out')
+    _write(os.path.join(root, 'data.yaml'),
+           'names:\n- screwdriver\n- wrench\n- plier\nnc: 3\n')
+    # 서로 다른 출처의 이미지를 넉넉히 섞는다 — valid 0장 가드보다 먼저
+    # 충돌 가드에 걸리는지 보려면 valid 배정 자체는 문제없이 되어야 한다.
+    for n in range(20):
+        _write(os.path.join(root, 'train/images', f's{n}_jpg.rf.h{n}.jpg'), 'x')
+        _write(os.path.join(root, 'train/labels', f's{n}_jpg.rf.h{n}.txt'),
+               '0 0.5 0.5 0.2 0.2\n')
+    # 소스의 서로 다른 split 에 같은 basename — 같은 출처라 항상 같은
+    # split 으로 함께 가므로, 출력명도 같아져 충돌한다.
+    for split in ('train', 'valid'):
+        _write(os.path.join(root, split, 'images', 'dup_jpg.rf.xxx.jpg'), 'x')
+        _write(os.path.join(root, split, 'labels', 'dup_jpg.rf.xxx.txt'),
+               '0 0.5 0.5 0.2 0.2\n')
+
+    with pytest.raises(ValueError, match='충돌'):
+        build([(root, 'one')], out, seed=0)
+
+
+def test_build_rejects_nonempty_out_dir(tmp_path):
+    """🔴 Important 2 둘째 증상 — 이전 실행 잔존물과 섞이면 리포트와 디스크가
+    어긋난다. 자동 삭제하지 않고 거부한다."""
+    a, b = str(tmp_path / 'ds6'), str(tmp_path / 'dsm')
+    out = str(tmp_path / 'out')
+    _make_6tool_like(a)
+    _make_mech83_like(b)
+    os.makedirs(out)
+    _write(os.path.join(out, 'leftover.txt'), 'x')
+
+    with pytest.raises(ValueError, match='비어 있지 않습니다'):
+        build([(a, '6tool'), (b, 'mech83')], out, seed=0)
+
+
+def test_checksum_changes_when_label_content_changes(tmp_path):
+    """🔴 Important 3 — 체크섬은 파일명뿐 아니라 라벨 내용까지 반영해야 한다.
+    리맵 버그는 파일명을 바꾸지 않으므로, 내용이 안 들어가면 "체크섬 일치"가
+    실제 보증이 되지 못한다."""
+    a, b = str(tmp_path / 'ds6'), str(tmp_path / 'dsm')
+    _make_6tool_like(a)
+    _make_mech83_like(b)
+
+    r1 = build([(a, '6tool'), (b, 'mech83')], str(tmp_path / 'out1'), seed=0)
+
+    # 파일명은 그대로 두고 라벨 좌표만 바꾼다.
+    _write(os.path.join(a, 'train/labels', 'shot1_jpg.rf.aaa.txt'),
+           '4 0.1 0.1 0.1 0.1\n')
+
+    r2 = build([(a, '6tool'), (b, 'mech83')], str(tmp_path / 'out2'), seed=0)
+
+    assert r1['checksum'] != r2['checksum']
+
+
+def test_main_rejects_empty_prefix():
+    """`main()` CLI — 접두어가 빈 문자열(`~/ds:`)이면 거부한다."""
+    with pytest.raises(SystemExit):
+        main(['prog', '/tmp/whatever_out', '/tmp/whatever_ds:'])
+
+
+def test_main_exits_cleanly_on_build_value_error(tmp_path):
+    """`main()` 이 `build()` 의 `ValueError` 를 raw traceback 대신
+    `sys.exit(str(e))` 로 낸다 — 다른 CLI 오류와 형식을 맞춘다."""
+    a, b = str(tmp_path / 'ds6'), str(tmp_path / 'dsm')
+    out = str(tmp_path / 'out')
+    _make_6tool_like(a)
+    _make_mech83_like(b)
+    os.makedirs(out)
+    _write(os.path.join(out, 'leftover.txt'), 'x')
+
+    with pytest.raises(SystemExit) as exc_info:
+        main(['prog', out, f'{a}:6tool', f'{b}:mech83'])
+    assert isinstance(exc_info.value.code, str)
+    assert '비어 있지 않습니다' in exc_info.value.code
 
 
 def test_build_raises_when_valid_is_empty(tmp_path):
