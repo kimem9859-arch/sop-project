@@ -35,6 +35,13 @@ CLASS_MAP = {
     'pliers': 'pliers',
 }
 
+# 🔴 CLASS_MAP 에 넣지 않는다 — 이건 매핑이 아니라 "안다·예상했다"는 표시다.
+# 6tool·mech83 두 데이터셋이 담고 있지만 우리 3종(driver·wrench·pliers)이
+# 아닌 공구들 — 이 이름들이 매핑에서 빠지는 건 의도된 것이라 경고가 아니다.
+# 매번 뜨는 경고는 운영자를 무디게 만들어, `spanner` 같은 **진짜 모르는
+# 이름**이 그 안에 묻히게 한다(이번 작업이 막으려던 실패 유형).
+KNOWN_DISCARD = {'bolt-nut', 'hammer', 'other tool', 'drill'}
+
 
 def build_remap(src_names):
     """원본 인덱스 → 새 인덱스, 그리고 매핑에 없던 원본 이름 목록.
@@ -242,6 +249,20 @@ def build(roots, out_dir, neg_ratio=0.15, valid_ratio=0.10, seed=0):
         if ds_report['unmapped']:
             unmapped_report[prefix] = ds_report
 
+    # 「예상된 버림」(KNOWN_DISCARD)과 「🔴 모르는 이름」을 가른다 — 매번
+    # 뜨는 경고에 운영자가 무뎌지면 spanner 같은 진짜 신호를 놓친다.
+    unknown_unmapped = {}
+    for prefix, info in unmapped_report.items():
+        unknown_names = sorted({
+            n for n in info['unmapped']
+            if n.strip().lower() not in KNOWN_DISCARD
+        })
+        if unknown_names:
+            unknown_unmapped[prefix] = {
+                'names': unknown_names,
+                'unmapped_negatives': info['unmapped_negatives'],
+            }
+
     items = sample_negatives(items, ratio=neg_ratio, seed=seed)
     assign = split_by_source(items, valid_ratio=valid_ratio, seed=seed)
 
@@ -348,6 +369,7 @@ def build(roots, out_dir, neg_ratio=0.15, valid_ratio=0.10, seed=0):
         'leaks': leaks,
         'checksum': checksum,
         'unmapped': unmapped_report,
+        'unknown_unmapped': unknown_unmapped,
     }
 
 
@@ -376,11 +398,18 @@ def main(argv):
     print(f"   {'클래스':<10}{'이미지':>8}{'인스턴스':>10}")
     for n in NEW_NAMES:
         print(f'   {n:<10}{report["class_images"][n]:>8}{report["instances"][n]:>10}')
-    if report['unmapped']:
-        print('⚠️ 매핑 안 된 클래스명(그 클래스만 있던 이미지는 네거티브로 들어감):')
-        for prefix, info in report['unmapped'].items():
-            print(f"   {prefix}: {info['unmapped']} "
-                  f"→ 네거티브화 {info['unmapped_negatives']}장")
+    if report['unknown_unmapped']:
+        # 🔴 모르는 이름 — 눈에 띄게. spanner 처럼 KNOWN_DISCARD 밖의
+        # 클래스명이 있으면 그 클래스만 있던 이미지가 조용히 네거티브로 들어간다.
+        print('🔴 매핑 안 된 미지의 클래스명이 있습니다(CLASS_MAP·KNOWN_DISCARD 둘 다 밖):')
+        for prefix, info in report['unknown_unmapped'].items():
+            print(f"   {prefix}: {info['names']} "
+                  f"→ 해당 데이터셋 매핑실패 네거티브화 {info['unmapped_negatives']}장(예상+미지 합산)")
+    elif report['unmapped']:
+        # 예상된 버림(KNOWN_DISCARD)뿐이면 조용히 한 줄 요약만 낸다 —
+        # 매번 뜨는 경고에 무뎌지면 진짜 신호(미지의 이름)를 놓친다.
+        total_neg = sum(info['unmapped_negatives'] for info in report['unmapped'].values())
+        print(f'ℹ️ 예상된 버림(우리 3종 아님) 네거티브화 {total_neg}장 — KNOWN_DISCARD 참조')
     print(f"■ 체크섬 {report['checksum']}  ← 파이·Colab 에서 같아야 한다")
     if report['leaks']:
         sys.exit('🔴 누출이 있다 — 분할 로직을 확인할 것.')

@@ -56,6 +56,13 @@ def main():
         ds = rf.workspace(ws).project(proj).version(ver).download('yolov8')
         roots.append((ds.location, prefix))
 
+    # 🔴 `--keep` 로 VM 을 재사용하면 두 번째 실행부터 `OUT_DIR` 가 이미
+    # 있어 `build()` 의 "비어 있지 않은 out_dir 거부" 가드에 걸린다. 그
+    # 가드는 사용자 데이터를 보호하려는 것인데, 여기 `OUT_DIR` 은 이
+    # 스크립트가 휘발성 VM 위에 만든 것이라 지워도 안전하다 — repo 를
+    # 매번 새로 clone 하는 것과 같은 논리다. (파이 쪽 실사용자 데이터에
+    # 대한 거부 가드는 절대 약화하지 않는다 — 여기서만 지운다.)
+    shutil.rmtree(OUT_DIR, ignore_errors=True)
     report = build(roots, OUT_DIR)
     print('[merge]', report)
     # ⚠️ 체크섬 산식(파일명+라벨 내용 해시)이 바뀌면 이 기록값도 갱신해야 한다.

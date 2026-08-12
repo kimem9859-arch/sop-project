@@ -547,6 +547,60 @@ def test_build_reports_unmapped_classes_per_dataset(tmp_path):
     assert report['unmapped']['mech83']['unmapped_negatives'] == 1
 
 
+def test_build_stays_quiet_when_only_known_discards_are_unmapped(tmp_path):
+    """🔴 회귀 방지 — 6tool·mech83 조합(정상 실사용)에서는 KNOWN_DISCARD 밖
+    이름이 하나도 없으므로 `unknown_unmapped` 가 비어야 한다. 매번 뜨는
+    경고에 운영자가 무뎌지면 진짜 미지의 이름을 놓친다."""
+    a, b = str(tmp_path / 'ds6'), str(tmp_path / 'dsm')
+    out = str(tmp_path / 'out')
+    _make_6tool_like(a)
+    _make_mech83_like(b)
+
+    report = build([(a, '6tool'), (b, 'mech83')], out, seed=0)
+
+    # bolt-nut·hammer·other tool·drill 은 전부 KNOWN_DISCARD 안이다.
+    assert report['unmapped']            # 예상된 버림은 여전히 기록된다
+    assert report['unknown_unmapped'] == {}
+
+
+def test_build_flags_unknown_class_name_not_in_known_discard(tmp_path):
+    """🔴 Important 2 핵심 — spanner 처럼 KNOWN_DISCARD 밖 이름은 눈에 띄게
+    분리돼야 한다(예상된 버림과 섞이면 안 됨)."""
+    a, b = str(tmp_path / 'ds6'), str(tmp_path / 'dsm')
+    out = str(tmp_path / 'out')
+    _make_6tool_like_with_unmapped(a)   # spanner 이미지 포함
+    _make_mech83_like(b)
+
+    report = build([(a, '6tool'), (b, 'mech83')], out, seed=0)
+
+    assert report['unknown_unmapped'] == {
+        '6tool': {'names': ['spanner'], 'unmapped_negatives': 2},
+    }
+    # mech83 은 drill·hammer 뿐이라(둘 다 KNOWN_DISCARD) unknown_unmapped 에 없다.
+    assert 'mech83' not in report['unknown_unmapped']
+
+
+def test_main_prints_alert_only_for_unknown_names(tmp_path, capsys):
+    """`main()` CLI — 예상된 버림뿐이면 조용히(🔴 표시 없이), 미지의 이름이
+    섞이면 🔴 로 눈에 띄게 출력한다."""
+    a, b = str(tmp_path / 'ds6'), str(tmp_path / 'dsm')
+    _make_6tool_like(a)
+    _make_mech83_like(b)
+
+    main(['prog', str(tmp_path / 'out_normal'), f'{a}:6tool', f'{b}:mech83'])
+    normal_out = capsys.readouterr().out
+    assert '🔴 매핑 안 된 미지의 클래스명' not in normal_out
+
+    a2, b2 = str(tmp_path / 'ds6_spanner'), str(tmp_path / 'dsm2')
+    _make_6tool_like_with_unmapped(a2)
+    _make_mech83_like(b2)
+
+    main(['prog', str(tmp_path / 'out_spanner'), f'{a2}:6tool', f'{b2}:mech83'])
+    spanner_out = capsys.readouterr().out
+    assert '🔴 매핑 안 된 미지의 클래스명' in spanner_out
+    assert 'spanner' in spanner_out
+
+
 def test_build_remap_used_alone_raises_for_fully_unmapped_dataset(tmp_path):
     """단일 데이터셋에서 클래스가 하나도 안 붙으면 "valid 0장" 이 아니라
     매핑 실패 메시지로 즉시 죽어야 한다 — 원인을 오도하지 않기 위해."""
