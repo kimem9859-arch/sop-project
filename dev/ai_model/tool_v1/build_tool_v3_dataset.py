@@ -177,12 +177,28 @@ def build(roots, out_dir, neg_ratio=0.15, valid_ratio=0.10, seed=0):
     """전 과정을 조립해 병합 데이터셋을 디스크에 쓴다.
 
     roots = [(데이터셋_루트, 접두어), ...]
+
+    🔴 사용자 재정(2026-08-12) — `pick_one_per_group` 을 여기서 쓰지 않는다.
+    계획서는 stem(`.rf.` 앞)이 "같은 사진의 증강본 묶음"이라고 전제했는데,
+    이 두 데이터셋에선 거짓이었다: 실사진을 직접 확인하니 같은 stem 아래
+    완전히 다른 사진들이 섞여 있었다(흔한 파일명을 여러 사람이 올려 Roboflow
+    가 해시로만 구분). Roboflow README 실물도 이를 뒷받침한다 —
+    6-tool v3 = "2 versions of each source image"(배수가 2로 균일이라
+    가중치 왜곡이 없다) / mech83 v2 = "No image augmentation techniques were
+    applied"(증강 자체가 없다 — 전부 다른 사진). 그래서 이름 기반 1벌
+    감축은 없는 문제를 풀면서 진짜 사진을 지우고 있었다(mech83 3종에서만
+    5,324 → 4,026, 사진 1,298장 소멸). `pick_one_per_group` 함수 자체는
+    남긴다 — 다른 데이터셋에선 전제가 성립할 수 있다.
+
+    누출 방어는 여전히 유효하다 — 한 사진의 모든 복사본은 같은 stem 을
+    공유하므로 `source_key` 아래 반드시 같은 split 으로 간다. 서로 다른
+    사진이 stem 을 공유해 함께 묶이는 것은 보수적일 뿐(그 사진들이 어느
+    split 에 갈지 함께 결정될 뿐) 누출이 아니다.
     """
     items = []
     for root, prefix in roots:
         items.extend(scan_dataset(os.path.expanduser(root), prefix))
 
-    items = pick_one_per_group(items)
     items = sample_negatives(items, ratio=neg_ratio, seed=seed)
     assign = split_by_source(items, valid_ratio=valid_ratio, seed=seed)
 

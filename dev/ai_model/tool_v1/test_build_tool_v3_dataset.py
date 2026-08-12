@@ -418,6 +418,30 @@ def test_build_embeds_dataset_prefix_after_rf_marker(tmp_path):
     assert all(('.rf.6tool_' in n) or ('.rf.mech83_' in n) for n in names)
 
 
+def test_build_keeps_all_copies_sharing_a_stem(tmp_path):
+    """🔴 사용자 재정(2026-08-12) — `build()` 는 `pick_one_per_group` 을 쓰지 않는다.
+
+    이 데이터셋들에선 같은 stem 이 "증강본"이 아니라 서로 다른 사진일 수
+    있다고 실측으로 확인됐다(Roboflow README: 6tool 은 배수 2로 균일,
+    mech83 은 증강 없음). 그래서 산출물은 `shot1` 의 두 벌(aaa·bbb)을
+    모두 살려야 한다 — 하나만 남기면 진짜 사진을 지우는 셈이다.
+    """
+    a, b = str(tmp_path / 'ds6'), str(tmp_path / 'dsm')
+    out = str(tmp_path / 'out')
+    _make_6tool_like(a)
+    _make_mech83_like(b)
+
+    build([(a, '6tool'), (b, 'mech83')], out, seed=0)
+
+    names = []
+    for split in ('train', 'valid'):
+        names += os.listdir(os.path.join(out, split, 'images'))
+    shot_copies = [n for n in names if n.startswith('shot1_jpg.rf.')]
+    assert len(shot_copies) == 2
+    assert any('_aaa' in n for n in shot_copies)
+    assert any('_bbb' in n for n in shot_copies)
+
+
 def _make_numeric_like(root):
     """실데이터를 닮은 6자리 숫자 파일명 — 예: 000102_jpg.rf.<해시>.jpg.
 
