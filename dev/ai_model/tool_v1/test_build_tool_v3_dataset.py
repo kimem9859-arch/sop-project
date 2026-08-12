@@ -203,6 +203,36 @@ def test_pick_one_per_group_is_deterministic(tmp_path):
     assert first == second
 
 
+def test_pick_one_per_group_prefers_max_labels():
+    """같은 그룹의 증강본끼리 라벨 수가 다르면 **가장 많은 장**을 고른다.
+
+    크롭 증강에서 물체가 화면 밖으로 나가면 라벨이 빠진다. 라벨 수가 적은
+    판을 고르면 학습 신호를 잃으므로, 최대를 선택해야 한다.
+
+    픽스처: 같은 그룹의 두 증강본을 정렬 순서상 라벨-적은 장이 먼저 오도록
+    만들어야 한다. 그래야 "첫 장 고르기"와 "최대 고르기"가 다르다.
+    """
+    # 그룹은 같고(g1), 이미지 경로는 정렬상 aaa가 먼저, bbb가 나중
+    items = [
+        _item('g1', 's1', '/path/aaa.jpg', positive=True),  # 라벨 1개 (기본값)
+        _item('g1', 's1', '/path/bbb.jpg', positive=True),  # 라벨 1개를 3개로 수정
+    ]
+    # bbb를 3개 라벨로 업데이트
+    items = [
+        items[0],
+        items[1]._replace(lines=['0 0.5 0.5 0.1 0.1', '1 0.3 0.3 0.1 0.1', '2 0.7 0.7 0.1 0.1'])
+    ]
+
+    kept = pick_one_per_group(items)
+
+    # 그룹이 하나만 남아야 한다
+    assert len(kept) == 1
+    assert len({i.group for i in kept}) == 1
+    # 라벨이 3개인 bbb가 선택되어야 한다
+    assert kept[0].src_img == '/path/bbb.jpg'
+    assert len(kept[0].lines) == 3
+
+
 def test_sample_negatives_caps_at_ratio():
     items = [_item(f'g{n}', f's{n}', f'/p/{n}.jpg') for n in range(20)]
     items += [_item(f'n{n}', f'ns{n}', f'/p/neg{n}.jpg', positive=False)

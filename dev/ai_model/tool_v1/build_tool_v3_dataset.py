@@ -114,11 +114,15 @@ def pick_one_per_group(items):
     사진의 가중치만 키운다(ARCAD 와 같은 구조). 출처 수는 줄지 않는다.
 
     ⚠️ 어느 벌이 '원본'인지는 파일명으로 알 수 없다(Roboflow 가 원본·변형을
-       같은 형식으로 내보낸다). 정렬 첫 장을 쓴다 — 어차피 다시 증강된다.
+       같은 형식으로 내보낸다). 대신 **라벨이 가장 많은 장**을 고른다.
+       회전·크롭 증강 시 물체가 화면 밖으로 나가면 라벨이 빠지므로, 라벨
+       적은 판을 피해야 한다. 동점은 정렬 첫 장.
     """
     best = {}
     for it in sorted(items, key=lambda i: i.src_img):
-        best.setdefault(it.group, it)
+        group_item = best.get(it.group)
+        if group_item is None or len(it.lines) > len(group_item.lines):
+            best[it.group] = it
     return sorted(best.values(), key=lambda i: i.src_img)
 
 
