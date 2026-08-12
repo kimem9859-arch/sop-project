@@ -9,6 +9,9 @@
 ⚠️ --keep 없으면 스크립트 종료 즉시 VM 이 반납돼 best.pt 를 못 가져온다.
 ⚠️ --timeout 기본값은 30초다. 반드시 크게 줄 것.
 ⚠️ colab stop 을 빠뜨리면 VM 이 계속 켜져 크레딧을 태운다.
+
+주의: colab run 은 스크립트 한 파일의 내용만 VM 으로 보낸다. 옆 모듈(build_tool_v3_dataset.py)
+      은 따라오지 않으므로, 이 스크립트가 실행 중에 repo 를 직접 clone 해야 한다.
 """
 import os
 import subprocess
@@ -28,9 +31,16 @@ def main():
     subprocess.run([sys.executable, '-m', 'pip', 'install', '-q',
                     'roboflow', 'ultralytics'], check=True)
 
-    # sop-project 를 clone 해 두었다고 가정하고, 병합 모듈을 경로에 넣는다.
-    here = os.path.dirname(os.path.abspath(__file__))
-    sys.path.insert(0, here)
+    # colab run 은 스크립트 파일만 VM 으로 전송되므로, repo 를 직접 clone 해 병합 모듈을 받는다.
+    # --keep 으로 VM 을 재사용할 때는 이미 clone 돼 있을 수 있으므로 존재 검사.
+    repo_path = '/tmp/sop-project'
+    if not os.path.exists(repo_path):
+        subprocess.run(['git', 'clone', '--depth', '1',
+                        'https://github.com/kimem9859-arch/sop-project.git', repo_path],
+                       check=True)
+
+    # clone 한 절대경로를 sys.path 에 추가 (__file__ 은 믿을 수 없음)
+    sys.path.insert(0, os.path.join(repo_path, 'dev/ai_model/tool_v1'))
     from build_tool_v3_dataset import build
 
     from roboflow import Roboflow
