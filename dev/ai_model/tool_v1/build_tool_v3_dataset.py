@@ -94,3 +94,32 @@ def scan_dataset(root, prefix):
                 positive=bool(lines),
             ))
     return items
+
+
+def pick_one_per_group(items):
+    """같은 사진의 증강본 여러 벌 중 **한 장만** 남긴다.
+
+    Roboflow 고정 증강은 ultralytics 의 매-epoch 증강과 겹치고, 증강본이 많은
+    사진의 가중치만 키운다(ARCAD 와 같은 구조). 출처 수는 줄지 않는다.
+
+    ⚠️ 어느 벌이 '원본'인지는 파일명으로 알 수 없다(Roboflow 가 원본·변형을
+       같은 형식으로 내보낸다). 정렬 첫 장을 쓴다 — 어차피 다시 증강된다.
+    """
+    best = {}
+    for it in sorted(items, key=lambda i: i.src_img):
+        best.setdefault(it.group, it)
+    return sorted(best.values(), key=lambda i: i.src_img)
+
+
+def sample_negatives(items, ratio=0.15, seed=0):
+    """양성은 전부, 네거티브는 양성 수의 ratio 만큼만 남긴다.
+
+    왜 섞나: tool_v2 가 **빈 바닥을 conf 0.78 로 오검출**했다(§10.38-(4)).
+    왜 상한: 네거티브가 과반이면 모델이 보수적으로 변해 재현율이 떨어진다.
+    """
+    positives = [i for i in items if i.positive]
+    negatives = sorted((i for i in items if not i.positive),
+                       key=lambda i: i.src_img)
+    k = min(round(len(positives) * ratio), len(negatives))
+    chosen = random.Random(seed).sample(negatives, k) if k else []
+    return sorted(positives + chosen, key=lambda i: i.src_img)

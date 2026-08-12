@@ -6,7 +6,9 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from build_tool_v3_dataset import (
     NEW_NAMES,
     build_remap,
+    pick_one_per_group,
     remap_label_lines,
+    sample_negatives,
     scan_dataset,
 )
 
@@ -148,5 +150,66 @@ def test_scan_dataset_is_deterministic(tmp_path):
 
     first = [i.src_img for i in scan_dataset(root, '6tool')]
     second = [i.src_img for i in scan_dataset(root, '6tool')]
+
+    assert first == second
+
+
+def _item(group, source, img, positive=True):
+    return __import__('build_tool_v3_dataset').Item(
+        group=group, source=source, src_img=img,
+        lines=['0 0.5 0.5 0.1 0.1'] if positive else [],
+        positive=positive,
+    )
+
+
+def test_pick_one_per_group_keeps_exactly_one(tmp_path):
+    root = str(tmp_path / 'ds6')
+    _make_6tool_like(root)
+
+    kept = pick_one_per_group(scan_dataset(root, '6tool'))
+
+    # 증강본 2벌 → 1장. 나머지 4장은 각자 단독 그룹.
+    assert len(kept) == 5
+    assert len({i.group for i in kept}) == 5
+
+
+def test_pick_one_per_group_is_deterministic(tmp_path):
+    root = str(tmp_path / 'ds6')
+    _make_6tool_like(root)
+    items = scan_dataset(root, '6tool')
+
+    first = [i.src_img for i in pick_one_per_group(items)]
+    second = [i.src_img for i in pick_one_per_group(items)]
+
+    assert first == second
+
+
+def test_sample_negatives_caps_at_ratio():
+    items = [_item(f'g{n}', f's{n}', f'/p/{n}.jpg') for n in range(20)]
+    items += [_item(f'n{n}', f'ns{n}', f'/p/neg{n}.jpg', positive=False)
+              for n in range(20)]
+
+    out = sample_negatives(items, ratio=0.15, seed=0)
+
+    assert sum(1 for i in out if i.positive) == 20      # 양성은 전부 살린다
+    assert sum(1 for i in out if not i.positive) == 3   # round(20 * 0.15)
+
+
+def test_sample_negatives_takes_all_when_scarce():
+    items = [_item(f'g{n}', f's{n}', f'/p/{n}.jpg') for n in range(20)]
+    items += [_item('n0', 'ns0', '/p/neg0.jpg', positive=False)]
+
+    out = sample_negatives(items, ratio=0.15, seed=0)
+
+    assert sum(1 for i in out if not i.positive) == 1
+
+
+def test_sample_negatives_is_deterministic():
+    items = [_item(f'g{n}', f's{n}', f'/p/{n}.jpg') for n in range(20)]
+    items += [_item(f'n{n}', f'ns{n}', f'/p/neg{n}.jpg', positive=False)
+              for n in range(20)]
+
+    first = [i.src_img for i in sample_negatives(items, seed=0)]
+    second = [i.src_img for i in sample_negatives(items, seed=0)]
 
     assert first == second
