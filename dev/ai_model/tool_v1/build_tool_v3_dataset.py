@@ -13,6 +13,7 @@
 """
 import collections
 import glob
+import hashlib
 import os
 import random
 import shutil
@@ -60,14 +61,16 @@ def remap_label_lines(lines, remap):
 
 IMAGE_EXTS = {'.jpg', '.jpeg', '.png', '.bmp', '.webp'}
 
-Item = collections.namedtuple('Item', 'group source src_img lines positive')
+Item = collections.namedtuple('Item', 'group source src_img lines positive dataset',
+                               defaults=(None,))
 
 
 def scan_dataset(root, prefix):
     """데이터셋 하나를 훑어 Item 목록으로 만든다(기존 split 은 무시 — 어차피 재분할한다).
 
-    prefix 를 그룹·출처 키 앞에 붙인다. 두 데이터셋에 같은 파일명이 있어도
-    출처가 뒤섞이지 않게 하는 장치다. 접두어는 상수라 묶음 관계는 그대로다.
+    🔴 그룹·출처에 접두어를 다르게 쓴다(사용자 재정 2026-08-12) —
+    산출물 감사(Task 6 관문 `dataset_diversity.py`)가 최종 파일명으로
+    출처를 다시 세기 때문에, 내부 판정과 감사 결과가 반드시 일치해야 한다.
     """
     remap = build_remap(load_names(os.path.join(root, 'data.yaml')))
     items = []
@@ -87,11 +90,19 @@ def scan_dataset(root, prefix):
                     lines = remap_label_lines(f.read().splitlines(), remap)
             gkey = group_key(fname)
             items.append(Item(
+                # 그룹에 접두어를 남긴다 — 두 데이터셋에 우연히 같은 stem 이
+                # 있어도 서로 다른 사진이므로 1벌 감축(pick_one_per_group)이
+                # 엉뚱하게 한 장을 버리지 않게 한다.
                 group=f'{prefix}_{gkey}',
-                source=f'{prefix}_{source_key(gkey)}',
+                # 출처는 접두어 없이 둔다 — source_key 는 "뒤 일련번호를 떼되
+                # 남는 부분이 3글자 이상일 때만" 병합하므로, 앞에 접두어가
+                # 붙으면 판정이 달라진다(예: mech83_m0/m1 이 mech83_m 하나로
+                # 뭉개짐). 산출물 파일명으로 다시 세는 감사와 어긋나면 안 된다.
+                source=source_key(gkey),
                 src_img=img,
                 lines=lines,
                 positive=bool(lines),
+                dataset=prefix,
             ))
     return items
 
@@ -132,7 +143,12 @@ def split_by_source(items, valid_ratio=0.10, seed=0):
        프레임이 양쪽에 걸려 valid 점수가 거짓 상승한다. ARCAD 에서 물린 것이다.
 
     ⚠️ valid 목표의 50% 를 넘는 거대 출처는 train 으로 보낸다. 안 그러면
-       valid 가 단일 장면으로 뒤덮혀 ARCAD valid 와 같은 실패가 재현된다.
+       valid 가 단일 장면으로 뒤덮여 ARCAD valid 와 같은 실패가 재현된다.
+
+    ⚠️ 기준에 `max(1, ...)` 하한을 둔다 — 작은 데이터셋에서는 target*0.5 가
+       1 미만으로 내려가 1장짜리 출처조차 못 들어가 valid 가 통째로 비는
+       사고가 난다(사용자 재정 2026-08-12). 715장 규모의 실데이터에서는
+       하한이 걸리지 않아 원래 의도(거대출처 배제)는 그대로다.
     """
     by_source = collections.defaultdict(list)
     for it in items:
@@ -145,9 +161,130 @@ def split_by_source(items, valid_ratio=0.10, seed=0):
     assign, n_valid = {}, 0
     for s in sources:
         size = len(by_source[s])
-        if n_valid < target and size <= target * 0.5:
+        if n_valid < target and size <= max(1, target * 0.5):
             assign[s] = 'valid'
             n_valid += size
         else:
             assign[s] = 'train'
     return assign
+
+
+def build(roots, out_dir, neg_ratio=0.15, valid_ratio=0.10, seed=0):
+    """전 과정을 조립해 병합 데이터셋을 디스크에 쓴다.
+
+    roots = [(데이터셋_루트, 접두어), ...]
+    """
+    items = []
+    for root, prefix in roots:
+        items.extend(scan_dataset(os.path.expanduser(root), prefix))
+
+    items = pick_one_per_group(items)
+    items = sample_negatives(items, ratio=neg_ratio, seed=seed)
+    assign = split_by_source(items, valid_ratio=valid_ratio, seed=seed)
+
+    for split in ('train', 'valid'):
+        os.makedirs(os.path.join(out_dir, split, 'images'), exist_ok=True)
+        os.makedirs(os.path.join(out_dir, split, 'labels'), exist_ok=True)
+
+    instances = {n: 0 for n in NEW_NAMES}
+    class_images = {n: 0 for n in NEW_NAMES}
+    splits = {'train': 0, 'valid': 0}
+    negatives = 0
+    manifest = []
+
+    for it in items:
+        split = assign[it.source]
+        # 🔴 접두어를 파일명 맨 앞이 아니라 `.rf.` 뒤에 넣는다(사용자 재정
+        # 2026-08-12). 맨 앞에 붙이면 짧은 숫자 파일명과 합쳐져(예: m0 →
+        # mech83_m0) source_key 의 일련번호 병합 규칙을 건드려, 산출물 감사가
+        # 서로 다른 출처를 하나로 잘못 뭉갠다. `.rf.` 뒤에 두면 group_key 가
+        # 보는 stem(‥`.rf.` 앞부분)이 그대로 보존돼 감사 결과가 왜곡되지 않는다.
+        fname = os.path.basename(it.src_img)
+        if '.rf.' in fname:
+            stem, rest = fname.split('.rf.', 1)
+            out_name = f'{stem}.rf.{it.dataset}_{rest}'
+        else:
+            stem, ext = os.path.splitext(fname)
+            out_name = f'{stem}.rf.{it.dataset}_0{ext}'
+        base = os.path.splitext(out_name)[0]
+        shutil.copy(it.src_img, os.path.join(out_dir, split, 'images', out_name))
+        with open(os.path.join(out_dir, split, 'labels', base + '.txt'), 'w') as f:
+            f.write('\n'.join(it.lines) + ('\n' if it.lines else ''))
+
+        splits[split] += 1
+        if it.positive:
+            present = set()
+            for line in it.lines:
+                name = NEW_NAMES[int(line.split()[0])]
+                instances[name] += 1
+                present.add(name)
+            for name in present:
+                class_images[name] += 1
+        else:
+            negatives += 1
+        manifest.append(f'{split}/{out_name}')
+
+    if splits['valid'] == 0:
+        raise ValueError(
+            'valid 가 0장이다 — 거대출처 규칙(valid 목표의 50% 초과 출처는 '
+            'train 행) 때문에 모든 출처가 train 으로 갔을 수 있다. '
+            'roots 구성(출처 다양성)을 늘리거나 valid_ratio 를 조정할 것.'
+        )
+
+    out_abs = os.path.abspath(out_dir)
+    with open(os.path.join(out_dir, 'data.yaml'), 'w') as f:
+        f.write('names:\n')
+        for n in NEW_NAMES:
+            f.write(f'- {n}\n')
+        f.write(f'nc: {len(NEW_NAMES)}\n')
+        f.write(f'path: {out_abs}\n')
+        f.write('train: train/images\n')
+        f.write('val: valid/images\n')
+
+    # 누출 재확인 — 설계상 0 이어야 하지만 산출물에서 직접 센다.
+    seen = collections.defaultdict(set)
+    for it in items:
+        seen[it.source].add(assign[it.source])
+    leaks = sum(1 for v in seen.values() if len(v) > 1)
+
+    checksum = hashlib.sha256('\n'.join(sorted(manifest)).encode()).hexdigest()[:16]
+    return {
+        'images': len(items),
+        'splits': splits,
+        'instances': instances,
+        'class_images': class_images,
+        'negatives': negatives,
+        'sources': len(seen),
+        'leaks': leaks,
+        'checksum': checksum,
+    }
+
+
+def main(argv):
+    if len(argv) < 3:
+        sys.exit('사용: python build_tool_v3_dataset.py <출력경로> <데이터셋:접두어> ...\n'
+                 '예)  python build_tool_v3_dataset.py ~/ds_tool_v3 '
+                 '~/ds_6tool:6tool ~/ds_mech83:mech83')
+    out_dir = os.path.expanduser(argv[1])
+    roots = []
+    for spec in argv[2:]:
+        path, _, prefix = spec.rpartition(':')
+        if not path:
+            sys.exit(f'형식이 <경로:접두어> 가 아닙니다: {spec}')
+        roots.append((path, prefix))
+
+    report = build(roots, out_dir)
+    print(f"■ 이미지 {report['images']} "
+          f"(train {report['splits']['train']} · valid {report['splits']['valid']})")
+    print(f"■ 네거티브 {report['negatives']} · 출처 {report['sources']} "
+          f"· 누출 {report['leaks']}건")
+    print(f"   {'클래스':<10}{'이미지':>8}{'인스턴스':>10}")
+    for n in NEW_NAMES:
+        print(f'   {n:<10}{report["class_images"][n]:>8}{report["instances"][n]:>10}')
+    print(f"■ 체크섬 {report['checksum']}  ← 파이·Colab 에서 같아야 한다")
+    if report['leaks']:
+        sys.exit('🔴 누출이 있다 — 분할 로직을 확인할 것.')
+
+
+if __name__ == '__main__':
+    main(sys.argv)

@@ -3,8 +3,11 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
+import pytest
+
 from build_tool_v3_dataset import (
     NEW_NAMES,
+    build,
     build_remap,
     pick_one_per_group,
     remap_label_lines,
@@ -131,18 +134,33 @@ def test_scan_dataset_groups_augmented_copies(tmp_path):
     assert a.source == b.source
 
 
-def test_scan_dataset_prefixes_keys_to_avoid_collision(tmp_path):
-    """두 데이터셋에 같은 파일명이 있어도 출처가 섞이면 안 된다."""
+def test_scan_dataset_groups_are_dataset_scoped_but_sources_are_not(tmp_path):
+    """🔴 사용자 재정(2026-08-12) — 그룹과 출처는 접두어를 다르게 쓴다.
+
+    그룹: 두 데이터셋에 우연히 같은 stem 이 있어도 서로 다른 사진이므로
+    데이터셋별로 분리한다(1벌 감축이 엉뚱하게 한 장을 버리지 않게).
+    출처: 접두어를 붙이지 않는다 — 산출물 파일명으로 다시 세는 감사
+    (dataset_diversity.source_key)와 내부 판정이 어긋나면 안 된다.
+    """
     root_a = str(tmp_path / 'dsA')
     root_b = str(tmp_path / 'dsB')
     _make_6tool_like(root_a)
     _make_6tool_like(root_b)
 
-    src_a = {i.source for i in scan_dataset(root_a, '6tool')}
-    src_b = {i.source for i in scan_dataset(root_b, 'mech83')}
+    items_a = scan_dataset(root_a, '6tool')
+    items_b = scan_dataset(root_b, 'mech83')
 
-    assert src_a.isdisjoint(src_b)
-    assert all(s.startswith('6tool_') for s in src_a)
+    grp_a = {i.group for i in items_a}
+    grp_b = {i.group for i in items_b}
+    assert grp_a.isdisjoint(grp_b)
+    assert all(g.startswith('6tool_') for g in grp_a)
+    assert all(g.startswith('mech83_') for g in grp_b)
+
+    # 같은 fixture 라 stem 이 똑같다 — 접두어가 없으므로 출처 키도 똑같다.
+    src_a = {i.source for i in items_a}
+    src_b = {i.source for i in items_b}
+    assert src_a == src_b
+    assert not any(s.startswith(('6tool_', 'mech83_')) for s in src_a)
 
 
 def test_scan_dataset_is_deterministic(tmp_path):
@@ -265,3 +283,163 @@ def test_split_by_source_changes_with_seed():
     items = [_item(f'g{n}', f'src{n}', f'/p/{n}.jpg') for n in range(200)]
 
     assert split_by_source(items, seed=0) != split_by_source(items, seed=1)
+
+
+def _make_mech83_like(root):
+    """ds_mech83 을 닮은 합성 데이터셋 — 클래스 이름이 6tool 과 다르다(`pliers`)."""
+    _write(os.path.join(root, 'data.yaml'),
+           'names:\n- drill\n- hammer\n- pliers\n- screwdriver\n- wrench\nnc: 5\n')
+    for n in range(6):
+        _write(os.path.join(root, 'train/images', f'm{n}_jpg.rf.h{n}.jpg'), 'x')
+        _write(os.path.join(root, 'train/labels', f'm{n}_jpg.rf.h{n}.txt'),
+               '2 0.5 0.5 0.2 0.2\n')       # pliers -> 2
+    _write(os.path.join(root, 'valid/images', 'mdrill_jpg.rf.z.jpg'), 'x')
+    _write(os.path.join(root, 'valid/labels', 'mdrill_jpg.rf.z.txt'),
+           '0 0.5 0.5 0.2 0.2\n')           # drill -> 네거티브
+
+
+def test_build_writes_dataset(tmp_path):
+    a, b = str(tmp_path / 'ds6'), str(tmp_path / 'dsm')
+    out = str(tmp_path / 'out')
+    _make_6tool_like(a)
+    _make_mech83_like(b)
+
+    report = build([(a, '6tool'), (b, 'mech83')], out, seed=0)
+
+    assert os.path.isdir(os.path.join(out, 'train/images'))
+    assert os.path.isdir(os.path.join(out, 'valid/images'))
+    y = open(os.path.join(out, 'data.yaml')).read()
+    assert 'nc: 3' in y
+    assert '- driver\n- wrench\n- pliers\n' in y
+    assert f'path: {os.path.abspath(out)}' in y
+    assert report['images'] > 0
+    assert report['leaks'] == 0
+
+
+def test_build_has_no_source_leak(tmp_path):
+    """🔴 산출물에서 직접 확인한다 — 같은 출처가 두 split 에 있으면 안 된다."""
+    import sys as _sys
+    _sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    from dataset_diversity import group_key, source_key
+
+    a, b = str(tmp_path / 'ds6'), str(tmp_path / 'dsm')
+    out = str(tmp_path / 'out')
+    _make_6tool_like(a)
+    _make_mech83_like(b)
+
+    build([(a, '6tool'), (b, 'mech83')], out, seed=0)
+
+    seen = {}
+    for split in ('train', 'valid'):
+        for f in os.listdir(os.path.join(out, split, 'images')):
+            s = source_key(group_key(f))
+            seen.setdefault(s, set()).add(split)
+    assert all(len(v) == 1 for v in seen.values())
+
+
+def test_build_remaps_across_differing_class_names(tmp_path):
+    """6tool 의 `plier` 와 mech83 의 `pliers` 가 같은 인덱스 2 로 모여야 한다."""
+    a, b = str(tmp_path / 'ds6'), str(tmp_path / 'dsm')
+    out = str(tmp_path / 'out')
+    _make_6tool_like(a)
+    _make_mech83_like(b)
+
+    build([(a, '6tool'), (b, 'mech83')], out, seed=0)
+
+    idxs = set()
+    for split in ('train', 'valid'):
+        for f in sorted(os.listdir(os.path.join(out, split, 'labels'))):
+            # 새 규칙: 접두어는 `.rf.` 뒤에 붙는다 — mech83 의 mN 파일만 고른다.
+            if not (f.startswith('m') and '.rf.mech83_' in f):
+                continue
+            for line in open(os.path.join(out, split, 'labels', f)):
+                if line.split():
+                    idxs.add(line.split()[0])
+    assert idxs == {'2'}
+
+
+def test_build_is_reproducible(tmp_path):
+    a, b = str(tmp_path / 'ds6'), str(tmp_path / 'dsm')
+    _make_6tool_like(a)
+    _make_mech83_like(b)
+
+    r1 = build([(a, '6tool'), (b, 'mech83')], str(tmp_path / 'o1'), seed=0)
+    r2 = build([(a, '6tool'), (b, 'mech83')], str(tmp_path / 'o2'), seed=0)
+
+    assert r1['checksum'] == r2['checksum']
+
+
+def test_build_embeds_dataset_prefix_after_rf_marker(tmp_path):
+    """🔴 사용자 재정(2026-08-12) — 접두어는 파일명 맨 앞이 아니라 `.rf.` 뒤에 붙는다.
+
+    맨 앞에 붙이면 짧은 숫자 stem 과 합쳐져 source_key 의 일련번호 병합
+    규칙을 건드려, 산출물 감사가 서로 다른 출처를 하나로 잘못 뭉갠다.
+    """
+    a, b = str(tmp_path / 'ds6'), str(tmp_path / 'dsm')
+    out = str(tmp_path / 'out')
+    _make_6tool_like(a)
+    _make_mech83_like(b)
+
+    build([(a, '6tool'), (b, 'mech83')], out, seed=0)
+
+    names = []
+    for split in ('train', 'valid'):
+        names += os.listdir(os.path.join(out, split, 'images'))
+    assert all(('.rf.6tool_' in n) or ('.rf.mech83_' in n) for n in names)
+
+
+def _make_numeric_like(root):
+    """실데이터를 닮은 6자리 숫자 파일명 — 예: 000102_jpg.rf.<해시>.jpg.
+
+    각 파일은 서로 다른 사진(다른 출처)이다. 접두어를 파일명 맨 앞에 붙이면
+    이 숫자 stem 과 합쳐져 source_key 가 전부 하나로 뭉갠다 — 이번에 물린
+    바로 그 함정이다.
+    """
+    _write(os.path.join(root, 'data.yaml'),
+           'names:\n- screwdriver\n- wrench\n- plier\nnc: 3\n')
+    for i in range(5):
+        n = f'{i:06d}'
+        _write(os.path.join(root, 'train/images', f'{n}_jpg.rf.h{i}.jpg'), 'x')
+        _write(os.path.join(root, 'train/labels', f'{n}_jpg.rf.h{i}.txt'),
+               '0 0.5 0.5 0.2 0.2\n')
+
+
+def test_build_output_names_dont_collapse_numeric_sources(tmp_path):
+    """🔴 회귀 — 접두어가 stem 과 합쳐져 서로 다른 출처가 하나로 뭉개지면 안 된다."""
+    import sys as _sys
+    _sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    from dataset_diversity import group_key, source_key
+
+    root = str(tmp_path / 'ds_numeric')
+    out = str(tmp_path / 'out')
+    _make_numeric_like(root)
+
+    build([(root, 'realcam')], out, seed=0)
+
+    sources = set()
+    for split in ('train', 'valid'):
+        img_dir = os.path.join(out, split, 'images')
+        if not os.path.isdir(img_dir):
+            continue
+        for f in os.listdir(img_dir):
+            sources.add(source_key(group_key(f)))
+    assert len(sources) == 5
+
+
+def test_build_raises_when_valid_is_empty(tmp_path):
+    """모든 출처가 거대출처면 valid 가 0장이 될 수 있다 — 빈 시험지로 학습시키지 않는다.
+
+    한 데이터셋에 출처가 하나뿐이고 이미지가 여러 장이면, 그 출처는
+    valid 목표(전체 * valid_ratio)의 50% 를 넘어 통째로 train 으로 간다.
+    """
+    root = str(tmp_path / 'ds_onesource')
+    out = str(tmp_path / 'out')
+    _write(os.path.join(root, 'data.yaml'),
+           'names:\n- screwdriver\n- wrench\n- plier\nnc: 3\n')
+    for n in range(10):
+        _write(os.path.join(root, 'train/images', f'shot_{n}_jpg.rf.h{n}.jpg'), 'x')
+        _write(os.path.join(root, 'train/labels', f'shot_{n}_jpg.rf.h{n}.txt'),
+               '0 0.5 0.5 0.2 0.2\n')
+
+    with pytest.raises(ValueError):
+        build([(root, 'one')], out, seed=0)
