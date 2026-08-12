@@ -123,3 +123,31 @@ def sample_negatives(items, ratio=0.15, seed=0):
     k = min(round(len(positives) * ratio), len(negatives))
     chosen = random.Random(seed).sample(negatives, k) if k else []
     return sorted(positives + chosen, key=lambda i: i.src_img)
+
+
+def split_by_source(items, valid_ratio=0.10, seed=0):
+    """**출처 단위로** train/valid 를 가른다 — 한 출처는 절대 갈라지지 않는다.
+
+    🔴 무작위(이미지 단위) 분할을 쓰면 같은 사진의 증강본·같은 영상의 이웃
+       프레임이 양쪽에 걸려 valid 점수가 거짓 상승한다. ARCAD 에서 물린 것이다.
+
+    ⚠️ valid 목표의 50% 를 넘는 거대 출처는 train 으로 보낸다. 안 그러면
+       valid 가 단일 장면으로 뒤덮혀 ARCAD valid 와 같은 실패가 재현된다.
+    """
+    by_source = collections.defaultdict(list)
+    for it in items:
+        by_source[it.source].append(it)
+
+    target = len(items) * valid_ratio
+    sources = sorted(by_source)
+    random.Random(seed).shuffle(sources)
+
+    assign, n_valid = {}, 0
+    for s in sources:
+        size = len(by_source[s])
+        if n_valid < target and size <= target * 0.5:
+            assign[s] = 'valid'
+            n_valid += size
+        else:
+            assign[s] = 'train'
+    return assign

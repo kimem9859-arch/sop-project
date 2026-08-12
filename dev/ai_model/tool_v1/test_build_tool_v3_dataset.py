@@ -10,6 +10,7 @@ from build_tool_v3_dataset import (
     remap_label_lines,
     sample_negatives,
     scan_dataset,
+    split_by_source,
 )
 
 
@@ -213,3 +214,54 @@ def test_sample_negatives_is_deterministic():
     second = [i.src_img for i in sample_negatives(items, seed=0)]
 
     assert first == second
+
+
+def test_split_by_source_never_splits_a_source():
+    """🔴 이 테스트가 이 작업의 존재 이유다 — 누출은 눈으로 볼 수 없다."""
+    items = []
+    for s in range(50):
+        for n in range(4):          # 한 출처당 4장(이웃 프레임)
+            items.append(_item(f'g{s}_{n}', f'src{s}', f'/p/{s}_{n}.jpg'))
+
+    assign = split_by_source(items, valid_ratio=0.10, seed=0)
+
+    by_source_split = {}
+    for it in items:
+        by_source_split.setdefault(it.source, set()).add(assign[it.source])
+    assert all(len(v) == 1 for v in by_source_split.values())
+
+
+def test_split_by_source_hits_ratio_approximately():
+    items = []
+    for s in range(200):
+        items.append(_item(f'g{s}', f'src{s}', f'/p/{s}.jpg'))
+
+    assign = split_by_source(items, valid_ratio=0.10, seed=0)
+    n_valid = sum(1 for i in items if assign[i.source] == 'valid')
+
+    assert 15 <= n_valid <= 25          # 목표 20장 언저리
+
+
+def test_split_by_source_sends_mega_source_to_train():
+    """한 출처가 valid 를 뒤덮으면 ARCAD valid 와 같은 실패가 재현된다.
+
+    valid 목표의 50% 를 넘는 출처는 train 으로 보낸다.
+    """
+    items = [_item('gbig', 'bigsrc', f'/p/big{n}.jpg') for n in range(60)]
+    items += [_item(f'g{n}', f'src{n}', f'/p/{n}.jpg') for n in range(140)]
+
+    assign = split_by_source(items, valid_ratio=0.10, seed=0)
+
+    assert assign['bigsrc'] == 'train'   # 60장 > 목표 20장의 50%
+
+
+def test_split_by_source_is_deterministic():
+    items = [_item(f'g{n}', f'src{n}', f'/p/{n}.jpg') for n in range(200)]
+
+    assert split_by_source(items, seed=0) == split_by_source(items, seed=0)
+
+
+def test_split_by_source_changes_with_seed():
+    items = [_item(f'g{n}', f'src{n}', f'/p/{n}.jpg') for n in range(200)]
+
+    assert split_by_source(items, seed=0) != split_by_source(items, seed=1)
