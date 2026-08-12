@@ -1,14 +1,32 @@
 """Colab T4 에서 tool_v3 학습 — 6-tool + mech83 병합 데이터.
 
 실행 (파이 터미널에서, 브라우저 불필요):
-    colab run --gpu T4 --keep --timeout 21600 -s v3 train_tool_v3.py
-    colab download -s v3 /content/runs/tool_v3/weights/best.pt \\
-        Rpi5/Demo/models/tool_v3.pt
+    colab new -s v3 --gpu T4
+    colab exec -s v3 -f train_tool_v3.py --timeout 25200
+    colab download -s v3 \\
+        /content/runs/detect/runs/tool_v3/weights/best.pt Rpi5/Demo/models/tool_v3.pt
     colab stop -s v3
 
-⚠️ --keep 없으면 스크립트 종료 즉시 VM 이 반납돼 best.pt 를 못 가져온다.
+🔴 **저장 경로 주의** — ultralytics 가 `project='runs'` 앞에 `runs/detect/` 를 덧붙여
+   실제 위치는 `/content/runs/detect/runs/tool_v3/` 다(2026-08-13 실측). `runs/tool_v3` 가
+   아니다. 못 찾겠으면 `colab ls /content/runs` 부터 훑을 것.
+
+🔴 **1시간 넘는 학습이면 `colab run` 대신 위처럼 `new`+`exec` 를 쓸 것.**
+   ROBOFLOW_API_KEY 를 커널에 미리 주입해야 하는데 `colab run` 은 환경변수를 못 넘긴다:
+       python -c "print('import os;os.environ[\\'ROBOFLOW_API_KEY\\']=' + repr(open(k).read().strip()))" | colab exec -s v3
+
+🔴 **프록시 토큰은 1시간짜리다** — CLI 가 만료된 토큰을 캐시해 그 뒤로 `ls`·`download`·
+   `restart-kernel` 이 전부 404 를 받는다(커널이 바빠서가 아니다). 복구 = 서버 assignment
+   목록에서 새 토큰을 받아 ~/.config/colab-cli/sessions.json 의 token·url 을 갱신:
+       from colab_cli.auth import get_credentials; from colab_cli.client import Client, Prod
+       c = Client(Prod(), get_credentials(cfg, provider='oauth2'))
+       a = [x for x in c.list_assignments() if x.endpoint == <endpoint>][0]
+       a.runtime_proxy_info.token / .url  ← 이 값을 sessions.json 에 써넣는다
+
 ⚠️ --timeout 기본값은 30초다. 반드시 크게 줄 것.
 ⚠️ colab stop 을 빠뜨리면 VM 이 계속 켜져 크레딧을 태운다.
+ℹ️ 학습을 중간에 끊고 가중치만 건지려면 `colab restart-kernel -s v3` — VM·디스크는 살아
+   있어 그때까지의 best.pt 를 그대로 내려받을 수 있다(`colab stop` 은 VM 째 없앤다).
 
 주의: colab run 은 스크립트 한 파일의 내용만 VM 으로 보낸다. 옆 모듈(build_tool_v3_dataset.py)
       은 따라오지 않으므로, 이 스크립트가 실행 중에 repo 를 직접 clone 해야 한다.
