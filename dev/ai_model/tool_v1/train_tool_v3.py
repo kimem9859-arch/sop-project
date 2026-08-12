@@ -66,7 +66,7 @@ def main():
     report = build(roots, OUT_DIR)
     print('[merge]', report)
     # ⚠️ 체크섬 산식(파일명+라벨 내용 해시)이 바뀌면 이 기록값도 갱신해야 한다.
-    print('[merge] 체크섬', report['checksum'], '← 파이 값과 같아야 한다 (π: 89a178c6c0d0e1ec)')
+    print('[merge] 체크섬', report['checksum'], '← 파이 값과 같아야 한다 (π: 4461bd5257eca39d)')
     if report['leaks']:
         sys.exit('🔴 누출 발생 — 학습 중단')
 
