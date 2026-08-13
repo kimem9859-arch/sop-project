@@ -80,14 +80,16 @@ gitignore 환경자산(루트): .poc_venv · poc_data · .syslibs — 머신마�
 
 ### Rpi5 = 별도 repo (파이 런타임 코드)
 
-`github.com/kimem9859-arch/Rpi5.git`, 작업 브랜치 **`feature/fsm-interlock`**(최신 본류). 구 브랜치 정리 완료.
-런타임 맥락은 `Rpi5/CLAUDE.md`에 있다.
+`github.com/kimem9859-arch/Rpi5.git`, 작업 브랜치 **`main`**. 런타임 맥락은 `Rpi5/CLAUDE.md`에 있다.
+
+> 🆕 **2026-08-13 브랜치 단일화** — `feature/glass-ui`·`feature/fsm-interlock`을 `main`으로 fast-forward 병합하고 삭제했다. 갈래가 하나뿐인데 브랜치가 넷이라 **셋업 절차가 41커밋 뒤처진 코드를 받는 상태**였다.
+> **`test-artifacts`는 남긴다** — 코드가 아니라 **측정 원자료 보관소**다(PNG 400·CSV 100·MP4 7, 50MB+). gitignore로 본류에서 뺀 것이라 병합하면 모든 clone이 이를 받는다. 통합문서 §10.8~§10.10이 근거로 인용한다.
 
 ```bash
 # 파이 셋업 (엄브렐러 재현)
 git clone https://github.com/kimem9859-arch/sop-project.git ~/sop-project
 cd ~/sop-project
-git clone -b feature/fsm-interlock https://github.com/kimem9859-arch/Rpi5.git Rpi5
+git clone https://github.com/kimem9859-arch/Rpi5.git Rpi5
 cd ~/sop-project && claude        # 통합문서 + 코드 한자리
 ```
 
@@ -116,5 +118,5 @@ cd ~/sop-project && claude        # 통합문서 + 코드 한자리
 | 증강 스펙 (파랑=저조도 주력·정반사 보험·`hsv_h=0`·기하 ±15°) | `Rpi5/Demo/docs/augmentation_plan.md` |
 | 학습 절차·DFC 변환·albumentations 2.x 인자 함정 | [`dev/ai_model/console_v2_학습가이드.md`](dev/ai_model/console_v2_학습가이드.md) |
 | 측정·원인 분석 (B4 미탐지·정반사·저조도 B3 사멸·파랑 스티커) | 통합문서 §10.5~§10.17 |
-| 트랙 A 인터락 코드·전장 E2E·EMO 해제 결함 | 통합문서 §12 · Rpi5 `feature/fsm-interlock` · [`dev/interlock/README.md`](dev/interlock/README.md) |
+| 트랙 A 인터락 코드·전장 E2E·EMO 해제 결함 | 통합문서 §12 · Rpi5 `main` · [`dev/interlock/README.md`](dev/interlock/README.md) |
 | 목적 프레이밍 B·발표 역반영 | 통합문서 §1·§3 (발표자료는 데스크톱 보관, repo 미포함) |
