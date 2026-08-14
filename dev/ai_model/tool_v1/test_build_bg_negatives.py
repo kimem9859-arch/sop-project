@@ -22,13 +22,14 @@ import cv2
 
 from build_bg_negatives import pick_frames, build_to_dir
 
-_fails = []
-
-
 def check(cond, msg):
+    """🔴 assert 로 올린다 — 이 디렉터리는 pytest 로 돈다.
+
+    실패를 리스트에 모으기만 하면 **pytest 가 "passed" 로 보고한다**(실측 확인,
+    2026-08-14). 조용한 실패는 이 프로젝트가 반복해서 물린 유형이다.
+    """
     print(("  ✅ " if cond else "  ❌ ") + msg)
-    if not cond:
-        _fails.append(msg)
+    assert cond, msg
 
 
 SPLIT = {
@@ -210,9 +211,5 @@ if __name__ == "__main__":
 
     elapsed = time.time() - t0
     print()
-    if _fails:
-        print(f"❌ 실패 {len(_fails)}건")
-        for m in _fails:
-            print(f"   - {m}")
-        sys.exit(1)
     print(f"✅ 배경 네거티브 샘플러 검증 통과 ({elapsed:.3f}s)")
+    print("※ 정본 실행은 pytest 다: ~/rfenv/bin/python -m pytest test_build_bg_negatives.py")

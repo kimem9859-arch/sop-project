@@ -17,13 +17,14 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from tool_falsepos import frame_rate, per_class
 
-_fails = []
-
-
 def check(cond, msg):
+    """🔴 assert 로 올린다 — 이 디렉터리는 pytest 로 돈다.
+
+    실패를 리스트에 모으기만 하면 **pytest 가 "passed" 로 보고한다**(실측 확인,
+    2026-08-14). 조용한 실패는 이 프로젝트가 반복해서 물린 유형이다.
+    """
     print(("  ✅ " if cond else "  ❌ ") + msg)
-    if not cond:
-        _fails.append(msg)
+    assert cond, msg
 
 
 # 한 프레임의 검출 = [(클래스명, 점수), ...]. 세션 = 프레임의 리스트.
@@ -95,12 +96,8 @@ if __name__ == "__main__":
 
     elapsed = time.time() - t0
     print()
-    if _fails:
-        print(f"❌ 실패 {len(_fails)}건")
-        for m in _fails:
-            print(f"   - {m}")
-        sys.exit(1)
     if elapsed > 1.0:
         print(f"❌ 느림 {elapsed:.1f}s — 모델을 올리고 있는 것 아닌가")
         sys.exit(1)
     print(f"✅ 측정 도구 검증 통과 ({elapsed:.3f}s)")
+    print("※ 정본 실행은 pytest 다: ~/rfenv/bin/python -m pytest test_tool_falsepos.py")
