@@ -163,18 +163,35 @@ def pick_one_per_group(items):
     return sorted(best.values(), key=lambda i: i.src_img)
 
 
-def sample_negatives(items, ratio=0.15, seed=0):
+def sample_negatives(items, ratio=0.15, seed=0, keep_all_prefixes=()):
     """양성은 전부, 네거티브는 양성 수의 ratio 만큼만 남긴다.
 
     왜 섞나: tool_v2 가 **빈 바닥을 conf 0.78 로 오검출**했다(§10.38-(4)).
     왜 상한: 네거티브가 과반이면 모델이 보수적으로 변해 재현율이 떨어진다.
+
+    🆕 `keep_all_prefixes`(2026-08-14) — 그 `dataset` 접두어의 네거티브는
+       **샘플링에서 빼고 전량 유지**한다.
+
+       왜 필요한가: 우리 작업환경 배경을 하드 네거티브로 넣으려는데, 그냥 소스로
+       추가하면 공개 데이터셋 네거티브와 **한 풀에 섞여 비율만큼만 뽑힌다.**
+       현재 네거티브 3,888장은 `round(양성×0.15)` 상한에 정확히 걸린 값이라
+       **공개 네거티브 후보가 그보다 많고**(2026-08-14 확인), 따라서 ratio 만
+       올려서는 우리 배경이 원하는 만큼 들어가지 않는다.
+       설계 = ../../../docs/superpowers/specs/2026-08-14-네거티브보강-design.md
+
+       ⚠️ 이 소스의 네거티브는 상한 계산에서도 빠진다 — 전량 유지가 목적이므로
+          k 를 그만큼 줄이지 않는다. 총 네거티브 비율이 ratio 를 넘게 되며,
+          그것이 의도다.
     """
+    keep = set(keep_all_prefixes)
     positives = [i for i in items if i.positive]
-    negatives = sorted((i for i in items if not i.positive),
-                       key=lambda i: i.src_img)
-    k = min(round(len(positives) * ratio), len(negatives))
-    chosen = random.Random(seed).sample(negatives, k) if k else []
-    return sorted(positives + chosen, key=lambda i: i.src_img)
+    kept = sorted((i for i in items if not i.positive and i.dataset in keep),
+                  key=lambda i: i.src_img)
+    pool = sorted((i for i in items if not i.positive and i.dataset not in keep),
+                  key=lambda i: i.src_img)
+    k = min(round(len(positives) * ratio), len(pool))
+    chosen = random.Random(seed).sample(pool, k) if k else []
+    return sorted(positives + kept + chosen, key=lambda i: i.src_img)
 
 
 def split_by_source(items, valid_ratio=0.10, seed=0):
@@ -210,7 +227,8 @@ def split_by_source(items, valid_ratio=0.10, seed=0):
     return assign
 
 
-def build(roots, out_dir, neg_ratio=0.15, valid_ratio=0.10, seed=0):
+def build(roots, out_dir, neg_ratio=0.15, valid_ratio=0.10, seed=0,
+          keep_all_prefixes=()):
     """전 과정을 조립해 병합 데이터셋을 디스크에 쓴다.
 
     roots = [(데이터셋_루트, 접두어), ...]
@@ -263,7 +281,8 @@ def build(roots, out_dir, neg_ratio=0.15, valid_ratio=0.10, seed=0):
                 'unmapped_negatives': info['unmapped_negatives'],
             }
 
-    items = sample_negatives(items, ratio=neg_ratio, seed=seed)
+    items = sample_negatives(items, ratio=neg_ratio, seed=seed,
+                             keep_all_prefixes=keep_all_prefixes)
     assign = split_by_source(items, valid_ratio=valid_ratio, seed=seed)
 
     # 🔴 디스크에 아무것도 쓰기 전에 확인한다 — 나중에 검사하면 가드가
@@ -375,19 +394,40 @@ def build(roots, out_dir, neg_ratio=0.15, valid_ratio=0.10, seed=0):
 
 def main(argv):
     if len(argv) < 3:
-        sys.exit('사용: python build_tool_v3_dataset.py <출력경로> <데이터셋:접두어> ...\n'
+        sys.exit('사용: python build_tool_v3_dataset.py <출력경로> <데이터셋:접두어> ... '
+                 '[--keep-all <접두어>]\n'
                  '예)  python build_tool_v3_dataset.py ~/ds_tool_v3 '
-                 '~/ds_6tool:6tool ~/ds_mech83:mech83')
+                 '~/ds_6tool:6tool ~/ds_mech83:mech83\n'
+                 '     python build_tool_v3_dataset.py ~/ds_tool_v4 '
+                 '~/ds_6tool:6tool ~/ds_mech83:mech83 ~/ds_bg_neg:bg --keep-all bg\n'
+                 '\n--keep-all <접두어> : 그 소스의 네거티브를 샘플링 없이 전량 넣는다.\n'
+                 '                      (하드 네거티브용 — 사유는 sample_negatives docstring)')
     out_dir = os.path.expanduser(argv[1])
     roots = []
-    for spec in argv[2:]:
+    keep_all = []
+    rest = list(argv[2:])
+    # 🆕 --keep-all <접두어> — 그 소스의 네거티브를 샘플링 없이 전량 넣는다.
+    #    (우리 배경 하드 네거티브용. 사유는 sample_negatives docstring)
+    while '--keep-all' in rest:
+        i = rest.index('--keep-all')
+        if i + 1 >= len(rest):
+            sys.exit('--keep-all 뒤에 접두어가 필요합니다')
+        keep_all.append(rest[i + 1])
+        del rest[i:i + 2]
+
+    for spec in rest:
         path, _, prefix = spec.rpartition(':')
         if not path or not prefix:
             sys.exit(f'형식이 <경로:접두어> 가 아닙니다(접두어는 비울 수 없음): {spec}')
         roots.append((path, prefix))
 
+    unknown = [p for p in keep_all if p not in {pr for _pa, pr in roots}]
+    if unknown:
+        sys.exit(f'🔴 --keep-all 접두어가 소스에 없습니다: {unknown} '
+                 f'(소스 접두어: {sorted(pr for _pa, pr in roots)})')
+
     try:
-        report = build(roots, out_dir)
+        report = build(roots, out_dir, keep_all_prefixes=tuple(keep_all))
     except ValueError as e:
         sys.exit(str(e))
 

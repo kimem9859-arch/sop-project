@@ -184,12 +184,72 @@ def test_scan_dataset_is_deterministic(tmp_path):
     assert first == second
 
 
-def _item(group, source, img, positive=True):
+def _item(group, source, img, positive=True, dataset=None):
     return __import__('build_tool_v3_dataset').Item(
         group=group, source=source, src_img=img,
         lines=['0 0.5 0.5 0.1 0.1'] if positive else [],
-        positive=positive,
+        positive=positive, dataset=dataset,
     )
+
+
+# --------------------------------------------------------- keep_all_prefixes
+# 🆕 2026-08-14 — 우리 배경 하드 네거티브(A-2 후속). 설계 =
+#    ../../../docs/superpowers/specs/2026-08-14-네거티브보강-design.md
+def test_keep_all_은_그_소스를_샘플링에서_뺀다():
+    """🔴 우리 배경이 공개 네거티브 풀에 섞여 잘리면 안 된다.
+
+    현재 네거티브 3,888장은 round(양성×0.15) 상한에 정확히 걸린 값이라
+    **공개 데이터셋 네거티브 후보가 그보다 많다**(2026-08-14 확인). 그래서
+    ratio 만 올리면 우리 배경이 그 풀에 섞여 원하는 만큼 안 들어간다.
+    """
+    items = [_item(f'g{n}', f's{n}', f'/p/{n}.jpg', dataset='6tool')
+             for n in range(100)]
+    items += [_item(f'n{n}', f'ns{n}', f'/p/neg{n}.jpg', positive=False,
+                    dataset='6tool') for n in range(50)]
+    items += [_item(f'b{n}', f'bs{n}', f'/p/bg{n}.jpg', positive=False,
+                    dataset='bg') for n in range(30)]
+
+    out = sample_negatives(items, ratio=0.15, seed=0, keep_all_prefixes=('bg',))
+
+    assert sum(1 for i in out if i.dataset == 'bg') == 30, 'bg 는 30장 전량 유지'
+    assert sum(1 for i in out if i.dataset == '6tool' and not i.positive) == 15, \
+        '나머지는 종전대로 round(100 × 0.15) = 15'
+    assert sum(1 for i in out if i.positive) == 100, '양성은 전부'
+
+
+def test_keep_all_없으면_종전과_한장도_다르지_않다():
+    """회귀 방지 — 옵션을 안 주면 지금 동작 그대로여야 한다."""
+    items = [_item(f'g{n}', f's{n}', f'/p/{n}.jpg', dataset='6tool')
+             for n in range(20)]
+    items += [_item(f'n{n}', f'ns{n}', f'/p/neg{n}.jpg', positive=False,
+                    dataset='6tool') for n in range(20)]
+
+    before = [i.src_img for i in sample_negatives(items, ratio=0.15, seed=0)]
+    after = [i.src_img for i in sample_negatives(items, ratio=0.15, seed=0,
+                                                 keep_all_prefixes=())]
+    assert before == after
+
+
+def test_keep_all_은_양성을_건드리지_않는다():
+    """bg 소스에 양성이 섞여 들어와도 네거티브 취급을 하지 않는다."""
+    items = [_item('g', 's', '/p/pos.jpg', dataset='bg'),
+             _item('n', 'ns', '/p/neg.jpg', positive=False, dataset='bg')]
+    out = sample_negatives(items, ratio=0.15, seed=0, keep_all_prefixes=('bg',))
+    assert len(out) == 2
+    assert sum(1 for i in out if i.positive) == 1
+
+
+def test_keep_all_결과도_결정적():
+    items = [_item(f'g{n}', f's{n}', f'/p/{n}.jpg', dataset='6tool')
+             for n in range(40)]
+    items += [_item(f'n{n}', f'ns{n}', f'/p/neg{n}.jpg', positive=False,
+                    dataset='6tool') for n in range(40)]
+    items += [_item(f'b{n}', f'bs{n}', f'/p/bg{n}.jpg', positive=False,
+                    dataset='bg') for n in range(10)]
+
+    a = [i.src_img for i in sample_negatives(items, 0.15, 0, ('bg',))]
+    b = [i.src_img for i in sample_negatives(items, 0.15, 0, ('bg',))]
+    assert a == b
 
 
 def test_pick_one_per_group_keeps_exactly_one(tmp_path):
