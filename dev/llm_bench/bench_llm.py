@@ -26,9 +26,14 @@ import urllib.request
 HOST = "http://127.0.0.1:11434"
 
 MODELS = [
+    # 1차 (2026-08-15) — Gemma 계열, 전부 QAT 양자화로 통일
     "gemma3:1b-it-qat",
     "gemma3:4b-it-qat",
     "gemma4:e2b-it-qat",
+    # 2차 (2026-08-16) — 온디바이스 설계 모델로 후보 확대
+    "LiquidAI/lfm2.5-1.2b-instruct",
+    "qwen3.5:0.8b",
+    "qwen3.5:2b",
 ]
 
 # num_ctx 를 기본값(128K)으로 두면 KV 캐시가 RAM 을 삼켜 OOM 이 난다.
@@ -105,18 +110,31 @@ def unload(model):
     time.sleep(3)
 
 
+# 🔴 Qwen3.5 등은 「thinking」(추론 과정을 토큰으로 뱉는) 모드가 기본이다.
+#    켜두면 생각 과정이 생성 토큰에 섞여 **다른 모델과 비교가 성립하지 않는다**
+#    (토큰 수·완료 시간이 몇 배로 뛴다). 끄고 잰다.
+#    thinking 을 모르는 모델은 이 필드를 거부하므로, 거부하면 빼고 재시도한다.
+_NO_THINK_FIELD = set()
+
+
 def generate(model, prompt):
     ns = 1_000_000.0  # ns → ms
-    r = _post(
-        "/api/generate",
-        {
-            "model": model,
-            "system": SYSTEM,
-            "prompt": prompt,
-            "stream": False,
-            "options": OPTIONS,
-        },
-    )
+    body = {
+        "model": model,
+        "system": SYSTEM,
+        "prompt": prompt,
+        "stream": False,
+        "options": OPTIONS,
+    }
+    if model not in _NO_THINK_FIELD:
+        body["think"] = False
+    try:
+        r = _post("/api/generate", body)
+    except urllib.error.HTTPError:
+        # 이 모델은 think 필드를 모른다 — 빼고 재시도하고, 이후로는 안 붙인다.
+        _NO_THINK_FIELD.add(model)
+        body.pop("think", None)
+        r = _post("/api/generate", body)
     load_ms = r.get("load_duration", 0) / ns
     prefill_ms = r.get("prompt_eval_duration", 0) / ns
     eval_ms = r.get("eval_duration", 0) / ns
