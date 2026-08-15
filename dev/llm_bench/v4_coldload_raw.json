@@ -1,0 +1,77 @@
+{
+  "measured_at": "2026-08-15T18:21:59+0900",
+  "models": [
+    {
+      "model": "gemma3:1b-it-qat",
+      "cold_loads": [
+        {
+          "load_ms": 13061.2,
+          "wall_ms": 15249.1
+        },
+        {
+          "load_ms": 13062.6,
+          "wall_ms": 15251.3
+        },
+        {
+          "load_ms": 13109.6,
+          "wall_ms": 15414.9
+        }
+      ],
+      "ps": "NAME                ID              SIZE      PROCESSOR    CONTEXT    UNTIL              \ngemma3:1b-it-qat    b491bd3989c6    1.1 GB    100% CPU     2048       4 minutes from now",
+      "mem_available_while_loaded_b": 6641074176,
+      "load_ms_median": 13062.6,
+      "load_ms_range": [
+        13061.2,
+        13109.6
+      ]
+    },
+    {
+      "model": "gemma3:4b-it-qat",
+      "cold_loads": [
+        {
+          "load_ms": 45954.3,
+          "wall_ms": 52367.2
+        },
+        {
+          "load_ms": 45943.3,
+          "wall_ms": 52362.5
+        },
+        {
+          "load_ms": 46181.9,
+          "wall_ms": 52573.5
+        }
+      ],
+      "ps": "NAME                ID              SIZE      PROCESSOR    CONTEXT    UNTIL              \ngemma3:4b-it-qat    d01ad0579247    3.5 GB    100% CPU     2048       4 minutes from now",
+      "mem_available_while_loaded_b": 3428384768,
+      "load_ms_median": 45954.3,
+      "load_ms_range": [
+        45943.3,
+        46181.9
+      ]
+    },
+    {
+      "model": "gemma4:e2b-it-qat",
+      "cold_loads": [
+        {
+          "load_ms": 51045.6,
+          "wall_ms": 57591.9
+        },
+        {
+          "load_ms": 51324.6,
+          "wall_ms": 57778.9
+        },
+        {
+          "load_ms": 51121.9,
+          "wall_ms": 57530.2
+        }
+      ],
+      "ps": "NAME                 ID              SIZE      PROCESSOR    CONTEXT    UNTIL              \ngemma4:e2b-it-qat    07ea59a47401    3.9 GB    100% CPU     2048       4 minutes from now",
+      "mem_available_while_loaded_b": 2920628224,
+      "load_ms_median": 51121.9,
+      "load_ms_range": [
+        51045.6,
+        51324.6
+      ]
+    }
+  ]
+}
