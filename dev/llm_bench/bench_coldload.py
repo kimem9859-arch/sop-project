@@ -19,6 +19,9 @@ import urllib.request
 sys.path.insert(0, "/home/pi")
 from bench_llm import HOST, MODELS, OPTIONS, PROMPTS, SYSTEM, _post, _sh, unload
 
+# ⚠️ 여기서는 `think` 를 끄지 않는다 — 재는 값이 `load_duration`(적재 시간)뿐이고
+#    thinking 여부는 적재 시간에 영향을 주지 않는다.
+
 REPEATS = 3  # 🔴 단일 값 금지
 
 
@@ -44,8 +47,13 @@ def cold_load(model):
 
 
 def main():
+    import argparse
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--models", nargs="*", default=MODELS)
+    ap.add_argument("--out", default="/home/pi/v4_coldload.json")
+    a = ap.parse_args()
     out = {"measured_at": time.strftime("%Y-%m-%dT%H:%M:%S%z"), "models": []}
-    for m in MODELS:
+    for m in a.models:
         print(f"\n### {m}", flush=True)
         rec = {"model": m, "cold_loads": []}
         for i in range(REPEATS):
@@ -63,9 +71,9 @@ def main():
         unload(m)
         out["models"].append(rec)
 
-    with open("/home/pi/v4_coldload.json", "w") as f:
+    with open(a.out, "w") as f:
         json.dump(out, f, ensure_ascii=False, indent=2)
-    print("\n저장: /home/pi/v4_coldload.json", flush=True)
+    print(f"\n저장: {a.out}", flush=True)
 
 
 if __name__ == "__main__":

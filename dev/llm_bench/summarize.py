@@ -20,11 +20,24 @@ def med(xs):
 
 
 def load(paths):
-    models = []
+    """뒤에 온 파일이 이긴다 — 같은 모델을 재측정했으면 나중 것이 유효하다."""
+    by_name = {}
     for p in paths:
-        d = json.load(open(p))
-        models += d["models"]
-    return models
+        for m in json.load(open(p))["models"]:
+            by_name[m["model"]] = m
+    return list(by_name.values())
+
+
+def invalidate_empty(m):
+    """🔴 응답이 전부 비어 있으면 측정이 무효다.
+
+    thinking 모델을 `think` 를 끄지 않고 재면 생성 예산을 생각 과정이 다 먹고
+    **답변이 0글자**로 나온다(gemma4:e2b 에서 실제로 물렸다). 속도표만 보면
+    「빠른 모델」로 남으므로 여기서 걸러 낸다.
+    """
+    if m.get("runs") and all(not r["response"].strip() for r in m["runs"]):
+        m["error"] = "응답 0글자 — thinking 소진 의심. 측정 무효(think 끄고 재측정할 것)"
+    return m
 
 
 def main():
@@ -34,7 +47,7 @@ def main():
     ap.add_argument("--responses", action="store_true")
     args = ap.parse_args()
 
-    models = load(args.results)
+    models = [invalidate_empty(m) for m in load(args.results)]
     cold = {m["model"]: m for m in load(args.cold)} if args.cold else {}
 
     rows = []

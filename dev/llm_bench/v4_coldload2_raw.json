@@ -1,0 +1,77 @@
+{
+  "measured_at": "2026-08-15T20:58:17+0900",
+  "models": [
+    {
+      "model": "LiquidAI/lfm2.5-1.2b-instruct",
+      "cold_loads": [
+        {
+          "load_ms": 9607.0,
+          "wall_ms": 11629.4
+        },
+        {
+          "load_ms": 9611.0,
+          "wall_ms": 11748.8
+        },
+        {
+          "load_ms": 9547.2,
+          "wall_ms": 11615.3
+        }
+      ],
+      "ps": "NAME                                    ID              SIZE      PROCESSOR    CONTEXT    UNTIL              \nLiquidAI/lfm2.5-1.2b-instruct:latest    e0b3029914da    929 MB    100% CPU     2048       4 minutes from now",
+      "mem_available_while_loaded_b": 6736347136,
+      "load_ms_median": 9607.0,
+      "load_ms_range": [
+        9547.2,
+        9611.0
+      ]
+    },
+    {
+      "model": "qwen3.5:0.8b",
+      "cold_loads": [
+        {
+          "load_ms": 15708.1,
+          "wall_ms": 19963.2
+        },
+        {
+          "load_ms": 15459.0,
+          "wall_ms": 19697.2
+        },
+        {
+          "load_ms": 15494.9,
+          "wall_ms": 19742.2
+        }
+      ],
+      "ps": "NAME            ID              SIZE      PROCESSOR    CONTEXT    UNTIL              \nqwen3.5:0.8b    f3817196d142    1.3 GB    100% CPU     2048       4 minutes from now",
+      "mem_available_while_loaded_b": 6156435456,
+      "load_ms_median": 15494.9,
+      "load_ms_range": [
+        15459.0,
+        15708.1
+      ]
+    },
+    {
+      "model": "qwen3.5:2b",
+      "cold_loads": [
+        {
+          "load_ms": 35585.2,
+          "wall_ms": 45325.3
+        },
+        {
+          "load_ms": 34819.3,
+          "wall_ms": 44600.3
+        },
+        {
+          "load_ms": 35285.0,
+          "wall_ms": 45049.4
+        }
+      ],
+      "ps": "NAME          ID              SIZE      PROCESSOR    CONTEXT    UNTIL              \nqwen3.5:2b    324d162be6ca    2.9 GB    100% CPU     2048       4 minutes from now",
+      "mem_available_while_loaded_b": 4197351424,
+      "load_ms_median": 35285.0,
+      "load_ms_range": [
+        34819.3,
+        35585.2
+      ]
+    }
+  ]
+}
