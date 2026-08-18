@@ -267,4 +267,4 @@ python3 test/dwell_probe.py test/raw/<세션> [--dwell 0.5] [--gap-fill 0.3] [--
 ## 8. 산출물
 
 - `Rpi5/Demo/test/hoi_probe.py` — 실증 프로브(단일/배치/시각화/FPS). 런타임 코드 미변경
-- 모델·앱: `~/hoi_probe/`(repo 밖, 재현은 이 문서의 URL로)
+- 모델·앱: `~/lab/hoi/`(repo 밖, 재현은 이 문서의 URL로)

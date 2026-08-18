@@ -396,10 +396,10 @@ def main(argv):
     if len(argv) < 3:
         sys.exit('사용: python build_tool_v3_dataset.py <출력경로> <데이터셋:접두어> ... '
                  '[--keep-all <접두어>]\n'
-                 '예)  python build_tool_v3_dataset.py ~/ds_tool_v3 '
-                 '~/ds_6tool:6tool ~/ds_mech83:mech83\n'
-                 '     python build_tool_v3_dataset.py ~/ds_tool_v4 '
-                 '~/ds_6tool:6tool ~/ds_mech83:mech83 ~/ds_bg_neg:bg --keep-all bg\n'
+                 '예)  python build_tool_v3_dataset.py ~/data/ds_tool_v3 '
+                 '~/data/ds_6tool:6tool ~/data/ds_mech83:mech83\n'
+                 '     python build_tool_v3_dataset.py ~/data/ds_tool_v4 '
+                 '~/data/ds_6tool:6tool ~/data/ds_mech83:mech83 ~/data/ds_bg_neg:bg --keep-all bg\n'
                  '\n--keep-all <접두어> : 그 소스의 네거티브를 샘플링 없이 전량 넣는다.\n'
                  '                      (하드 네거티브용 — 사유는 sample_negatives docstring)')
     out_dir = os.path.expanduser(argv[1])

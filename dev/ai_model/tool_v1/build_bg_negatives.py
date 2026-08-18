@@ -23,7 +23,7 @@
    §10.40 이 파이·Colab 체크섬 일치로 실증한 재현성을 같은 방식으로 지킨다.
 
 사용법:
-    ~/rfenv/bin/python build_bg_negatives.py <출력경로> <raw루트> <split.json> \
+    ~/env/rfenv/bin/python build_bg_negatives.py <출력경로> <raw루트> <split.json> \
         [--per-session 38]
 """
 
@@ -126,8 +126,8 @@ def main(argv=None):
     print(f'■ 체크섬 {h.hexdigest()[:16]}')
     print(f'■ 출력 {out_dir}')
     print('\n다음: build_tool_v3_dataset.py 에 소스로 넘긴다')
-    print(f'  ~/rfenv/bin/python build_tool_v3_dataset.py ~/ds_tool_v4 \\')
-    print(f'      ~/ds_6tool:6tool ~/ds_mech83:mech83 {out_dir}:bg --keep-all bg')
+    print(f'  ~/env/rfenv/bin/python build_tool_v3_dataset.py ~/data/ds_tool_v4 \\')
+    print(f'      ~/data/ds_6tool:6tool ~/data/ds_mech83:mech83 {out_dir}:bg --keep-all bg')
     return 0
 
 

@@ -3,7 +3,7 @@
 왜 있나: 클래스 인덱스가 한 칸 밀려도 테스트는 전부 통과한다. 드라이버에
 `pliers` 박스가 붙은 것은 사람 눈으로만 잡힌다. 학습 전 마지막 관문.
 
-사용: python preview_labels.py ~/ds_tool_v3 ~/tool_v3_preview [20] [0]
+사용: python preview_labels.py ~/data/ds_tool_v3 ~/lab/tool-detect/tool_v3_preview [20] [0]
 """
 import glob
 import os

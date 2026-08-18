@@ -12,13 +12,13 @@
    공구 모델은 `rfenv` + `ultralytics` 경로이므로 `tool_live.py`·`tool_worker.py`
    와 같은 스택으로 만든다.
 
-⚠️ **실행 환경** — 파이 기본 Python 3.13 에는 ultralytics 가 없다. `~/rfenv` 로 돌린다:
-       ~/rfenv/bin/python tool_falsepos.py --model <pt> --conf 0.65 <세션경로...>
+⚠️ **실행 환경** — 파이 기본 Python 3.13 에는 ultralytics 가 없다. `~/env/rfenv` 로 돌린다:
+       ~/env/rfenv/bin/python tool_falsepos.py --model <pt> --conf 0.65 <세션경로...>
 
 🔴 **임계는 인자로 받는다.** 하드코딩하면 config 가 바뀌어도 도구가 안 따라간다.
 
 사용 예:
-    ~/rfenv/bin/python tool_falsepos.py \
+    ~/env/rfenv/bin/python tool_falsepos.py \
         --model ~/sop-project/Rpi5/Demo/models/tool_v3.pt --conf 0.65 \
         --every 20 --out ~/baseline.csv \
         ~/sop-project/Rpi5/Demo/test/raw/2026*_esp32_*

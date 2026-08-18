@@ -1,6 +1,6 @@
 """배경 네거티브 샘플러 검증.
 
-실행: ~/rfenv/bin/python test_build_bg_negatives.py
+실행: ~/env/rfenv/bin/python test_build_bg_negatives.py
 
 정본: ../../../docs/superpowers/specs/2026-08-14-네거티브보강-design.md §3.1·§5
 
@@ -212,4 +212,4 @@ if __name__ == "__main__":
     elapsed = time.time() - t0
     print()
     print(f"✅ 배경 네거티브 샘플러 검증 통과 ({elapsed:.3f}s)")
-    print("※ 정본 실행은 pytest 다: ~/rfenv/bin/python -m pytest test_build_bg_negatives.py")
+    print("※ 정본 실행은 pytest 다: ~/env/rfenv/bin/python -m pytest test_build_bg_negatives.py")

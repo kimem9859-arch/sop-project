@@ -2,13 +2,13 @@
 
 정본: ../../../docs/superpowers/specs/2026-08-14-네거티브보강-design.md §5
 
-실행: ~/rfenv/bin/python sessions_split.py > sessions_split.json
+실행: ~/env/rfenv/bin/python sessions_split.py > sessions_split.json
 
 🔴 **이 판정은 자동이 아니다.** 아래 두 단계를 거쳐 사람이 확정한 결과를 박아 둔 것이며,
    스크립트는 그 결과를 JSON 으로 내보내는 일만 한다.
 
 선별 절차 (2026-08-14 실시)
-    ① 세션당 3장을 붙인 대조표를 만들어 눈으로 훑음(`~/neg_screening/`)
+    ① 세션당 3장을 붙인 대조표를 만들어 눈으로 훑음(`~/lab/neg-screening/`)
     ② `tool_falsepos.py` 로 **53세션 전량**을 `every 20`·conf 0.65 로 자동 스캔하고,
        걸린 프레임을 **전부 눈으로 확인**
        → 980장 중 5장만 검출(0.5%). 그중

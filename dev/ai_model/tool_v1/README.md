@@ -33,7 +33,7 @@
 #   ⚠️ 파이 기본 Python 3.13 에는 못 깐다(§10.35-(7) 함정과 동일)
 yolo predict model=Rpi5/Demo/models/tool_v1.pt \
   source=Rpi5/Demo/test/raw/20260810_154055_esp32_tools-baseline_console_v2/ \
-  conf=0.65 save=True project=~/tool_eyeball name=v1
+  conf=0.65 save=True project=~/lab/tool-detect/tool_eyeball name=v1
 ```
 
 **결과 = 미달**(수치·해석 정본 = §10.37). 요약: 재현율 6.9%(conf 0.65, 25/360) · 오픈엔드 스패너를 `spanner`로 일관 오분류(정답 0/7) · **위치 검출은 정상** · 드라이버 분류는 정상.
@@ -68,7 +68,7 @@ ARCAD 5,203장은 실질적으로 **출처 118개**였다 — 3클래스가 **�
 
 **절차**: ①클래스명 정규화·3종 병합 ②네거티브(공구 없는 배경) 15% 혼합 ③**출처 단위 재분할**(누출 제거) ④산출물 기준 누출 재계산·체크섬 ⑤`dataset_diversity.py` 관문 통과 확인 ⑥라벨 눈확인(`preview_labels.py`).
 
-`build_tool_v3_dataset.py`(도구)로 실행 — `~/ds_tool_v3`(약 3만 장, train/valid 분할)가 결과물이다. 학습은 아직 **미실행**(`train_tool_v3.py` 는 작성만 됨). 규모·관문 통과 여부의 정확한 수치는 통합문서 §10 참조.
+`build_tool_v3_dataset.py`(도구)로 실행 — `~/data/ds_tool_v3`(약 3만 장, train/valid 분할)가 결과물이다. 학습은 아직 **미실행**(`train_tool_v3.py` 는 작성만 됨). 규모·관문 통과 여부의 정확한 수치는 통합문서 §10 참조.
 
 ### 🔴 병합 과정에서 새로 밝혀진 함정
 
@@ -87,13 +87,13 @@ ARCAD 5,203장은 실질적으로 **출처 118개**였다 — 3클래스가 **�
 
 | 경로 | 내용 |
 |---|---|
-| **`~/rfenv`** | **Python 3.12 + torch(CPU) + ultralytics + inference.** 파이 기본 3.13 엔 못 깔아서 만든 것(§10.35-(7)). `~/rfenv/bin/python <스크립트>` 로 쓴다 |
-| `~/ds_6tool` · `~/ds_mech83` | **주력 데이터셋 2종** (출처 5,762 · 4,026) |
-| `~/ds_vsisj` | 3순위 보강재 (164클래스 → 3종 병합 필요, 미사용) |
-| **`~/ds_tool_v3`** | **`6-tool` + `mech83` 병합본**(약 3만 장, train/valid 분할, 관문 통과·체크섬 기록됨) — 학습 입력 |
-| `~/tool_v3_preview` | `preview_labels.py` 눈확인 오버레이(20장) — 병합본 라벨 육안 검수용 |
-| `~/tool_research/` | `classes.json`(**23개 데이터셋 클래스 원자료**) · `preds_*.json`(측정 기록 9종) |
-| `~/tool_eyeball*` · `~/tool_live_shots*` | §10.37·§10.38 판정 근거 오버레이 |
+| **`~/env/rfenv`** | **Python 3.12 + torch(CPU) + ultralytics + inference.** 파이 기본 3.13 엔 못 깔아서 만든 것(§10.35-(7)). `~/env/rfenv/bin/python <스크립트>` 로 쓴다 |
+| `~/data/ds_6tool` · `~/data/ds_mech83` | **주력 데이터셋 2종** (출처 5,762 · 4,026) |
+| `~/data/ds_vsisj` | 3순위 보강재 (164클래스 → 3종 병합 필요, 미사용) |
+| **`~/data/ds_tool_v3`** | **`6-tool` + `mech83` 병합본**(약 3만 장, train/valid 분할, 관문 통과·체크섬 기록됨) — 학습 입력 |
+| `~/lab/tool-detect/tool_v3_preview` | `preview_labels.py` 눈확인 오버레이(20장) — 병합본 라벨 육안 검수용 |
+| `~/lab/tool-detect/tool_research/` | `classes.json`(**23개 데이터셋 클래스 원자료**) · `preds_*.json`(측정 기록 9종) |
+| `~/lab/tool-detect/tool_eyeball*` · `~/lab/tool-detect/tool_live_shots*` | §10.37·§10.38 판정 근거 오버레이 |
 | `Rpi5/Demo/models/tool_v1.pt`·`tool_v2.pt` | 폐기된 모델(gitignore) — 비교 기준선으로 보존 |
 
 > ⛔ ARCAD(`~/arcad_v9`)·`~/ds_mmmxd`·`~/ds_hmqnl` 은 **삭제했다**(2026-08-12, 4GB 회수). 판정 근거는 §10.39 에 남아 있고 필요하면 몇 분이면 다시 받는다.

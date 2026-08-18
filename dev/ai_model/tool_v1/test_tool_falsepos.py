@@ -1,6 +1,6 @@
 """오검출·검출 프레임률 측정 도구 검증.
 
-실행: ~/rfenv/bin/python test_tool_falsepos.py
+실행: ~/env/rfenv/bin/python test_tool_falsepos.py
 
 정본: ../../../docs/superpowers/specs/2026-08-14-네거티브보강-design.md §4
 
@@ -100,4 +100,4 @@ if __name__ == "__main__":
         print(f"❌ 느림 {elapsed:.1f}s — 모델을 올리고 있는 것 아닌가")
         sys.exit(1)
     print(f"✅ 측정 도구 검증 통과 ({elapsed:.3f}s)")
-    print("※ 정본 실행은 pytest 다: ~/rfenv/bin/python -m pytest test_tool_falsepos.py")
+    print("※ 정본 실행은 pytest 다: ~/env/rfenv/bin/python -m pytest test_tool_falsepos.py")
