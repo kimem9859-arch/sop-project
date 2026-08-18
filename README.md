@@ -23,6 +23,7 @@
 | Claude Code 인프라 이력 | [`docs/claude-code-작업로그.md`](docs/claude-code-작업로그.md) |
 | 훅 구성·작업 방식·훅 설계 원칙 | [`docs/claude-code-작업문서.md`](docs/claude-code-작업문서.md) |
 | **작업 규칙·금지·함정** | [`CLAUDE.md`](CLAUDE.md) |
+| 파이 홈 폴더 배치·생성 규칙 | [`docs/파이-홈-폴더규칙.md`](docs/파이-홈-폴더규칙.md) |
 | 작업 전 설계 근거 (왜·거부한 대안) | [`docs/superpowers/specs/`](docs/superpowers/specs/) |
 | 파이 런타임 코드 | `Rpi5/` — **별도 repo** (아래 셋업 참조) |
 | 라벨링·데이터셋·증강 스펙 | `Rpi5/Demo/docs/` |
