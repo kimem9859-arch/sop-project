@@ -64,6 +64,7 @@
 │  ├─ fsm/                순서위반 상태머신 (정본 코드는 Rpi5/Demo/fsm.py)
 │  └─ ai_model/           트랙 B — YOLO 버튼 동적검출 (상태는 통합문서 §7.1)
 ├─ media/                 🎬 overlay 영상 (정상·스침만 git 추적)
+│  └─ 발표차트/           📊 발표용 차트 SVG·PNG (생성기 = Rpi5/Demo/test/slide_charts.py)
 └─ Rpi5/                  🍓 RPi 데모 (별도 git repo · gitignore)
 
 gitignore 환경자산(루트): .poc_venv · poc_data · .syslibs — 머신마다 재구축
