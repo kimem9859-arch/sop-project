@@ -80,9 +80,11 @@ gitignore 환경자산(루트): .poc_venv · poc_data · .syslibs — 머신마�
 /home/kimem/hanium-docs/    ← 제출문서 (Word·PPT 도구·다이어그램·서식)
 ```
 
-- **두 폴더는 형제 관계여야 한다** — `hanium-docs` 가 `../projects/docs/통합문서.md` 를 상대경로로 읽는다
+- **데스크톱에서만 두 폴더가 형제 관계여야 한다** — `hanium-docs` 가 `../projects/docs/통합문서.md` 를 상대경로로 읽는다
+- 🔴 **파이에는 `hanium-docs` 가 없다. 그것이 정상이다** — 원격이 없어 `pull` 로 오지 않는다. 없다고 만들거나 찾아 헤매지 말 것
+- 의존은 **한 방향뿐** — 이 저장소의 코드·스크립트는 `hanium-docs` 를 참조하지 않는다. 없어도 여기는 정상 동작한다
 - 그쪽은 **읽기만** 한다. 사실·수치가 바뀌면 **이 저장소에서 먼저** 고친다
-- Word·PPT 편집 규율·3단 관문·그림 규격 = `../hanium-docs/CLAUDE.md` §3~§4
+- Word·PPT 편집 규율·3단 관문·그림 규격 = `../hanium-docs/CLAUDE.md` §3~§4 (**데스크톱에서만 열람 가능**)
 
 ## 두 환경 (런타임 분리 / 지식 공유)
 
