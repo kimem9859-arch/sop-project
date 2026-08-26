@@ -151,6 +151,9 @@ def generate(model, prompt):
         "prompt_tokens": r.get("prompt_eval_count", 0),
         "complete_ms": round(r.get("total_duration", 0) / ns, 1),
         "response": r.get("response", "").strip(),
+        # 🔴 잘림 판별용 — `length` 면 생성 예산이 모자라 답이 끊긴 것이다
+        #    (§10.46-(4) 의 thinking 함정이 정확히 이 값으로 드러났다).
+        "done_reason": r.get("done_reason"),
     }
     # ⚠️ 모델마다 답변 길이가 달라 complete_ms 를 바로 비교하면 안 된다.
     #    설계문서 ②「20~40토큰 완료 시간」은 길이를 고정해야 비교가 성립하므로
@@ -236,7 +239,10 @@ def main():
             "ollama_version": _sh("ollama --version"),
             "kernel": _sh("uname -r"),
             "cpu_cores": _sh("nproc"),
-            "swap": _sh("swapon --show") or "없음",
+            # 🔴 절대경로로 부른다 — `swapon` 은 `/sbin` 에 있고 사용자 PATH 에 없다.
+            #    상대경로로 부르던 1·2차 회차는 "명령 없음"을 **「스왑 없음」으로 기록**했다
+            #    (2026-08-27 발견 — 실제로는 zram 2GB 가 있었다).
+            "swap": _sh("/sbin/swapon --show") or _sh("free -h | grep -i swap") or "확인 실패",
         },
         "models": [],
     }
