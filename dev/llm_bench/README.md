@@ -35,3 +35,10 @@ scp pi2:~/v4_result.json pi2:~/v4_coldload.json dev/llm_bench/
 - **조건이 바뀌면 `num_ctx`·`num_predict`·양자화를 결과에 다시 병기할 것.**
 - 🔴 **thinking 모델은 반드시 끄고 잴 것** — 안 끄면 생성 예산을 생각 과정이 다 먹어 **답변이 0글자**로 나오는데, 속도표에는 정상처럼 찍힌다(`gemma4:e2b` 에서 실제로 물렸다, §10.46-(4)). `bench_llm.py` 가 `think:false` 를 붙이고, 거부하는 모델은 자동으로 뺀다. `summarize.py` 는 응답이 전부 비면 **「측정 무효」** 로 표시한다.
 - 🔴 **속도표만 보고 고르지 말 것** — `--responses` 로 한국어 답변을 반드시 사람이 읽는다. 그럴듯한 오답은 속도표에 안 나타난다.
+
+## 라이선스 사본 — `licenses/`
+
+🔴 **Ollama 배포본에는 라이선스 원문이 들어 있지 않다**(`ollama show --license` 가 빈 값). 그래서 원문을 여기 따로 받아 둔다.
+
+- `licenses/LFM-Open-License-v1.0.txt` — 최우선 후보 `LiquidAI/lfm2.5-1.2b-instruct` 의 라이선스. 출처 = HuggingFace `LiquidAI/LFM2.5-1.2B-Instruct/raw/main/LICENSE`(2026-08-27 수신).
+- **판정 정본은 통합문서 §10.46-(7)** — 결론만: Apache 2.0 기반 + **매출 $10M 미만이면 상업적 사용까지 허용**이라 우리 조건에서는 걸리지 않는다. **모델 파일을 남에게 넘길 때만** 사본 동봉 등 §4 조건이 발동한다.
