@@ -115,15 +115,36 @@ def collect(models, save=None):
     return rows
 
 
-def make_sheet(data, out_md, out_key):
-    """블라인드 채점표 — 🔑 프롬프트마다 따로 섞는다.
+def blind_items(rows):
+    """응답을 문항별로 섞어 A/B/C 를 붙인다. **채점표와 설문 폼의 공통 출처.**
 
-    한 번만 섞으면 「A 는 늘 같은 모델」이라 두세 문항만 읽어도 정체가 드러나고,
-    그 뒤로는 모델을 아는 채로 채점하게 된다. 문항마다 섞으면 그게 안 된다.
+    🔑 프롬프트마다 따로 섞는다 — 한 번만 섞으면 「A 는 늘 같은 모델」이라 두세 문항만
+       읽어도 정체가 드러나고, 그 뒤로는 모델을 아는 채로 채점하게 된다.
+
+    🔴 **두 산출물이 이 함수를 함께 쓴다** — 따로 섞으면 마크다운의 A 와 폼의 A 가
+       다른 모델을 가리키게 되고, 매핑 키 하나로는 둘 다 복원할 수 없다.
     """
-    rows = data["rows"]
     rng = random.Random(BLIND_SEED)
-    key = {}
+    items, key = [], {}
+    for pid, prompt in PROMPTS.items():
+        got = [r for r in rows if r["prompt_id"] == pid and "response" in r]
+        rng.shuffle(got)
+        opts = []
+        for i, r in enumerate(got):
+            label = chr(ord("A") + i)
+            key[f"{pid}/{label}"] = r["model"]
+            opts.append({
+                "label": label,
+                "text": r["response"].strip() or "(빈 응답)",
+                "truncated": r.get("done_reason") == "length",
+            })
+        items.append({"pid": pid, "prompt": prompt, "options": opts})
+    return items, key
+
+
+def make_sheet(data, out_md, out_key):
+    """블라인드 채점표(마크다운) — 종이·에디터로 채점할 때."""
+    items, key = blind_items(data["rows"])
     md = [
         "# V4 품질 채점표 (블라인드)",
         "",
@@ -141,15 +162,12 @@ def make_sheet(data, out_md, out_key):
         md.append(f"- **{name}** — {desc}")
     md += ["", "---", ""]
 
-    for pid, prompt in PROMPTS.items():
-        got = [r for r in rows if r["prompt_id"] == pid and "response" in r]
-        rng.shuffle(got)
-        md += [f"## {pid}", "", f"> {prompt}", ""]
-        for i, r in enumerate(got):
-            label = chr(ord("A") + i)
-            key[f"{pid}/{label}"] = r["model"]
-            cut = "  ⚠️ **잘림**(생성 예산 소진)" if r.get("done_reason") == "length" else ""
-            body = r["response"].strip() or "*(빈 응답)*"
+    for it in items:
+        md += [f"## {it['pid']}", "", f"> {it['prompt']}", ""]
+        for o in it["options"]:
+            label = o["label"]
+            cut = "  ⚠️ **잘림**(생성 예산 소진)" if o["truncated"] else ""
+            body = o["text"]
             md += [
                 f"### {label}{cut}",
                 "",
