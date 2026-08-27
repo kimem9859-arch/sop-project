@@ -75,7 +75,10 @@ function buildScoringForm() {
     for (var j = 0; j < it.options.length; j++) {
       var o = it.options[j];
       var grid = form.addGridItem();
-      grid.setTitle("보기 " + o.label)
+      // 🔴 제목에 문항 번호·이름을 넣는다 — 응답 시트의 열 이름이 **문항 제목에서만**
+      //    나오기 때문이다. "보기 A" 로만 두면 96개 열 중 8개가 똑같은 이름이 되어
+      //    어느 문항인지 순서로 추측해야 한다(2026-08-27 실물 시트에서 확인).
+      grid.setTitle((i + 1) + ". " + it.pid + " · 보기 " + o.label)
         .setHelpText(o.text + (o.truncated ? "  (※ 생성 예산이 모자라 끊긴 답입니다)" : ""))
         .setRows(CRITERIA.map(function (c) { return c[0]; }))
         .setColumns(CHOICES)
