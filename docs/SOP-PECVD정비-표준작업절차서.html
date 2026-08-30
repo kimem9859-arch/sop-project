@@ -1,0 +1,215 @@
+<html><head><meta charset="utf-8"><title>PECVD 챔버 웻클린 정비 표준작업절차서</title>
+<style>
+@page { size: A4 portrait; margin: 20mm 18mm 20mm 18mm; }
+body { font-family: "NanumGothic","맑은 고딕","Malgun Gothic",sans-serif; font-size: 10.5pt; line-height: 1.45; color:#000; }
+h1 { font-size: 18pt; text-align:center; margin: 0 0 4pt 0; }
+h2 { font-size: 13pt; margin: 16pt 0 6pt 0; border-bottom: 1.5pt solid #333; padding-bottom: 2pt; }
+h3 { font-size: 11.5pt; margin: 12pt 0 4pt 0; }
+h4 { font-size: 11pt; margin: 10pt 0 3pt 0; }
+p { margin: 4pt 0; }
+table { border-collapse: collapse; width: 100%; margin: 6pt 0 10pt 0; font-size: 10pt; }
+th, td { border: 0.75pt solid #666; padding: 3.5pt 5pt; vertical-align: top; }
+th { background-color: #E9E9E9; font-weight: bold; text-align: center; }
+td.c { text-align: center; }
+.subtitle { text-align:center; font-size: 10.5pt; margin: 0 0 14pt 0; color:#333; }
+.warnbox { border: 1pt solid #000; background-color: #F4F4F4; padding: 8pt 10pt; margin: 10pt 0 14pt 0; font-size: 10pt; }
+.note { border-left: 3pt solid #999; background-color: #F7F7F7; padding: 5pt 8pt; margin: 6pt 0 10pt 0; font-size: 9.5pt; }
+.pb { page-break-before: always; }
+ul { margin: 4pt 0 8pt 0; padding-left: 18pt; }
+li { margin: 2pt 0; }
+.chk { list-style: none; padding-left: 4pt; }
+.sig { height: 46pt; }
+</style></head><body>
+
+<h1>PECVD 챔버 웻클린 정비<br/>표준작업절차서</h1>
+<p class="subtitle">Standard Operating Procedure for PECVD Chamber Wet-Clean Maintenance</p>
+
+<table width="100%" border="1" cellpadding="6" cellspacing="0"><tr><td width="100%" bgcolor="#F0F0F0">
+<b>※ 본 절차서는 시연·평가용으로 작성된 가상 절차서입니다.</b><br/>
+실제 장비 제조사의 정비 매뉴얼이 아니며, 시연에 사용되는 콘솔은 모조품으로
+버튼을 눌러도 실제 가스 차단·챔버 벤트 등 물리 동작이 일어나지 않습니다.
+</td></tr></table>
+
+<table width="100%" border="1" cellpadding="4" cellspacing="0">
+<tr><th width="18%">문서번호</th><td width="34%">SOP-PECVD-PM-001</td><th width="18%">개정번호</th><td width="30%">Rev. 0</td></tr>
+<tr><th width="18%">시행일</th><td width="34%">2026-08-30</td><th width="18%">적용 설비</th><td width="30%">PECVD 챔버</td></tr>
+<tr><th width="18%">작성</th><td width="34%">&nbsp;</td><th width="18%">검토</th><td width="30%">&nbsp;</td></tr>
+<tr><th width="18%">승인</th><td colspan="3" width="82%">&nbsp;</td></tr>
+</table>
+
+<h3>개정 이력</h3>
+<table width="100%" border="1" cellpadding="4" cellspacing="0">
+<tr><th width="12%">개정</th><th width="20%">일자</th><th>내용</th><th width="18%">작성</th></tr>
+<tr><td class="c">0</td><td class="c">2026-08-30</td><td>최초 제정</td><td>&nbsp;</td></tr>
+<tr><td class="c">&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>
+</table>
+
+<h3>목차</h3>
+<table width="100%" border="1" cellpadding="4" cellspacing="0">
+<tr><td width="50%">1. 목적<br/>2. 적용 범위<br/>3. 용어 정의<br/>4. 책임 및 역할<br/>5. 작업 전 준비<br/>6. 위험요인 및 안전 주의사항</td>
+<td width="50%">7. 작업 절차<br/>8. 순서 위반 시 조치<br/>9. 비상 시 조치<br/>10. 기록 및 확인<br/>11. 참고 문헌</td></tr>
+</table>
+
+<h2 class="pb">1. 목적</h2>
+<p>본 절차서는 PECVD(플라스마 화학기상증착) 챔버의 웻클린 정비 작업을 <b>정해진 순서대로</b> 수행하도록 규정하여,
+순서 누락·역순으로 인한 <b>잔류 유해가스 노출, 고온 전극 접촉, 잔압 상태의 챔버 개방</b> 사고를 예방하는 것을 목적으로 한다.</p>
+
+<h2>2. 적용 범위</h2>
+<ul>
+<li><b>적용 대상</b> — PECVD 챔버 웻클린 정비(PM, make-safe) 작업 1종</li>
+<li><b>적용 인원</b> — 해당 장비의 정비 자격을 갖춘 작업자 및 감독자</li>
+<li><b>제외 사항</b>
+  <ul>
+  <li>웨이퍼 생산 운전(공정 레시피 수행) 절차는 본 절차서의 대상이 아니다.</li>
+  <li>챔버 부품 반출 후의 세정조(HF 침적) 작업은 별도 절차서를 따른다.</li>
+  <li>본 절차서에 부속된 감시 시스템은 <b>버튼 조작의 순서만</b> 판정하며, <b>가스 누출을 감지하거나 차단하지 않는다.</b></li>
+  </ul>
+</li>
+</ul>
+
+<h2>3. 용어 정의</h2>
+<table width="100%" border="1" cellpadding="4" cellspacing="0">
+<tr><th width="22%">용어</th><th>정의</th></tr>
+<tr><td><b>PECVD</b></td><td>플라스마 화학기상증착. 플라스마를 이용해 웨이퍼 표면에 박막을 입히는 공정</td></tr>
+<tr><td><b>웻클린</b><br/>(Wet Clean)</td><td>챔버 내부에 쌓인 증착물을 부품 분해·습식 세정으로 제거하는 정비 작업</td></tr>
+<tr><td><b>make-safe</b></td><td>정비 착수 전 설비를 안전한 상태(가스 차단·감압·냉각·대기압)로 만드는 일련의 조치</td></tr>
+<tr><td><b>퍼지</b> (Purge)</td><td>챔버 내 잔류 가스를 불활성 가스(N2)로 밀어내어 치환하는 것</td></tr>
+<tr><td><b>벤트</b> (Vent)</td><td>진공 상태의 챔버에 기체를 넣어 대기압으로 복귀시키는 것</td></tr>
+<tr><td><b>LOTO</b></td><td>Lockout/Tagout. 위험 에너지원을 차단·잠금하고 표지를 부착해 정비 중 재기동을 막는 절차</td></tr>
+<tr><td><b>EMO</b></td><td>Emergency Off. 비상정지 버튼</td></tr>
+<tr><td><b>SOP 감시 시스템</b></td><td>작업자가 착용한 1인칭 카메라 영상으로 손과 버튼을 인식하여, 순서 위반을 버튼 조작 직전에 감지·차단하는 시스템</td></tr>
+<tr><td><b>경고 / 차단</b></td><td><b>경고(WARNING)</b> = 잘못된 버튼 위에 손이 머물 때의 사전 경고. <b>차단(BLOCK)</b> = 잘못된 버튼이 눌려 작업이 정지된 상태</td></tr>
+<tr><td><b>순서 위반</b></td><td>기대되는 단계가 아닌 단계의 버튼을 조작하는 것. <b>누락</b>(뒤 단계로 건너뜀)과 <b>역순</b>(이미 지난 단계로 되돌아감)으로 나뉜다</td></tr>
+</table>
+
+<h2>4. 책임 및 역할</h2>
+<table width="100%" border="1" cellpadding="4" cellspacing="0">
+<tr><th width="24%">역할</th><th>책임</th></tr>
+<tr><td><b>정비 작업자</b></td><td>본 절차서의 단계를 순서대로 수행하고, 각 단계의 확인 사항을 점검·기록한다</td></tr>
+<tr><td><b>정비 감독자</b></td><td>작업 착수 전 준비 상태와 LOTO 시행을 확인하고, 완료 후 기록을 검토·서명한다</td></tr>
+<tr><td><b>안전 담당자</b></td><td>유해가스 관련 위험요인과 보호구 착용 상태를 확인한다</td></tr>
+</table>
+<table width="100%" border="1" cellpadding="6" cellspacing="0"><tr><td width="100%" bgcolor="#F7F7F7">시연 환경에서는 1인이 정비 작업자 역할을 수행하며, 감독자 확인은 생략한다.</td></tr></table>
+
+<h2 class="pb">5. 작업 전 준비</h2>
+<h3>5.1 필요 공구·자재</h3>
+<table width="100%" border="1" cellpadding="4" cellspacing="0">
+<tr><th width="18%">구분</th><th width="42%">품목</th><th>비고</th></tr>
+<tr><td class="c">공구</td><td><b>스패너 (wrench)</b></td><td>2단계 진행에 반드시 지참</td></tr>
+<tr><td class="c">자재</td><td>N2 공급 상태 확인</td><td>퍼지용</td></tr>
+<tr><td class="c">기타</td><td>정비 작업 허가서, 본 절차서 사본</td><td>&nbsp;</td></tr>
+</table>
+
+<h3>5.2 개인보호구(PPE)</h3>
+<table width="100%" border="1" cellpadding="4" cellspacing="0">
+<tr><td width="50%">☐ 보안경 또는 안면보호구<br/>☐ 내화학성 장갑</td>
+<td width="50%">☐ 안전화<br/>☐ (필요 시) 호흡보호구</td></tr>
+</table>
+
+<h3>5.3 착수 전 확인</h3>
+<table width="100%" border="1" cellpadding="4" cellspacing="0">
+<tr><th width="8%">확인</th><th>항목</th></tr>
+<tr><td class="c">☐</td><td>정비 작업 허가서 발행 및 승인 완료</td></tr>
+<tr><td class="c">☐</td><td>장비가 생산 운전에서 해제되고 정비 모드로 전환됨</td></tr>
+<tr><td class="c">☐</td><td><b>LOTO 시행 완료</b> — 위험 에너지원(전원·가스·진공) 차단, 잠금장치 및 표지 부착, 차단 상태 검증</td></tr>
+<tr><td class="c">☐</td><td>비상정지(EMO) 버튼 위치 확인</td></tr>
+<tr><td class="c">☐</td><td>작업 구역 출입 통제</td></tr>
+</table>
+<table width="100%" border="1" cellpadding="6" cellspacing="0"><tr><td width="100%" bgcolor="#F7F7F7"><b>LOTO 는 본 절차의 전제 조건이다.</b> 아래 7장의 4단계 절차는 LOTO 가 시행된 상태에서 수행하며,
+LOTO 자체의 상세 절차는 사업장 LOTO 규정을 따른다.</td></tr></table>
+
+<h2>6. 위험요인 및 안전 주의사항</h2>
+<table width="100%" border="1" cellpadding="4" cellspacing="0">
+<tr><th width="9%">단계</th><th width="45%">위험요인</th><th>안전 조치</th></tr>
+<tr><td class="c">1</td><td><b>SiH4(실란)</b> — 자연발화성 원료가스. 차단 전 후속 단계 진행 시 잔류·발화 위험</td><td>가스 차단 밸브 폐쇄 상태를 지시등으로 확인</td></tr>
+<tr><td class="c">1</td><td><b>CF4/O2 플라스마 클린 부산물</b> — 불소계 잔류물</td><td>클린 완료 표시 전 다음 단계로 넘어가지 않는다</td></tr>
+<tr><td class="c">2</td><td><b>잔류 가스</b> — 퍼지 미완 시 챔버 내 유해가스 잔존</td><td>N2 퍼지를 규정 사이클 이상 수행</td></tr>
+<tr><td class="c">2</td><td><b>N2 자체</b> — 밀폐 공간 산소 결핍</td><td>배기 상태 확인</td></tr>
+<tr><td class="c">3</td><td><b>고온 전극</b> — 냉각 미완 시 화상</td><td>온도 하강 완료 표시 확인 후 진행</td></tr>
+<tr><td class="c">4</td><td><b>잔압 상태 개방</b> — 챔버 급개방 시 내용물 분출</td><td>대기압 도달 확인 후 개방</td></tr>
+</table>
+<table width="100%" border="1" cellpadding="6" cellspacing="0"><tr><td width="100%" bgcolor="#F7F7F7"><b>위 위험은 모두 ‘앞 단계를 건너뛰었을 때’ 현실화된다.</b>
+각 단계는 다음 단계의 안전 전제이므로, 어떤 이유로도 순서를 바꾸어 수행하지 않는다.</td></tr></table>
+
+<h2 class="pb">7. 작업 절차</h2>
+<h3>7.1 콘솔 버튼 배치</h3>
+<table width="100%" border="1" cellpadding="6" cellspacing="0"><tr><td width="100%" height="200" align="center" valign="middle"><br/><br/><br/><i>[ 그림 1. 콘솔 버튼 배치도 — 추후 삽입 ]</i><br/><br/><br/><br/></td></tr></table>
+<p align="center" style="font-size:9.5pt">그림 1. 콘솔 버튼 배치도 (B1~B4 및 비상정지 위치)</p>
+<h3>7.2 절차 요약</h3>
+<table width="100%" border="1" cellpadding="4" cellspacing="0">
+<tr><th width="9%">단계</th><th width="26%">작업 내용</th><th width="8%">조작</th><th width="34%">완료 판정 기준</th><th width="15%">실측값</th><th width="8%">확인</th></tr>
+<tr><td class="c"><b>1</b></td><td>플라스마 클린(CF4/O2) 및 SiH4 공급 차단</td><td class="c"><b>B1</b></td><td>클린 사이클 완료<br/>SiH4 공급밸브 CLOSE 표시</td><td>&nbsp;</td><td class="c">☐</td></tr>
+<tr><td class="c"><b>2</b></td><td>펌프 다운 및 N2 퍼지</td><td class="c"><b>B2</b></td><td>N2 퍼지 <b>2사이클 이상</b> 완료<br/>챔버압 <b>5 Torr 이하</b><br/><b>스패너 지참</b></td><td>&nbsp;Torr</td><td class="c">☐</td></tr>
+<tr><td class="c"><b>3</b></td><td>전극 냉각</td><td class="c"><b>B3</b></td><td>전극 온도 <b>300℃ 이하</b></td><td>&nbsp;℃</td><td class="c">☐</td></tr>
+<tr><td class="c"><b>4</b></td><td>챔버 벤트 및 개방</td><td class="c"><b>B4</b></td><td>챔버압 <b>760 Torr(대기압)</b> 도달</td><td>&nbsp;Torr</td><td class="c">☐</td></tr>
+</table>
+
+<table width="100%" border="1" cellpadding="6" cellspacing="0"><tr><td width="100%" bgcolor="#F7F7F7">위 판정 기준값(5 Torr · 300℃ · 760 Torr)은 <b>시연 표시용 설정값</b>이며, 실제 설비의 관리기준과는 다르다.</td></tr></table>
+<h3>7.3 단계별 상세</h3>
+
+<h4>단계 1 — 클린·가스차단 (버튼 B1)</h4>
+<p>① 콘솔에서 <b>B1(클린·가스차단)</b> 버튼을 누른다.<br/>
+② 플라스마 클린이 진행되는 동안 대기한다. <b>클린 완료 및 SiH4 밸브 CLOSE 표시를 확인할 때까지 다른 버튼을 조작하지 않는다.</b><br/>
+③ 진행 완료 표시를 확인한다. → 자동으로 단계 2로 진행된다.</p>
+<table width="100%" border="1" cellpadding="6" cellspacing="0"><tr><td width="100%" bgcolor="#F7F7F7"><b>버튼을 누르는 것만으로 단계가 끝나지 않는다.</b> ‘버튼 조작 + 후속 대기’가 하나의 단계이며,
+대기 중 다른 버튼을 누르면 <b>순서 위반</b>으로 판정된다.</td></tr></table>
+
+<h4>단계 2 — 펌프/퍼지 (버튼 B2)</h4>
+<p>① <b>B2(펌프/퍼지)</b> 버튼을 누른다.<br/>
+② N2 퍼지가 2사이클 이상 진행되고 <b>챔버압이 5 Torr 이하</b>로 내려갈 때까지 대기한다.<br/>
+③ <b>대기 중 스패너(wrench)를 손에 든다.</b> 압력 조건과 공구 지참이 <b>모두</b> 충족되어야 다음 단계로 진행된다.<br/>
+④ 조건 충족 시 자동으로 단계 3으로 진행된다.</p>
+
+<h4>단계 3 — 전극 냉각 (버튼 B3)</h4>
+<p>① <b>B3(전극 냉각)</b> 버튼을 누른다.<br/>
+② 전극 온도가 약 300℃ 이하로 내려갈 때까지 대기한다.<br/>
+③ 온도 하강 완료 표시를 확인한다. → 자동으로 단계 4로 진행된다.</p>
+
+<h4>단계 4 — 챔버 벤트·개방 (버튼 B4)</h4>
+<p>① <b>B4(챔버 벤트)</b> 버튼을 누른다.<br/>
+② 챔버압이 <b>760 Torr(대기압)</b>에 도달했음을 확인한다.<br/>
+③ 챔버를 개방한다. → <b>정비 착수 준비 완료. 본 절차 종료.</b></p>
+
+<h2 class="pb">8. 순서 위반 시 조치</h2>
+<p>본 작업은 1인칭 비전 AI 감시 시스템의 감시를 받는다. 시스템은 작업자의 손이 <b>기대되지 않는 버튼</b>에 접근·체류하면 다음과 같이 개입한다.</p>
+<table width="100%" border="1" cellpadding="4" cellspacing="0">
+<tr><th width="30%">상황</th><th width="28%">시스템 동작</th><th>작업자 조치</th></tr>
+<tr><td>잘못된 버튼에 손이 <b>접근</b></td><td class="c">화면에 접근 표시</td><td>손을 뗀다</td></tr>
+<tr><td>잘못된 버튼 위에 손이 <b>체류</b></td><td class="c"><b>경고 (WARNING)</b></td><td>즉시 손을 떼고 현재 단계를 확인한다</td></tr>
+<tr><td>잘못된 버튼을 <b>누름</b></td><td class="c"><b>차단 (BLOCK)</b> — 작업 정지</td><td>감독자에게 보고 후, 해제 시 직전에 수행하던 단계부터 다시 수행한다</td></tr>
+</table>
+<table width="100%" border="1" cellpadding="6" cellspacing="0"><tr><td width="100%" bgcolor="#F7F7F7"><b>위반이 발생해도 단계는 진전되지 않는다.</b> 차단이 해제되어도 기대 단계는 그대로 유지되므로,
+건너뛴 단계를 반드시 수행해야 한다.</td></tr></table>
+
+<table width="100%" border="1" cellpadding="6" cellspacing="0"><tr><td width="100%" height="170" align="center" valign="middle"><br/><br/><br/><i>[ 그림 2. 순서 위반 시 경고·차단 화면 — 추후 삽입 ]</i><br/><br/><br/></td></tr></table>
+<p align="center" style="font-size:9.5pt">그림 2. 순서 위반 시 경고·차단 화면</p>
+<h2>9. 비상 시 조치</h2>
+<p>① 이상 상황(가스 냄새, 이상음, 화재, 부상) 발생 시 <b>즉시 비상정지(EMO) 버튼</b>을 누른다.<br/>
+② 작업 구역에서 대피하고 감독자·안전 담당자에게 즉시 보고한다.<br/>
+③ EMO 조작 시 시퀀스 전체가 중단되며, <b>재개 시 단계 1부터 다시 수행</b>한다. 중간 단계부터 재개하지 않는다.</p>
+
+<h2>10. 기록 및 확인</h2>
+<table width="100%" border="1" cellpadding="4" cellspacing="0">
+<tr><th width="18%">작업 일시</th><td width="32%">&nbsp;</td><th width="18%">장비 번호</th><td width="32%">&nbsp;</td></tr>
+<tr><th>특이사항</th><td colspan="3" width="82%" class="sig">&nbsp;</td></tr>
+<tr><th width="18%">작업자</th><td width="32%" class="sig">(서명)</td><th width="18%">감독자</th><td width="32%" class="sig">(서명)</td></tr>
+</table>
+
+<h3>단계 수행 체크리스트</h3>
+<table width="100%" border="1" cellpadding="4" cellspacing="0">
+<tr><th width="12%">단계</th><th>작업 내용</th><th width="22%">수행 시각</th><th width="10%">확인</th></tr>
+<tr><td class="c">사전</td><td>LOTO 시행 및 검증</td><td>&nbsp;</td><td class="c">☐</td></tr>
+<tr><td class="c">사전</td><td>PPE 착용</td><td>&nbsp;</td><td class="c">☐</td></tr>
+<tr><td class="c"><b>1</b></td><td>클린·가스차단</td><td>&nbsp;</td><td class="c">☐</td></tr>
+<tr><td class="c"><b>2</b></td><td>펌프/퍼지 (공구 지참)</td><td>&nbsp;</td><td class="c">☐</td></tr>
+<tr><td class="c"><b>3</b></td><td>전극 냉각</td><td>&nbsp;</td><td class="c">☐</td></tr>
+<tr><td class="c"><b>4</b></td><td>챔버 벤트·개방</td><td>&nbsp;</td><td class="c">☐</td></tr>
+</table>
+
+<h2>11. 참고 문헌</h2>
+<p>1. EPA QA/G-6, <i>Guidance for Preparing Standard Operating Procedures</i>, 2007<br/>
+2. OSHA 29 CFR 1910.147, <i>The Control of Hazardous Energy (Lockout/Tagout)</i><br/>
+3. SEMI S2, <i>EHS Guideline for Semiconductor Manufacturing Equipment</i><br/>
+4. KOSHA GUIDE C-C-2, 화학설비 정비·보수작업계획서 작성에 관한 기술지침</p>
+
+</body></html>
