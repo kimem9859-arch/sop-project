@@ -35,3 +35,21 @@ def test_preview_labels_handles_out_of_range_index(tmp_path):
     preview_labels.main(['prog', root, out, '1', '0'])
 
     assert len(os.listdir(out)) == 1
+
+
+def test_names_come_from_dataset_yaml(tmp_path):
+    """🔑 클래스 이름은 **그 데이터셋의 data.yaml** 에서 온다(v3/v4 스키마 혼동 방지)."""
+    root = str(tmp_path / 'ds6')
+    os.makedirs(os.path.join(root, 'train', 'images'))
+    _write(os.path.join(root, 'data.yaml'),
+           "names:\n- driver\n- wrench\n- pliers\n"
+           "- driver-in-hand\n- wrench-in-hand\n- pliers-in-hand\nnc: 6\n")
+    assert preview_labels.load_names(root) == [
+        'driver', 'wrench', 'pliers',
+        'driver-in-hand', 'wrench-in-hand', 'pliers-in-hand']
+
+
+def test_names_missing_yaml_does_not_die(tmp_path):
+    root = str(tmp_path / 'noyaml')
+    os.makedirs(root)
+    assert preview_labels.load_names(root) == []
