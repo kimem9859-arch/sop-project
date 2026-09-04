@@ -7,6 +7,8 @@ import pytest
 
 from build_tool_v3_dataset import (
     NEW_NAMES,
+    class_scheme,
+    use_scheme,
     build,
     build_remap,
     main,
@@ -772,3 +774,46 @@ def test_build_raises_when_valid_is_empty(tmp_path):
 
     with pytest.raises(ValueError):
         build([(root, 'one')], out, seed=0)
+
+
+# ─────────────────────────────────────────── v4 스키마 (2026-09-03)
+# 설계 = ../../../docs/superpowers/specs/2026-09-03-공구-쥔상태-검출-design.md §3
+def test_v4_scheme_maps_in_hand_classes():
+    names, cmap = class_scheme('v4')
+    assert names == ['driver', 'wrench', 'pliers',
+                     'driver-in-hand', 'wrench-in-hand', 'pliers-in-hand']
+    assert cmap['screwdriver-in-hand'] == 'driver-in-hand'
+    assert cmap['plier-in-hand'] == 'pliers-in-hand'
+    assert cmap['pliers-in-hand'] == 'pliers-in-hand'
+    # 🔑 우리 오픈엔드의 정답은 wrench 다 — 통합문서 §10.39-(6)
+    assert cmap['spanner-in-hand'] == 'wrench-in-hand'
+    assert cmap['spanner'] == 'wrench'
+    # v3 매핑은 그대로 살아 있다
+    assert cmap['screwdriver'] == 'driver'
+    assert cmap['wrench'] == 'wrench'
+
+
+def test_v3_scheme_unchanged():
+    """🔴 기본값은 v3 그대로여야 한다 — 기존 46개 테스트가 그 계약이다."""
+    names, cmap = class_scheme('v3')
+    assert names == ['driver', 'wrench', 'pliers']
+    assert 'wrench-in-hand' not in cmap
+    assert 'spanner' not in cmap        # v3 에서 spanner 는 「모르는 이름」으로 경고돼야 한다
+
+
+def test_unknown_scheme_raises():
+    with pytest.raises(ValueError):
+        class_scheme('v9')
+
+
+def test_use_scheme_switches_module_globals(tmp_path):
+    """`--scheme v4` 는 build_remap 등 모듈 전역을 갈아끼운다. 끝나면 되돌린다."""
+    import build_tool_v3_dataset as B
+    try:
+        B.use_scheme('v4')
+        remap, unmapped = B.build_remap(['wrench-in-hand', 'hammer'])
+        assert remap == {0: B.NEW_NAMES.index('wrench-in-hand')}
+        assert unmapped == ['hammer']
+    finally:
+        B.use_scheme('v3')
+    assert B.NEW_NAMES == ['driver', 'wrench', 'pliers']

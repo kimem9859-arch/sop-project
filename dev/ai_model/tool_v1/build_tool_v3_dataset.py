@@ -24,23 +24,86 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from dataset_diversity import group_key, load_names, source_key  # noqa: E402
 
 # 🔴 이 순서가 계약이다 — 학습·추론·recipe.json 이 공유한다. 바꾸지 말 것.
-NEW_NAMES = ['driver', 'wrench', 'pliers']
+NEW_NAMES_V3 = ['driver', 'wrench', 'pliers']
 
 # 원본 클래스명(소문자) → 새 클래스명.
 # 버려지는 것: hammer · drill · bolt-nut · other tool (→ 네거티브 후보로 넘어간다)
-CLASS_MAP = {
+CLASS_MAP_V3 = {
     'screwdriver': 'driver',
     'wrench': 'wrench',
     'plier': 'pliers',
     'pliers': 'pliers',
 }
 
+# 🆕 v4 (2026-09-03) — 「손에 쥔 공구」를 **별도 클래스**로 배운다.
+#    왜 = 쥐면 손이 공구를 가려 검출이 무너졌다(통합문서 §10.54). 설계 =
+#    ../../../docs/superpowers/specs/2026-09-03-공구-쥔상태-검출-design.md §3
+#    🔴 앞 3개의 순서·이름은 v3 과 같게 두고 **뒤에 덧붙인다** — 그래야 두 스키마의
+#       인덱스가 앞부분에서 일치해 비교·디버깅이 쉽다.
+NEW_NAMES_V4 = NEW_NAMES_V3 + ['driver-in-hand', 'wrench-in-hand', 'pliers-in-hand']
+
+# 🔑 `spanner` 계열은 `wrench` 로 병합한다 — 우리 오픈엔드의 정답이 `wrench` 이고
+#    큰 데이터셋들이 모든 렌치를 하나로 묶는다(§10.39-(6)).
+#    ⚠️ v3 소스(6tool·mech83)에는 `spanner` 클래스가 없으므로 이 매핑은 **in-hand
+#       소스에만** 영향을 준다. v3 스키마에서는 종전대로 「모르는 이름」으로 경고된다.
+CLASS_MAP_V4 = dict(CLASS_MAP_V3)
+CLASS_MAP_V4.update({
+    'spanner': 'wrench',
+    'screwdriver-in-hand': 'driver-in-hand',
+    'wrench-in-hand': 'wrench-in-hand',
+    'spanner-in-hand': 'wrench-in-hand',
+    'plier-in-hand': 'pliers-in-hand',
+    'pliers-in-hand': 'pliers-in-hand',
+})
+
+# 현재 스키마 — `use_scheme()` 이 갈아끼운다. 기본값은 **v3**(종전 동작 보존).
+NEW_NAMES = NEW_NAMES_V3
+CLASS_MAP = CLASS_MAP_V3
+
 # 🔴 CLASS_MAP 에 넣지 않는다 — 이건 매핑이 아니라 "안다·예상했다"는 표시다.
 # 6tool·mech83 두 데이터셋이 담고 있지만 우리 3종(driver·wrench·pliers)이
 # 아닌 공구들 — 이 이름들이 매핑에서 빠지는 건 의도된 것이라 경고가 아니다.
 # 매번 뜨는 경고는 운영자를 무디게 만들어, `spanner` 같은 **진짜 모르는
 # 이름**이 그 안에 묻히게 한다(이번 작업이 막으려던 실패 유형).
-KNOWN_DISCARD = {'bolt-nut', 'hammer', 'other tool', 'drill'}
+KNOWN_DISCARD_V3 = {'bolt-nut', 'hammer', 'other tool', 'drill'}
+
+# v4 는 in-hand 소스가 들어오면서 「우리 3종이 아닌」 이름이 늘어난다. 이것들이
+# 매번 🔴 경고로 뜨면 운영자가 무뎌져 **진짜 모르는 이름**이 그 안에 묻힌다.
+KNOWN_DISCARD_V4 = KNOWN_DISCARD_V3 | {
+    'ratchet', 'scissors', 'scissors-in-hand', 'hammer-in-hand', 'screw',
+    'human', 'sl', 'power drill',
+}
+
+KNOWN_DISCARD = KNOWN_DISCARD_V3
+
+_SCHEMES = {
+    'v3': (NEW_NAMES_V3, CLASS_MAP_V3, KNOWN_DISCARD_V3),
+    'v4': (NEW_NAMES_V4, CLASS_MAP_V4, KNOWN_DISCARD_V4),
+}
+
+
+def class_scheme(name):
+    """스키마 이름 → (클래스 순서, 클래스 매핑). 모르는 이름이면 ValueError."""
+    if name not in _SCHEMES:
+        raise ValueError(f'모르는 스키마: {name!r} (아는 것: {sorted(_SCHEMES)})')
+    names, cmap, _discard = _SCHEMES[name]
+    return names, cmap
+
+
+def use_scheme(name):
+    """모듈 전역을 그 스키마로 갈아끼운다.
+
+    🔑 전역을 바꾸는 이유 — `build_remap`·`scan_dataset`·`write_yaml` 등이 전부
+       이 전역을 읽는다. 인자로 흘리려면 함수 대여섯 개의 시그니처를 바꿔야 하고,
+       그것은 검증된 코드를 건드리는 일이다(기존 테스트 46개가 그 계약이다).
+    """
+    global NEW_NAMES, CLASS_MAP, KNOWN_DISCARD
+    NEW_NAMES, CLASS_MAP, KNOWN_DISCARD = _SCHEMES[name] if name in _SCHEMES else \
+        _raise_scheme(name)
+
+
+def _raise_scheme(name):
+    raise ValueError(f'모르는 스키마: {name!r} (아는 것: {sorted(_SCHEMES)})')
 
 
 def build_remap(src_names):
@@ -393,6 +456,18 @@ def build(roots, out_dir, neg_ratio=0.15, valid_ratio=0.10, seed=0,
 
 
 def main(argv):
+    # 🆕 --scheme v4 : 6클래스(3종 + 각 in-hand). 없으면 종전 v3 그대로.
+    argv = list(argv)
+    scheme = 'v3'
+    if '--scheme' in argv:
+        i = argv.index('--scheme')
+        if i + 1 >= len(argv):
+            sys.exit('--scheme 뒤에 스키마 이름이 필요합니다 (v3 | v4)')
+        scheme = argv[i + 1]
+        del argv[i:i + 2]
+    use_scheme(scheme)
+    print(f'[스키마] {scheme} — 클래스 {NEW_NAMES}')
+
     if len(argv) < 3:
         sys.exit('사용: python build_tool_v3_dataset.py <출력경로> <데이터셋:접두어> ... '
                  '[--keep-all <접두어>]\n'
@@ -400,6 +475,9 @@ def main(argv):
                  '~/data/ds_6tool:6tool ~/data/ds_mech83:mech83\n'
                  '     python build_tool_v3_dataset.py ~/data/ds_tool_v4 '
                  '~/data/ds_6tool:6tool ~/data/ds_mech83:mech83 ~/data/ds_bg_neg:bg --keep-all bg\n'
+                 '     python build_tool_v3_dataset.py --scheme v4 ~/data/ds_tool_v4 '
+                 '~/data/ds_6tool:6tool ~/data/ds_mech83:mech83 ~/data/ds_inhand:inhand\n'
+                 '\n--scheme v3|v4   : 클래스 체계. v4 = 3종 + 각 「쥔 상태」(§10.54). 기본 v3.\n'
                  '\n--keep-all <접두어> : 그 소스의 네거티브를 샘플링 없이 전량 넣는다.\n'
                  '                      (하드 네거티브용 — 사유는 sample_negatives docstring)')
     out_dir = os.path.expanduser(argv[1])
