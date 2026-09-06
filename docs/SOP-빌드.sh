@@ -7,6 +7,7 @@ NAME="SOP-PECVD정비-표준작업절차서"
 SOF=/home/kimem/.claude/plugins/cache/anthropic-agent-skills/document-skills/3b3fad96af16/skills/docx/scripts/office/soffice.py
 WORK=$(mktemp -d)
 cp "$NAME.html" "$WORK/sop.html"
+cp -r "SOP-그림" "$WORK/"          # 그림은 상대경로 참조라 함께 옮겨야 한다
 cd "$WORK"
 # 1) HTML -> ODT  (HTML -> DOCX 직행은 표 폭이 뭉개진다)
 python3 "$SOF" --headless --convert-to odt:"writer8" sop.html >/dev/null 2>&1
@@ -30,6 +31,18 @@ for name,lay,mdp in (('Standard','Mpm1','1'),('HTML','Mpm3','2')):
     old='<style:master-page style:name="%s" style:page-layout-name="%s" draw:style-name="Mdp%s"/>'%(name,lay,mdp)
     if old in s: s=s.replace(old, old[:-2]+'>'+footer+'</style:master-page>')
 items['styles.xml']=s.encode('utf-8')
+# 2-b) 그림 임베드 — HTML 의 경로 링크를 ODT 내부 Pictures/ 로 넣는다.
+#      링크로 두면 DOCX 가 임시폴더 절대경로를 external 참조로 내보내 그림이 전부 깨진다.
+import os,mimetypes
+c=items['content.xml'].decode('utf-8'); mf=items['META-INF/manifest.xml'].decode('utf-8')
+for f in sorted(os.listdir('SOP-그림')):
+    src='../SOP-그림/'+f
+    if src not in c: continue
+    items['Pictures/'+f]=open(os.path.join('SOP-그림',f),'rb').read()
+    c=c.replace(src,'Pictures/'+f)
+    mt=mimetypes.guess_type(f)[0] or 'application/octet-stream'
+    mf=mf.replace('</manifest:manifest>','<manifest:file-entry manifest:full-path="Pictures/%s" manifest:media-type="%s"/></manifest:manifest>'%(f,mt))
+items['content.xml']=c.encode('utf-8'); items['META-INF/manifest.xml']=mf.encode('utf-8')
 zo=zipfile.ZipFile('sop2.odt','w',zipfile.ZIP_DEFLATED)
 zo.writestr('mimetype',items.pop('mimetype'),zipfile.ZIP_STORED)
 for n,d in items.items(): zo.writestr(n,d)
