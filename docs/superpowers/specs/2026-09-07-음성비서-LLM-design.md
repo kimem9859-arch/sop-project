@@ -250,6 +250,11 @@ A 갈래의 *"GUI 를 0줄도 안 건드린다"* 는 여기서 **깨진다.** �
 | `Demo/state_publisher.py` | 🆕 상태 파일 쓰기(GUI 쪽, 20줄 안팎) |
 | `Demo/safety_console.py` | ⚠️ 상태 변화 지점에서 publisher 호출 — **최소 삽입** |
 | `Demo/selftest/test_voice_card.py` | 🆕 카드 생성·부재 표기·검산 판정 |
+| `Demo/selftest/test_voice_llm.py` | 🆕 ollama 호출 — 모의 서버로 요청 모양·실패 4종(500·빈 응답·미접속·타임아웃)이 예외로 새지 않는지 |
+| `Demo/selftest/test_voice_tts.py` | 🆕 런타임 합성 — 상주 모델 적재·PCM 프레이밍(`voice_tts.frame`) 체크섬 |
+| `Demo/selftest/test_state_publisher.py` | 🆕 상태 파일 쓰기 — 원자적 교체·유령 pid·쓰기 실패가 GUI 를 안 죽이는지 |
+| `Demo/voice/llm_gate.py` | 🆕 프롬프트 관문 러너 — G2 그라운딩 · G3 허가 거절 · G4 라벨 정확도를 pi2 에 직접 물어 채점 |
+| `Demo/voice/LLM관문.md` | 🆕 실HW 관문 절차서 — G6~G11 의 「무엇을 한다 / 무엇이 보이면 통과 / 안 되면 무엇을 본다」 |
 | `Demo/voice/make_answers.py` | 폴백 문구 **4종 추가** — `checking`(확인 중, §7) · `notready`(작업 시작 전) · `changed`(상태가 바뀜) · `unavailable`(답변 불가) |
 
 ## 12. 관문
