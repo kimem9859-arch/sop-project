@@ -242,7 +242,7 @@ A 갈래의 *"GUI 를 0줄도 안 건드린다"* 는 여기서 **깨진다.** �
 
 | 파일 | 변경 |
 |---|---|
-| `Demo/voice_lib.py` | 🆕 `read_state()` · `build_card()` · `verify_card()` — **순수 함수**라 selftest 로 검증 |
+| `Demo/voice_card.py` | 🆕 `read_state()` · `build_card()` · `card_facts()` · `verify_answer()` — **순수 함수**라 selftest 로 검증. ⚠️ 종전 초안은 `voice_lib.py` 에 넣으려 했으나 그쪽은 VAD·호출어 판정 담당이라 나눴다 |
 | `Demo/voice_llm.py` | 🆕 ollama HTTP 호출 · 타임아웃 · 폴백 판단 (한 파일로 격리) |
 | `Demo/voice_tts.py` | 🆕 런타임 합성(sherpa `OfflineTts` 상주) |
 | `Demo/voice_assistant.py` | ⑤⑥⑦ 삽입 · 깨어남 분기 · 계측 항목 추가 |
