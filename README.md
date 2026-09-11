@@ -22,6 +22,7 @@
 | 회로도·핀맵 | [`dev/interlock/`](dev/interlock/) · [`dev/glass/`](dev/glass/) 결선도 ★ repo가 정본 |
 | **지금 어디까지 · 다음 할 일** | [`docs/작업로그.md`](docs/작업로그.md)의 `⏸`/`▶` → SessionStart 훅이 배너로 표시 |
 | 프로젝트 작업 이력 (무엇을 했나) | [`docs/작업로그.md`](docs/작업로그.md) |
+| **문서에 반영 안 된 작업**(2026-09-11 전수 점검) | [`docs/미기록작업-점검-20260911.md`](docs/미기록작업-점검-20260911.md) — 발견 목록·처리 대기 |
 | Claude Code 인프라 이력 | [`docs/claude-code-작업로그.md`](docs/claude-code-작업로그.md) |
 | 훅 구성·작업 방식·훅 설계 원칙 | [`docs/claude-code-작업문서.md`](docs/claude-code-작업문서.md) |
 | **작업 규칙·금지·함정** | [`CLAUDE.md`](CLAUDE.md) |
@@ -83,7 +84,7 @@ gitignore 환경자산(루트): .poc_venv · poc_data · .syslibs — 머신마�
 ```
 
 - **데스크톱에서만 두 폴더가 형제 관계여야 한다** — `hanium-docs` 가 `../projects/docs/통합문서.md` 를 상대경로로 읽는다
-- 🔴 **파이에는 `hanium-docs` 가 없다. 그것이 정상이다** — 원격이 없어 `pull` 로 오지 않는다. 없다고 만들거나 찾아 헤매지 말 것
+- 🆕 **파이도 `hanium-docs` 를 클론해 읽는다**(2026-08-29 규칙 변경 · CC작업로그 `74e3243`). 종전의 「파이에는 없는 것이 정상」은 **폐기**. 원격은 **private** 이며 `git clone` 으로 받는다 — 파이는 **읽기**, Word·PPT 편집은 데스크톱
 - 의존은 **한 방향뿐** — 이 저장소의 코드·스크립트는 `hanium-docs` 를 참조하지 않는다. 없어도 여기는 정상 동작한다
 - 그쪽은 **읽기만** 한다. 사실·수치가 바뀌면 **이 저장소에서 먼저** 고친다
 - Word·PPT 편집 규율·3단 관문·그림 규격 = `../hanium-docs/CLAUDE.md` §3~§4 (**데스크톱에서만 열람 가능**)

@@ -6,6 +6,18 @@
 
 ---
 
+## 2026-09-12 · session 17c2ff79-18f1-433d-992f-18fcf9c7e5f5 (세션 기록 보존 30일 → 50일)
+
+- ✅ **`~/.claude/settings.json` 에 `cleanupPeriodDays: 50` 추가** — 종전은 키가 없어 기본값 **30일**이었다.
+  - 계기 = 미기록 작업 전수 점검(`docs/미기록작업-점검-20260911.md`)에서 **2026-08-10 이전 세션이 이미 삭제된 것**을 확인했다. 그 구간은 커밋·문서로만 추적할 수밖에 없었다.
+  - 공식 문서 근거 = *"Claude Code clients store session transcripts locally in plaintext under `~/.claude/projects/` for 30 days by default… Adjust the period with `cleanupPeriodDays`"* (code.claude.com `data-usage` 데이터 보존 항).
+  - 🔴 **소급되지 않는다** — 이미 지워진 것은 돌아오지 않는다. 삭제 기준은 **최종 수정 시각**이라, 남은 가장 오래된 기록(8/13)이 10월 초까지 유지된다.
+  - ⚠️ `~/.claude` 가 현재 **706M**. 보존을 늘렸으므로 더 커진다 — 루트 디스크가 **93%(여유 4.1G)** 라 함께 본다.
+- ⏸ **프로젝트 훅의 휴지통 보존은 30일 유지**(사용자 결정) — `.claude/hooks/session-prune-stubs.sh` 의 `TRASH_RETAIN_DAYS=30`. 그 훅은 **실제 대화 ≤5개인 껍데기 세션만** 옮기므로 이번 변경과 무관하다.
+- 📌 이 세션의 프로젝트 작업(전수 점검·문서 정정)은 `docs/작업로그.md` 담당.
+
+---
+
 ## 2026-08-29 · session 미상(소급 — 커밋 기반) (`hanium-docs` 접근 규칙 변경 — 파이도 읽는다)
 
 > ⚠️ **커밋 메시지 기반 소급이다** — 무커밋 작업·판단 근거는 유실됐다. 2026-09-01 마무리 점검에서 미기록으로 검출돼 사용자 승인 후 기록했다.
