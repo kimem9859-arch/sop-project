@@ -60,12 +60,14 @@
 ├─ docs/                  📄 문서
 │  ├─ 통합문서.md                     ★ 단일 정본
 │  ├─ 작업로그.md · claude-code-작업로그.md · claude-code-작업문서.md
-│  └─ superpowers/specs · plans        작업 전 설계·계획
+│  ├─ superpowers/specs · plans        작업 전 설계·계획
+│  └─ 제작설계서/         📐 제출 제작설계서 자료 (이미지·생성도구·_보관 캡처)
 ├─ dev/                   💻 개발
 │  ├─ poc/                Step1 PoC — MediaPipe 손 + 색 ROI + dwell (검증 완료)
 │  ├─ interlock/          트랙 A — 물리 인터락 (ref/ = ESP/Arduino 참고자산)
 │  ├─ fsm/                순서위반 상태머신 (정본 코드는 Rpi5/Demo/fsm.py)
 │  └─ ai_model/           트랙 B — YOLO 버튼 동적검출 (상태는 통합문서 §7.1)
+├─ captures/              🖼️ 손 검출 샘플 이미지 (테스트 입력용)
 ├─ media/                 🎬 overlay 영상 (정상·스침만 git 추적)
 │  └─ 발표차트/           📊 발표용 차트 SVG·PNG (생성기 = Rpi5/Demo/test/slide_charts.py)
 └─ Rpi5/                  🍓 RPi 데모 (별도 git repo · gitignore)
@@ -75,8 +77,8 @@ gitignore 환경자산(루트): .poc_venv · poc_data · .syslibs — 머신마�
 
 ### 형제 저장소 — `../hanium-docs` (공모전 제출문서)
 
-**개발보고서·제작설계서·시연영상은 여기가 아니라 형제 폴더에 있다.** 데스크톱 전용이라
-파이와 동기화하지 않으며, 편집 라운드마다 나오는 docx 바이너리를 이 저장소에서 떼어냈다.
+**개발보고서·제작설계서·시연영상은 여기가 아니라 형제 폴더에 있다.** 편집 라운드마다 나오는
+docx 바이너리를 이 저장소에서 떼어내려고 갈랐다. **파이도 클론해 읽는다**(아래 🆕 항목 — 편집은 데스크톱에서만).
 
 ```
 /home/kimem/projects/       ← 여기 (통합문서·코드 = 사실의 정본)
