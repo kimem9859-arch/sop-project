@@ -87,6 +87,23 @@ def test_8_active_session():
     idx = open(os.path.join(os.environ["SESSION_ARCHIVE_DIR"], "INDEX.tsv")).read()
     check("%s\t지시 0\t0\t0\t진행중" % G in idx, "60분 안에 바뀐 세션은 진행중")
     check(not any(x.startswith("gggggggg") for x in sa.unlogged(36500, now=T0 + 40000)), "진행중은 미기재 목록에서 빠진다")
+def test_9a_empty_scan_keeps_index():
+    arch = os.environ["SESSION_ARCHIVE_DIR"]
+    before = open(os.path.join(arch, "INDEX.tsv")).read(); stamp = open(os.path.join(arch, ".last-scan")).read()
+    r = sa.run(os.path.join(_tmp, "없는폴더"), D, now=T0 + 90000)
+    check(r == "skipped-no-sessions", "세션 0개면 건너뛴다: " + r)
+    check(open(os.path.join(arch, "INDEX.tsv")).read() == before, "빈 스캔이 색인을 덮어쓰지 않는다")
+    check(open(os.path.join(arch, ".last-scan")).read() == stamp, "빈 스캔이 스캔 시각을 바꾸지 않는다")
+def test_9b_cli_help_does_not_scan():
+    import subprocess
+    arch = os.environ["SESSION_ARCHIVE_DIR"]
+    before = open(os.path.join(arch, "INDEX.tsv")).read(); stamp = open(os.path.join(arch, ".last-scan")).read()
+    script = os.path.join(os.path.dirname(os.path.abspath(__file__)), "session_archive.py")
+    for args in (["--help"], ["/없는/경로", "x"], []):
+        out = subprocess.run([sys.executable, script] + args, capture_output=True, text=True, env=dict(os.environ)).stdout
+        check("사용:" in out, "잘못된 인자 %r 는 사용법만 출력: %r" % (args, out[:40]))
+    check(open(os.path.join(arch, "INDEX.tsv")).read() == before, "CLI 잘못된 인자가 색인을 건드리지 않는다")
+    check(open(os.path.join(arch, ".last-scan")).read() == stamp, "CLI 잘못된 인자가 스캔 시각을 건드리지 않는다")
 if __name__ == "__main__":
     for n, f in sorted(globals().items()):
         if n.startswith("test_"): f()

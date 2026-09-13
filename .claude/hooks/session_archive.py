@@ -119,7 +119,10 @@ def run(project_dir, current_id, now=None):
         return _log(now, "skipped-recent")
     texts = [open(os.path.join(project_dir, p), errors="ignore").read() for p in LOGS if os.path.exists(os.path.join(project_dir, p))]
     rows, written, errors = [], 0, 0
-    for path in sorted(glob.glob(os.path.join(sess_dir(project_dir), "*.jsonl"))):
+    paths = sorted(glob.glob(os.path.join(sess_dir(project_dir), "*.jsonl")))
+    if not paths:  # 세션이 하나도 없으면 잘못 불린 것이다 — 멀쩡한 색인·스캔 시각을 덮어쓰지 않는다
+        return _log(now, "skipped-no-sessions")
+    for path in paths:
         sid = os.path.basename(path)[:-6]
         if sid == current_id:
             continue
@@ -150,9 +153,17 @@ def unlogged(days, now=None):
     rows = [l.split("\t") for l in open(p).read().splitlines()[1:] if l] if os.path.exists(p) else []
     return ["%s %s %s" % (r[1][:8], r[0], r[2]) for r in rows if len(r) >= 6 and r[5] == "미기재" and r[0] >= cutoff]
 
+USAGE = "사용: session_archive.py <project_dir> <current_session_id> | session_archive.py --unlogged <days>"
+
 if __name__ == "__main__":
     try:
-        print("\n".join(unlogged(int(sys.argv[2]))) if sys.argv[1] == "--unlogged" else run(sys.argv[1], sys.argv[2] if len(sys.argv) > 2 else ""))
+        a = sys.argv[1:]
+        if a and a[0] == "--unlogged" and len(a) > 1:
+            print("\n".join(unlogged(int(a[1]))))
+        elif a and not a[0].startswith("-") and os.path.isdir(a[0]) and os.path.isdir(sess_dir(os.path.abspath(a[0]))):
+            print(run(os.path.abspath(a[0]), a[1] if len(a) > 1 else ""))
+        else:  # 도움말·잘못된 인자는 스캔하지 않는다(2026-09-13 --help 가 색인을 비운 사고)
+            print(USAGE)
     except Exception as ex:  # fail-open — 그래도 흔적은 남긴다
         print("archive-error %s" % ex, file=sys.stderr)
         try:
