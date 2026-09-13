@@ -3,7 +3,7 @@
 # 목적: 이전 세션의 ⏸중단·▶다음, 양 repo 동기화 상태, 현재 session_id를 하나의 표 배너로 띄우고
 #       session_id를 모델 컨텍스트에 주입("세션 마무리" 기록·resume 식별용).
 # ※ 시작 HEAD 기록은 2026-07-17 제거(짝이던 SessionEnd commit 훅 폐기 — 자세한 경위는 CC 작업로그).
-# 앞서 도는 session-sync-check.sh 가 .startup-sync.tmp 에 남긴 동기화 행을 읽어 합친다.
+# 내부에서 순차 호출하는 session-sync-check.sh 가 .startup-sync.tmp 에 남긴 동기화 행을 읽어 합친다.
 # 표 정렬·JSON 인코딩은 _banner.py 가 담당. jq 비의존.
 set -uo pipefail
 
@@ -24,6 +24,11 @@ fi
 # 별도 훅으로 두면 tmp 핸드오프에 경쟁이 생긴다. 여기서 직접 부르면 순서 보장.
 bash "$PROJ/.claude/hooks/session-sync-check.sh" 2>/dev/null || true
 
+# 보존·색인(spec 2026-09-13 §6.1) — 배너보다 먼저, 순차. 실패해도 계속.
+timeout 20 python3 "$PROJ/.claude/hooks/session_archive.py" "$PROJ" "$SID" >/dev/null 2>&1 || true
+UNLOGGED=$(python3 "$PROJ/.claude/hooks/session_archive.py" --unlogged 7 2>/dev/null)
+LATEST_DATE=$(awk '/^## /{print $2; exit}' "$LOG" 2>/dev/null)
+
 # 이어하기: 최신 사람 블록(첫 '## ' ~ 다음 '## ')에서 ⏸중단·▶다음만 추출. '(없음)' 제외.
 open=""
 if [ -f "$LOG" ]; then
@@ -41,6 +46,8 @@ fi
     done < "$SYNC_TMP"
   fi
 
+  printf 'R%s📌 대기 항목 출처%s작업로그 최신 블록 %s — 그 뒤 세션이 미기재면 낡았을 수 있다. 실제 상태로 대조할 것\n' "$TAB" "$TAB" "${LATEST_DATE:-?}"
+
   # 이어하기 행 (콜론 기준 키/값 분리 — ASCII 안전)
   if [ -n "$open" ]; then
     printf '%s\n' "$open" | sed 's/^-\{0,1\} *//' | while IFS= read -r ln; do
@@ -51,6 +58,11 @@ fi
     done
   else
     printf 'R%s📋 이어하기%s미완 작업 없음\n' "$TAB" "$TAB"
+  fi
+
+  if [ -n "$UNLOGGED" ]; then
+    printf 'R%s📭 미기재 세션(7일)%s%s개\n' "$TAB" "$TAB" "$(printf '%s\n' "$UNLOGGED" | grep -c .)"
+    printf '%s\n' "$UNLOGGED" | while IFS= read -r u; do printf 'R%s  ·%s%s\n' "$TAB" "$TAB" "$u"; done
   fi
 
   # session_id 각주(전체폭)
