@@ -65,6 +65,13 @@ Important 7건을 **전부 실데이터로 재현한 뒤** 반영 — 커밋 제
 - **`autoCompactEnabled:false` 유지**(사용자 결정) — 자동 요약이 관문 진행 중 끼면 Claude 의 중간 판단이 사라지고, 보존 층은 사용자 발화만 지킨다. 비용은 작업 단위마다 세션을 나누는 것으로 대응
 - 푸시 — sop-project 13건
 
+### ✅ 완료 — 플러그인 재구성 · 보충 도구 발동 규칙
+
+- **켬** context7 · hookify(재활성) · **설치** pyright-lsp(pyright 1.1.414 를 `~/.local` 에) · session-report — 모두 다음 세션부터
+- 🔴 **fiftyone 시험 중단** — 격리 가상환경 설치는 성공(1.1GB)했으나 내장 MongoDB 가 이 파이에서 기동 불가(`MongoDB could not be installed on your system`). MongoDB 공식 ARM64 빌드는 우분투·RHEL·아마존용뿐이고 Debian 은 x86_64 만, Docker 없음 → 시험 환경 삭제, 데스크톱에서 검토. 🔑 fiftyone 은 미디어를 복사하지 않고 경로만 저장하며 Roboflow 와는 YOLO 형식 파일로 만난다
+- 🔑 **가설 검증** — superpowers 는 자기 SessionStart 훅(`startup|clear|compact`)이 「해당하면 반드시 스킬」 지시를 주입한다. 문서에 없는 systematic-debugging 이 5회 쓰인 이유. 반대로 설명서 흐름 목록에만 있던 검증·리뷰 요청 스킬은 0회
+- 🔑 **발동 규칙은 자동으로 읽히는 CLAUDE.md 에** — 작업 중간엔 설명서가 컨텍스트에 없다. CLAUDE.md §2 발동 표 + CC작업문서 §2.8 주의점. 사용자 결정 = 주 도구 superpowers · 나머지는 상황에 따라 보충(이름을 말하지 않는다)
+
 ### 🔗 커밋
 - 설계·계획: `f2ac7e6` · `795fb30` · `4b34f13` · `8a19e59` · `430c6d3` · `b4b0352` · `8a1c509`
 - 구현: `b15a42f` 보존·색인·배너 · `516bfa6` 금지 규칙 · `8b9ff88` 규칙 문서화 · `48c14f6` 리뷰 반영
