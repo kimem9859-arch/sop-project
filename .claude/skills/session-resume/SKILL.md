@@ -36,17 +36,19 @@ cd "$CLAUDE_PROJECT_DIR" && for f in docs/작업로그.md docs/claude-code-작�
 
 ```bash
 python3 "$CLAUDE_PROJECT_DIR/.claude/hooks/session_archive.py" --unlogged 7
-awk -F'\t' -v me="${CLAUDE_CODE_SESSION_ID:0:8}" 'NR>1 && $6=="진행중" && substr($2,1,8)!=me {print $2, $1, $3}' ~/lab/session-archive/INDEX.tsv | while read -r sid day first; do
+I=~/lab/session-archive/INDEX.tsv
+if [ ! -f "$I" ]; then echo "보존 색인 없음 — 작업로그 기준으로만 판단"; else
+awk -F'\t' -v me="${CLAUDE_CODE_SESSION_ID:0:8}" 'NR>1 && $6=="진행중" && substr($2,1,8)!=me {print $2, $1, $3}' "$I" | while read -r sid day first; do
   if grep -q "$sid" "$CLAUDE_PROJECT_DIR"/docs/작업로그.md "$CLAUDE_PROJECT_DIR"/docs/claude-code-작업로그.md; then echo "최근 종료·기록 있음 ${sid:0:8} $day"; else echo "⚠️ 진행 중·기록 없음 ${sid:0:8} $day $first"; fi
-done
+done; fi
 ```
 
 🔑 **「진행중」만으로 경고하지 않는다.** 색인은 원본이 60분 안에 바뀐 세션을 모두 진행중으로 표시하므로, **방금 닫은 세션**도 여기 걸린다. 전체 세션 번호가 작업로그에 있으면 「최근 종료」로 보고 경고하지 않는다 — 기록이 없을 때만 경고한다(2026-09-13 시험 실행에서 발견).
 
-**그 세션들이 멈춘 지점** — 보존본의 마지막 발화 2개와 응답 꼬리(`<ID8>` 를 채운다):
+**그 세션들이 멈춘 지점** — 앞에서 찾은 미기재·「진행 중·기록 없음」 세션 **각각**의 보존본에서 마지막 발화 2개와 응답 꼬리를 본다(`<ID8 …>` 를 찾은 번호들로 채운다):
 
 ```bash
-f=$(ls ~/lab/session-archive/*_<ID8>.md); awk '/^## 사용자 발화/{g=1;next} /^## 편집 파일/{g=0} g' "$f" | grep '^\[' | tail -2 | cut -c1-200; awk '/^## 마지막 응답 꼬리/{g=1;next} g' "$f"
+for id in <ID8 …>; do f=$(ls ~/lab/session-archive/*_"$id".md 2>/dev/null | head -1); if [ -z "$f" ]; then echo "== $id 보존본 없음"; continue; fi; echo "== $id"; awk '/^## 사용자 발화/{g=1;next} /^## 편집 파일/{g=0} g' "$f" | grep '^\[' | tail -2 | sed -E 's/^(.{200}).*/\1…/'; awk '/^## 마지막 응답 꼬리/{g=1;next} g' "$f"; done
 ```
 
 **커밋 안 된 변경:**
@@ -89,3 +91,4 @@ CLAUDE.md §1 답변 방식을 따른다(결론 먼저 · 새 용어 풀기).
 - 보존 색인은 세션 시작 스캔 기준이라 **최대 30분 늦을 수 있다.** 방금 끝난 세션이 안 보이면 그 때문이다.
 - 최신 블록이 어제 이전 것일 수 있다 — 보고에 **블록 날짜**를 적어 기준을 드러낸다.
 - 추천은 **하나만** 한다(CLAUDE.md §1⑤). 나머지는 남은 작업 표로 충분하다.
+- **긴 한글 줄 자르기는 문자 단위(`sed`)로** — `cut -c` 는 바이트 단위라 한글을 반쪽으로 잘라 깨진 글자를 만든다(2026-09-13 시험에서 발견).
