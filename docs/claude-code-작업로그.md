@@ -9,8 +9,8 @@
 ## 2026-09-13 · session d44c5db2-f26a-4700-82c1-1f2db721e247 (⭐ 하네스 점검 → 목적 확정 → 보존·색인·배너·권한 구현 — 🔑 규칙이 깨진 곳에만 장치를 붙인다)
 
 - ✅ 🤝 **관문 G1~G5 전부 통과 — 2026-09-13 사용자와 공동 선언**
-- ⏸ 보류 — 안 쓰는 플러그인 6개(`ralph-loop` 제외) · 문서에 없는 설정 키 4개·`autoCompactEnabled:false` 의도 · 두 기계 자동 메모리 분리
-- ▶ 다음: ①미푸시 커밋 푸시(요청 시) ②보류 항목(플러그인 6개 · 설정 키 4개) ③보존·색인 몇 주 운용 뒤 3층(자동 산문 요약) 재검토
+- ⏸ 보류 — 두 기계 자동 메모리 분리(사용자가 이번 범위에서 제외) · 데스크톱 플러그인 설정은 별개(파이만 비활성)
+- ▶ 다음: ①프로젝트 작업은 새 세션에서(인터락 NO 개정) ②보존·색인 몇 주 운용 뒤 3층(자동 산문 요약) 재검토
 
 > 설계 정본 = `docs/superpowers/specs/2026-09-13-하네스-design.md` · 계획 = `docs/superpowers/plans/2026-09-13-하네스.md`. 목적·역할·검증 의무의 내용은 거기와 CC작업문서 §2.7 이 정본이라 여기 반복하지 않는다.
 
@@ -55,7 +55,15 @@ Important 7건을 **전부 실데이터로 재현한 뒤** 반영 — 커밋 제
 
 ### ✅ 완료 — 기억
 
-`review-via-summary-not-files` 신설(검토는 파일 대신 고정 형식 요약) · `model-attribution-labeling` 색인 누락 보정.
+`review-via-summary-not-files` 신설(검토는 파일 대신 고정 형식 요약) · `model-attribution-labeling` 색인 누락 보정 · `cc-infra-official-docs-first` 에 「큰 문서의 사실 확인은 원문 grep」 적용법 추가.
+
+### ✅ 완료 — 보류 항목 정리
+
+- **플러그인 7개 비활성**(파이 사용자 설정) — hookify · claude-code-setup · code-simplifier · skill-creator · claude-md-management · code-review · context7. 켜둔 것 = superpowers · ralph-loop(요청 시 루프, spec §9.1). 🔑 설명서의 `code-review` 참조는 superpowers `requesting-code-review` 스킬이라 표준 절차에 영향 없음. 백업 `~/.claude/settings.json.bak-20260913` · 다음 세션부터 적용
+- 🔴 **정정 — 「문서에 없는 설정 키 4개」는 틀렸다.** 공식 `settings-reference.md` 원문을 받아 찾으니 `verbose`·`theme`·`worktree`·`useAutoModeDuringPlan` 모두 공식 키. 앞선 판정은 요약 도구가 43만 자 문서에서 놓친 것 → **CC 설정 사실 확인은 요약 도구가 아니라 원문 grep 으로**
+- 🔴 **정정 — 안 쓰는 플러그인은 8개였다**(6개·7개로 두 번 틀리게 보고)
+- **`autoCompactEnabled:false` 유지**(사용자 결정) — 자동 요약이 관문 진행 중 끼면 Claude 의 중간 판단이 사라지고, 보존 층은 사용자 발화만 지킨다. 비용은 작업 단위마다 세션을 나누는 것으로 대응
+- 푸시 — sop-project 13건
 
 ### 🔗 커밋
 - 설계·계획: `f2ac7e6` · `795fb30` · `4b34f13` · `8a19e59` · `430c6d3` · `b4b0352` · `8a1c509`
