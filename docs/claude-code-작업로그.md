@@ -72,6 +72,7 @@ Important 7건을 **전부 실데이터로 재현한 뒤** 반영 — 커밋 제
 - **켬** context7 · hookify(재활성) · **설치** pyright-lsp(pyright 1.1.414 를 `~/.local` 에) · session-report — 모두 다음 세션부터
 - 🔴 **fiftyone 시험 중단** — 격리 가상환경 설치는 성공(1.1GB)했으나 내장 MongoDB 가 이 파이에서 기동 불가(`MongoDB could not be installed on your system`). MongoDB 공식 ARM64 빌드는 우분투·RHEL·아마존용뿐이고 Debian 은 x86_64 만, Docker 없음 → 시험 환경 삭제, 데스크톱에서 검토. 🔑 fiftyone 은 미디어를 복사하지 않고 경로만 저장하며 Roboflow 와는 YOLO 형식 파일로 만난다
 - 🔑 **가설 검증** — superpowers 는 자기 SessionStart 훅(`startup|clear|compact`)이 「해당하면 반드시 스킬」 지시를 주입한다. 문서에 없는 systematic-debugging 이 5회 쓰인 이유. 반대로 설명서 흐름 목록에만 있던 검증·리뷰 요청 스킬은 0회
+- ✅ **이어하기 스킬 신설**(`/이어하기` · `session-resume`) — 새 세션에서 무슨 말로 이어받게 할지 매번 몰랐던 문제. 원격 확인 → 두 로그 ⏸·▶ + 보존 색인 미기재·진행중 + 커밋 안 된 변경 → 실제 상태 대조(대기·실물 준비 필요·낡음·미대조) → 요약·남은 작업·추천 하나 보고 후 멈춤. 🔴 **시험 실행에서 결함 발견·수정** — 색인의 「진행중」(60분)만 보면 방금 닫은 세션을 「가져가지 말라」고 잘못 경고한다 → 전체 세션 번호가 작업로그에 있으면 「최근 종료」로 판정
 - 🔑 **발동 규칙은 자동으로 읽히는 CLAUDE.md 에** — 작업 중간엔 설명서가 컨텍스트에 없다. CLAUDE.md §2 발동 표 + CC작업문서 §2.8 주의점. 사용자 결정 = 주 도구 superpowers · 나머지는 상황에 따라 보충(이름을 말하지 않는다)
 
 ### 🔗 커밋
