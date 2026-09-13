@@ -17,12 +17,12 @@
 
 | # | 항목 | 역할 |
 |---|---|---|
-| ① | `.claude/hooks/session-worklog-brief.sh` | **세션 시작 배너** — 원격 동기화 + `⏸`중단·`▶`다음 이어하기(출처·낡음 표기) + 📭 미기재 세션 + 현재 session_id 주입. 사람 화면은 한 줄, 전체는 Claude 컨텍스트 |
+| ① | `.claude/hooks/session-worklog-brief.sh` | **세션 시작 배너** — 원격 동기화 + `⏸`중단·`▶`다음 이어하기(출처·낡음 표기) + 📭 미기재 세션 + 현재 session_id 주입. 사람 화면은 현황 요약 최대 4줄(마감 D-day·대기·긴급·다음·조건부 이상 — spec `2026-09-13-배너-현황요약`), 전체 목록은 Claude 컨텍스트 |
 | ② | `.claude/hooks/session-prune-stubs.sh` | resume 목록의 tiny/원격제어 스텁 세션을 `.trash`로 정리 (systemMessage 배너) |
 | ③ | `.claude/hooks/session_archive.py` | 세션 기록 **보존·색인** — ①이 배너 전에 **순차 호출**(독립 훅 아님). 산출물은 저장소 밖 `~/lab/session-archive/`, 작업로그 기재 여부를 `INDEX.tsv` 로 판정해 ①이 📭 행으로 주입(spec 2026-09-13-하네스) |
 | — | 스킬 `session-wrap` / 커맨드 `/세션마무리` | 세션 작업을 4분류로 정리해 로그에 기록 — **세션 추적의 본체** |
 
-⚠️ **`session-sync-check.sh`는 독립 훅이 아니다.** ①이 **내부에서 순차 호출**한다(SessionStart 병렬실행 경쟁 회피). sop-project·Rpi5 양쪽의 ahead/behind·로컬변경을 점검·보고하며, 결과는 `_banner.py`가 한 줄 systemMessage + 전체 additionalContext 로 렌더한다(정렬 표는 2026-09-13 폐기).
+⚠️ **`session-sync-check.sh`는 독립 훅이 아니다.** ①이 **내부에서 순차 호출**한다(SessionStart 병렬실행 경쟁 회피). sop-project·Rpi5 양쪽의 ahead/behind·로컬변경을 점검·보고하며, 결과는 `_banner.py`가 현황 요약 systemMessage + 전체 additionalContext 로 렌더한다(정렬 표는 2026-09-13 폐기). 동기화 임시파일은 실행마다 따로 만든다(동시 실행 경합 — 고정 파일 공유 시 🔄 행 중복·누락).
 
 ### 폐기 이력 — 같은 목표에 3번 시도, 훅으로는 해결 안 된다는 결론
 - `doc-consistency-check.sh`(SessionStart grep, **2026-07-01 제거**) — 타이밍상 예방 불가·중복.
