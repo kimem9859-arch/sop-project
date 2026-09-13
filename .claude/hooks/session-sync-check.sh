@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 # SessionStart 훅 — 양 repo(sop-project, Rpi5) 원격 fetch 후 ahead/behind 점검.
 # 목적: 새 세션에서 "로컬이 최신이겠거니" 가정하다 stale 상태로 답하는 문제 방지(2026-06-11 도입).
-# 표시는 하지 않는다 — 결과 행을 임시파일(.startup-sync.tmp)에 써서 뒤이어 도는
-# session-worklog-brief.sh 가 '이어하기'와 합쳐 하나의 표 배너로 띄운다(2026-07-03 개편).
+# 표시는 하지 않는다 — 결과 행을 첫 인자로 받은 임시파일(없으면 .startup-sync.tmp)에 써서 뒤이어 도는
+# session-worklog-brief.sh 가 '이어하기'와 합쳐 하나의 배너로 띄운다(2026-07-03 개편).
 # jq 비의존.
 set -uo pipefail
 
 PROJ="${CLAUDE_PROJECT_DIR:-$(pwd)}"
-TMP="$PROJ/.claude/.startup-sync.tmp"
+TMP="${1:-$PROJ/.claude/.startup-sync.tmp}"
 : > "$TMP" 2>/dev/null || TMP=/dev/null
 
 # repo 한 개 점검 → "키<TAB>값" 한 줄을 $TMP 에 append
