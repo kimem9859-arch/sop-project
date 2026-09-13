@@ -53,7 +53,7 @@ def summary(rows, hanium, now):
             seg.append("📅 %s 기록" % m.group(1))
             break
     wait = [l for l in joined if l.startswith("⏸")]
-    seg.append("⏸ 대기 %d" % len(wait))
+    seg.append("⏸️ 대기 %d" % len(wait))  # U+FE0F — 없으면 폭 1로 계산돼 그림과 글자가 겹친다(2026-09-13 V4)
     red = [l for l in wait if re.match(r"⏸\s*🔴", l)]  # 줄 앞 태그만(본문 속 🔴 제외)
     if red:
         title = red[0].replace("⏸", "", 1).replace("🔴", "", 1).split(" — ")[0]
@@ -63,7 +63,7 @@ def summary(rows, hanium, now):
     if nxt:
         body = re.sub(r"^▶\s*(다음)?(\([^)]*\))?:?", "", nxt)
         m = re.search(r"①\s*(.*?)(?=\s*②|$)", body)
-        lines.append("▶ 다음 " + cut(m.group(1) if m else body))
+        lines.append("▶️ 다음 " + cut(m.group(1) if m else body))
     issues = []
     for k, v in rows:
         if k.startswith("🔄"):
