@@ -17,6 +17,11 @@
       "Bash(head:*)",
       "Bash(tail:*)",
       "Bash(wc:*)"
+    ],
+    "deny": [
+      "Bash(git add -A *)",
+      "Bash(git add --all *)",
+      "Bash(git add . *)"
     ]
   },
   "statusLine": {
