@@ -21,7 +21,10 @@
     "deny": [
       "Bash(git add -A *)",
       "Bash(git add --all *)",
-      "Bash(git add . *)"
+      "Bash(git add . *)",
+      "Bash(git -C * add -A *)",
+      "Bash(git -C * add --all *)",
+      "Bash(git -C * add . *)"
     ]
   },
   "statusLine": {
