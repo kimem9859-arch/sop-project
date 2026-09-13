@@ -24,7 +24,17 @@ msg2, _ = run(clean)
 eq("C2 이상 없음·마감표 없음·▶ 없음", msg2, "🚀 SOP 가디언\n📅 09-13 기록 · ⏸ 대기 1")
 msg3, _ = run("T\tx\n" + P + "R\t⏸ 🔴 가나다라마바사아자차카타파하가나다라마바사아자차카타파하가나다 — 뒤\t\n")
 eq("C3 30자 자르기", msg3.split("\n")[1], "📅 09-13 기록 · ⏸ 대기 1 · 🔴 가나다라마바사아자차카타파하가나다라마바사아자차카타파하가나…")
-for name, m in (("C1", msg), ("C2", msg2), ("C3", msg3)):
+# 최종 리뷰 반영 — (당시) · 줄 중간 🔴 · 달 넘김 날짜 · 🔴 하나(외 없음) · ① 없는 ▶ · upstream 미설정
+msg4, _ = run("T\tx\nR\t🔄 sop-project\t[main] upstream 미설정\nR\t📌 대기 항목 출처\t작업로그 최신 블록 2026-08-31~09-01 — x\n"
+              "R\t⏸ ⚠️ gpio — 🔴 급함\t\nR\t⏸ 🔴 인터락\t\nR\t▶ 다음(당시)\t실물 결선 · 촬영\n")
+eq("C4 드문 형태", msg4, "🚀 SOP 가디언\n📅 08-31~09-01 기록 · ⏸ 대기 2 · 🔴 인터락\n▶ 다음 실물 결선 · 촬영\n⚠️ sop-project [main] upstream 미설정")
+# 깨진 입력에도 JSON·session_id 는 살아야 한다(리뷰 Important #1)
+r5 = subprocess.run([sys.executable, os.path.join(HERE, "_banner.py")], input=b"T\tx\n\xff\nN\t\xf0\x9f\x86\x94 sid-5\n", capture_output=True)
+try:
+    if "sid-5" not in json.loads(r5.stdout.decode())["hookSpecificOutput"]["additionalContext"]: fails.append("C5 session_id 누락")
+except Exception as e:
+    fails.append("C5 깨진 입력에 출력 없음: %r" % e)
+for name, m in (("C1", msg), ("C2", msg2), ("C3", msg3), ("C4", msg4)):
     if m.count("\n") > 3: fails.append(name + " 4줄 초과")
     if "  " in m: fails.append(name + " 연속 공백")
 os.unlink(tbl)
