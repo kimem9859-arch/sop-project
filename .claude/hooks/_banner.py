@@ -74,8 +74,10 @@ def summary(rows, hanium, now):
                     issues.append("sop-project " + b.group())
                 elif "미설정" in state or "없음" in state:
                     issues.append("sop-project " + state)
-            elif state != "동기화됨":
-                issues.append("%s %s" % (name, state))
+            else:  # 커밋 안 한 변경은 매 세션 떠서 소음 — 뺀다(2026-09-13 V4 사용자 결정)
+                state = state.replace("로컬변경", "").strip()
+                if state and state != "동기화됨":
+                    issues.append("%s %s" % (name, state))
         elif k.startswith("📭"):
             issues.append("미기재 세션 " + re.sub(r"\D", "", v))
     if issues:
