@@ -36,7 +36,8 @@ cd "$CLAUDE_PROJECT_DIR" && for f in docs/작업로그.md docs/claude-code-작�
 **보존 색인 — 최근 7일 기록 안 끝난 세션(미기재·부분기재)과 진행중 세션:**
 
 ```bash
-python3 "$CLAUDE_PROJECT_DIR/.claude/hooks/session_archive.py" --unlogged 7
+P="${CLAUDE_PROJECT_DIR:-$(git rev-parse --show-toplevel)}"
+python3 "$P/.claude/hooks/session_archive.py" --unlogged 7
 I=~/lab/session-archive/INDEX.tsv
 if [ ! -f "$I" ]; then echo "보존 색인 없음 — 작업로그 기준으로만 판단"; else
 date '+지금 %Y-%m-%d %H:%M (현지)'
@@ -49,10 +50,10 @@ awk -F'\t' -v me="${CLAUDE_CODE_SESSION_ID:0:8}" 'NR>1 && $6=="진행중" && sub
 **그 세션들이 멈춘 지점** — 찾은 기록 안 끝난 세션 **각각**(진행중은 사용자가 「떠났다」고 답한 뒤. `<ID8 …>` 를 찾은 번호들로 채운다):
 
 ```bash
-for id in <ID8 …>; do echo "== $id"; python3 "$CLAUDE_PROJECT_DIR/.claude/hooks/session_archive.py" --pending "$id" | sed -E 's/^(.{220}).*/\1…/'; done
+P="${CLAUDE_PROJECT_DIR:-$(git rev-parse --show-toplevel)}"; for id in <ID8 …>; do echo "== $id"; CLAUDE_PROJECT_DIR="$P" python3 "$P/.claude/hooks/session_archive.py" --pending "$id" | sed -E 's/^(.{220}).*/\1…/'; done
 ```
 
-출력 = 마지막 활동(현지)·경과·오늘/어제 · **작업로그에 없는 커밋** · 편집한 계획서의 **체크 x/y · 첫 미체크 태스크** · 마지막 발화 3개 · 응답 꼬리. 🔴 「해시 못 찾은 커밋 명령」은 실패한 시도·고쳐 쓰기·다른 저장소일 수 있다 — 판정에 쓰지 않는다.
+출력 = 마지막 활동(현지)·경과·오늘/어제 · **작업로그에 없는 커밋** · 편집한 계획서의 **커밋 스텝 x/y · 첫 미완 커밋**(계획서에 적힌 커밋 제목을 실제 커밋과 대조 — 이 프로젝트는 체크박스를 쓰지 않는다) · 마지막 발화 3개 · 응답 꼬리. 🔴 「해시 못 찾은 커밋 명령」은 실패한 시도·고쳐 쓰기·다른 저장소일 수 있다 — 판정에 쓰지 않는다.
 
 **커밋 안 된 변경:**
 
@@ -82,14 +83,14 @@ CLAUDE.md §1 답변 방식을 따른다(결론 먼저 · 새 용어 풀기).
 남은 작업
 | 항목 | 상태 | 근거 |
 
-🔓 기록 안 끝난 작업 — <ID8 · 멈춘 지점 한 줄 · 미기록 커밋 N · 계획서 체크 x/y>   (있을 때만)
+🔓 기록 안 끝난 작업 — <ID8 · 멈춘 지점 한 줄 · 미기록 커밋 N · 계획서 커밋 스텝 x/y>   (있을 때만)
 ❓ 진행중 세션 — <ID8 · 마지막 활동 N분 전 · 마지막 지시 『…』> — 다른 창에서 작업 중인가요, 떠난 세션인가요?   (있을 때만)
 🔄 원격 — <동기화 / behind N / 로컬변경>
 
 추천 — <하나> · 이유 <한 줄> · 실물 준비 <필요 / 불필요>
 ```
 
-**추천 규칙** — ①기록 안 끝난 작업이 있으면 1순위 = 「이 작업을 이어서 끝낼까요, 중단으로 확정할까요?」(이어서 → 남은 태스크 → 공동 확인 → `work-close` / 중단 확정 → `work-close` 🛑) ②그 작업의 계획서 태스크가 전부 체크됐고 정본 기록만 없으면 묻지 않고 「`work-close` 부터」 ③둘 다 없으면 남은 작업 중 하나.
+**추천 규칙** — ①기록 안 끝난 작업이 있으면 1순위 = 「이 작업을 이어서 끝낼까요, 중단으로 확정할까요?」(이어서 → 남은 태스크 → 공동 확인 → `work-close` / 중단 확정 → `work-close` 🛑) ②그 작업의 계획서 커밋 스텝이 전부 커밋됐고 정본 기록만 없으면 「**공동 확인 후 `work-close`**」 — 떠난 세션의 작업은 공동 확인을 거치지 않았을 수 있다(CLAUDE.md §2, 2026-09-14 리뷰 I7) ③둘 다 없으면 남은 작업 중 하나.
 
 **그리고 멈춘다.** 사용자가 고르면 그때 시작한다 — 비자명 작업이면 `superpowers:brainstorming` 부터(CLAUDE.md §2).
 

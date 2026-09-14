@@ -43,7 +43,7 @@ def commits_in(cmd):
                 body = [l for l in lines[body_from:i - 1] if l.strip()]
                 out.append((body[0].strip() if body else "")[:100])
             else:
-                q = re.search(r'-m\s+"([^"\n]*)', seg) or re.search(r"-m\s+'([^'\n]*)", seg)
+                q = re.search(r'-[a-zA-Z]*m\s*"([^"\n]*)', seg) or re.search(r"-[a-zA-Z]*m\s*'([^'\n]*)", seg)  # -m · -qm · -am
                 out.append((q.group(1) if q else seg)[:100])
     return out
 
@@ -202,12 +202,16 @@ def unlogged(days, now=None):
     cutoff = time.strftime("%Y-%m-%d", time.localtime((now or time.time()) - days * 86400))
     p = os.path.join(ARCHIVE, "INDEX.tsv")
     rows = [l.split("\t") for l in open(p).read().splitlines()[1:] if l] if os.path.exists(p) else []
+    def day(r):  # 마지막 활동 기준 — 여러 날 이어진 세션이 시작일 때문에 빠지지 않게(2026-09-14 리뷰 I5)
+        return r[6][:10] if len(r) >= 7 and r[6][:1].isdigit() else r[0]
     return ["%s %s %s%s" % (r[1][:8], r[0], r[2], " · 부분기재" if r[5] == "부분기재" else "")
-            for r in rows if len(r) >= 6 and r[5] in ("미기재", "부분기재") and r[0] >= cutoff]
+            for r in rows if len(r) >= 6 and r[5] in ("미기재", "부분기재") and day(r) >= cutoff]
 
 def pending(project_dir, id8, now=None):
     """이어받기용 — 한 세션의 멈춘 지점: 마지막 활동과 경과 · 작업로그에 없는 커밋 · 편집한 계획서 체크 · 마지막 발화 3개 · 응답 꼬리."""
     now = now or time.time()
+    if not re.fullmatch(r"[0-9A-Za-z-]{8,}", id8 or ""):  # 빈 값·짧은 값·글롭 문자(*?[)가 임의 세션을 집지 않게
+        return "세션 번호는 영문자·숫자·하이픈 8자 이상이어야 한다: %r" % id8
     paths = sorted(glob.glob(os.path.join(sess_dir(project_dir), id8 + "*.jsonl")))
     if not paths:
         return "세션 %s — 원본 없음" % id8
@@ -215,14 +219,16 @@ def pending(project_dir, id8, now=None):
     if not s:
         return "세션 %s — 껍데기·헤드리스라 이어받을 작업 없음" % id8
     out = []
-    if s["ts"]:
+    cur = datetime.datetime.fromtimestamp(now).astimezone()
+    try:
         last = datetime.datetime.fromisoformat(s["ts"][-1].replace("Z", "+00:00")).astimezone()
-        cur = datetime.datetime.fromtimestamp(now).astimezone()
         mins = max(0, int((cur - last).total_seconds() // 60))
         ago = "%d분" % mins if mins < 120 else ("%d시간" % (mins // 60) if mins < 2880 else "%d일" % (mins // 1440))
         days = (cur.date() - last.date()).days
-        when = "오늘" if days == 0 else ("어제" if days == 1 else "%d일 전" % days)
-        out.append("마지막 활동 %s (%s 전 · %s) · 지금 %s" % (last.strftime("%Y-%m-%d %H:%M"), ago, when, cur.strftime("%Y-%m-%d %H:%M")))
+        when = " · 오늘" if days == 0 else (" · 어제" if days == 1 else "")
+        out.append("마지막 활동 %s (%s 전%s) · 지금 %s" % (last.strftime("%Y-%m-%d %H:%M"), ago, when, cur.strftime("%Y-%m-%d %H:%M")))
+    except (IndexError, ValueError, AttributeError):
+        out.append("마지막 활동 ? (시각 기록 없음·깨짐) · 지금 %s" % cur.strftime("%Y-%m-%d %H:%M"))
     miss, unresolved = pending_commits(s, repo_commits(project_dir), _texts(project_dir))
     out.append("## 작업로그에 없는 커밋 %d건" % len(miss))
     out += ["- %s %s %s" % (h, t, title) for h, t, title in miss]
@@ -230,17 +236,23 @@ def pending(project_dir, id8, now=None):
         out.append("## 해시 못 찾은 커밋 명령 %d건 — 실패한 시도·고쳐 쓰기·다른 저장소일 수 있음(판정 제외)" % len(unresolved))
         out += ["- " + t for t in unresolved]
     plans = [f for f in s["files"] if "/docs/superpowers/plans/" in f and f.endswith(".md")]
-    out.append("## 편집한 계획서 %d개" % len(plans))
+    out.append("## 편집한 계획서 %d개 — 계획서의 커밋 스텝 제목을 실제 커밋과 대조(체크박스는 이 프로젝트에서 쓰지 않는다)" % len(plans))
+    known = repo_commits(project_dir)
     for f in plans:
         try:
-            body = open(f, errors="ignore").read().splitlines()
+            body = open(f, errors="ignore").read()
         except OSError:
             out.append("- %s (파일 없음)" % f)
             continue
-        done = sum(1 for l in body if re.match(r"^\s*- \[[xX]\]", l))
-        todo = [l.strip() for l in body if re.match(r"^\s*- \[ \]", l)]
+        steps = [m.group(1) for line in body.splitlines() if "커밋" in line
+                 for m in re.finditer(r"`([a-z]+(?:\([^)`]*\))?: [^`]+)`", line)]
         name = os.path.relpath(f, project_dir) if f.startswith(project_dir) else f
-        out.append("- %s — 체크 %d/%d%s" % (name, done, done + len(todo), (" · 첫 미체크: " + todo[0][:120]) if todo else ""))
+        if not steps:
+            out.append("- %s — 계획서에 커밋 제목이 없어 판단 불가" % name)
+            continue
+        made = [t for t in steps if t[:100] in known or any(k.startswith(t[:40]) for k in known)]
+        todo = [t for t in steps if t not in made]
+        out.append("- %s — 커밋 스텝 %d/%d%s" % (name, len(made), len(steps), (" · 첫 미완: " + todo[0][:120]) if todo else " · 전부 커밋됨"))
     out.append("## 마지막 발화")
     out += ["- " + p.replace("\n", " ")[:200] for p in s["prompts"][-3:]]
     out += ["## 응답 꼬리", s["tail"]]

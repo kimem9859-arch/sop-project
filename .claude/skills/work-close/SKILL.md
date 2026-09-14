@@ -61,7 +61,7 @@ when_to_use: 공동 확인 직후 · 실패·중단을 사용자와 합의한 �
 ### 2.5 자가 점검 (커밋 전)
 
 ```bash
-cd "$CLAUDE_PROJECT_DIR" && git diff -U0 -- docs/통합문서.md | grep -E '^[-+]' | grep -vE '^(\+\+\+|---)' | head -40   # 바뀐 줄 눈으로 확인
+P="${CLAUDE_PROJECT_DIR:-$(git rev-parse --show-toplevel)}"; cd "$P" && git diff HEAD -U0 -- docs/통합문서.md | grep -E '^[-+]' | grep -vE '^(\+\+\+|---)' | head -40   # 바뀐 줄 눈으로 확인
 python3 - <<'EOF'
 import re
 L = open("docs/통합문서.md", encoding="utf-8").read().splitlines()
@@ -88,22 +88,30 @@ EOF
 
 ## 3. 세션 마무리
 
-`session-wrap` 절차를 그대로 수행한다(그 스킬의 0단계 안전판은 이 스킬에서 불렸으므로 통과). 🛑 중단 작업은 작업로그 ⏸ 에 **재개 조건** 한 줄을 남긴다.
+`session-wrap` 절차를 그대로 수행한다(그 스킬의 0단계 안전판은 이 스킬에서 불렸으므로 통과). 🛑 중단 작업은 작업로그 ⏸ 에 **재개 조건** 한 줄을 남긴다. 🔴 **🔗 커밋 줄에 2단계의 `docs(정본)`·`docs(CC정본)` 커밋 해시를 반드시 넣는다** — 빠지면 다음 세션 색인이 이 세션을 부분기재로 띄운다(2026-09-14 리뷰 I4).
 
 ## 4. push — 한 번
 
+**4-1. 올라갈 커밋 확인** — 저장소마다 원격과 비교해 목록을 본다:
+
 ```bash
-cd "$CLAUDE_PROJECT_DIR" && for r in . Rpi5; do
-  n=$(git -C "$r" rev-list --count '@{u}..HEAD' 2>/dev/null || echo 0)
-  [ "$n" = 0 ] && { echo "$r: 올릴 커밋 없음"; continue; }
-  git -C "$r" fetch -q
-  b=$(git -C "$r" rev-list --count 'HEAD..@{u}')
-  [ "$b" != 0 ] && { echo "$r: 🔴 원격에 새 커밋 ${b}건 — push 하지 않음"; continue; }
-  git -C "$r" push -q origin HEAD 2>&1 | tail -1; echo "$r: push ${n}건"
+P="${CLAUDE_PROJECT_DIR:-$(git rev-parse --show-toplevel)}"; cd "$P" && for r in . Rpi5; do
+  git -C "$r" fetch -q 2>/dev/null
+  b=$(git -C "$r" rev-list --count 'HEAD..@{u}' 2>/dev/null || echo 0)
+  echo "== $r · 원격에만 있는 커밋 ${b}건"; git -C "$r" log --oneline '@{u}..HEAD' 2>/dev/null
 done
 ```
 
-- **원격에 새 커밋이 있으면 push 하지 않고 멈춰 보고한다** — 병합 판단은 사람이 한다(데스크톱이 먼저 올린 경우).
+- 🔴 **원격에만 있는 커밋이 있으면 push 하지 않고 멈춰 보고한다** — 병합 판단은 사람이 한다(데스크톱이 먼저 올린 경우).
+- 🔴 **목록에 이번 작업 단위 커밋이 아닌 것이 섞여 있으면 push 하지 않고 멈춰 보고한다** — 자동 push 가 허용된 것은 이번 작업분뿐이다(다른 세션이 일부러 안 올린 커밋일 수 있다 · 2026-09-14 리뷰 I2).
+
+**4-2. push** — 위 두 조건을 통과한 저장소만, **종료 코드로 성공을 판정**한다:
+
+```bash
+P="${CLAUDE_PROJECT_DIR:-$(git rev-parse --show-toplevel)}"; cd "$P" && for r in <통과한 저장소 …>; do
+  if out=$(git -C "$r" push -q origin HEAD 2>&1); then echo "$r: push 완료"; else echo "$r: 🔴 push 실패 — $out"; fi
+done
+```
 - 커밋 안 한 변경은 대상이 아니다 — 끝 보고에 적기만 한다.
 - 실패하면 작업로그는 그대로 두고 끝 보고에 오류와 재시도 방법을 적는다.
 
@@ -129,4 +137,4 @@ push — <저장소: N건 / 올릴 커밋 없음 / 🔴 멈춘 이유>
 ## 주의
 
 - push 는 **4단계에서만** 한다 — 작업 도중 push 는 사용자가 요청할 때만(CLAUDE.md §4).
-- brainstorming 없이 진행한 작업(미계획 작업)의 기록 형식은 아직 정하지 않았다 — 이 스킬의 발동 대상이 아니다.
+- brainstorming 없이 진행한 작업(미계획 작업)의 기록 형식은 아직 정하지 않았다 — 이 스킬의 발동 대상이 아니다. 결과 사실이 있으면 `session-wrap` 0단계가 작업로그 ⏸ 에 「정본 미기록(미계획 작업)」으로 남긴다.

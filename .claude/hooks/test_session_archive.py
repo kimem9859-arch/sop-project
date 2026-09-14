@@ -44,6 +44,7 @@ def test_1b_commit_forms():
         ("grep -n 'git commit -m' plan.md", []),
         ("cat > f.md <<'EOF'\ngit commit -m \"가짜\"\nEOF", []),
         ("git commit -q --amend --no-edit", []),
+        ("git commit -qm \"제목D\"", ["제목D"]),
     ]
     for cmd, want in cases:
         got = sa.commits_in(cmd); check(got == want, "커밋 형태 %r → %r (기대 %r)" % (cmd[:30], got, want))
@@ -68,7 +69,7 @@ def test_1d_bad_lines():
 def test_2_scope():
     session(B, 3); session(C, 2); session(D, 3); session(E, 3, sub=".trash"); session(F, 3, ep="sdk-cli")
     plan = os.path.join(PROJ, "docs", "superpowers", "plans", "p.md"); os.makedirs(os.path.dirname(plan), exist_ok=True)
-    open(plan, "w").write("- [x] **Step 1:** 끝\n- [ ] **Step 2:** 남음\n")
+    open(plan, "w").write("- [ ] **Step 5: 커밋** — `feat: 뒤작업`\n- [ ] **Step 9: 커밋** — `feat: 아직 안 한 커밋`\n")
     session(H, 3, [tool("Edit", {"file_path": plan}), tool("Bash", {"command": 'git commit -m "feat: 뒤작업"'})])
     session(I, 3, [tool("Bash", {"command": 'git commit -m "feat: 저장소에 없는 제목"'})])
     session(J, 3, [tool("Bash", {"command": 'git commit -m "docs(세션마무리): x"'})])
@@ -132,9 +133,27 @@ def test_9c_pending():
     hv = next(l.split()[0] for l in log.splitlines() if l.endswith("feat: 뒤작업"))
     check("마지막 활동" in out, "pending 에 마지막 활동: %r" % out[:120])
     check(hv[:7] in out, "pending 에 미기록 커밋 해시")
-    check("체크 1/2" in out, "pending 에 계획서 체크 1/2: %r" % out[-200:])
+    check("커밋 스텝 1/2" in out and "첫 미완: feat: 아직 안 한 커밋" in out, "pending 에 계획서 커밋 스텝 1/2: %r" % out[-300:])
+    check("세션 번호는" in sa.pending(PROJ, "", now=T0) and "세션 번호는" in sa.pending(PROJ, "*", now=T0), "빈·짧은·글롭 세션 번호는 거부")
     out_i = sa.pending(PROJ, "iiiiiiii", now=T0)
     check("해시 못 찾은 커밋 명령 1건" in out_i and "feat: 저장소에 없는 제목" in out_i, "pending 에 해시 못 찾은 명령은 따로 표시: %r" % out_i[:200])
+def test_9d_unlogged_uses_last_activity():
+    old = sa.ARCHIVE; d = os.path.join(_tmp, "arch9d"); os.makedirs(d, exist_ok=True); sa.ARCHIVE = d
+    open(os.path.join(d, "INDEX.tsv"), "w").write("시작일\t세션\t첫지시\t편집\t커밋\t기재\t마지막활동\n"
+        "2026-09-01\tkkkkkkkk-1\t오래 이어짐\t0\t0\t미기재\t2026-09-12 10:00\n"
+        "2026-09-01\tllllllll-1\t오래전 끝\t0\t0\t미기재\t2026-09-02 10:00\n")
+    now = time_of("2026-09-14 12:00")
+    u = sa.unlogged(7, now=now); sa.ARCHIVE = old
+    check([x[:8] for x in u] == ["kkkkkkkk"], "7일 필터는 마지막 활동 기준: %r" % u)
+def test_9e_pending_broken_timestamp():
+    session("mmmmmmmm-0000-0000-0000-000000000013", 3, [{"type": "assistant", "timestamp": "깨짐", "message": {"content": [{"type": "text", "text": "끝"}]}}])
+    try:
+        out = sa.pending(PROJ, "mmmmmmmm", now=T0); check("마지막 활동 ?" in out, "깨진 시각은 ? 로: %r" % out[:80])
+    except Exception as ex:
+        check(False, "깨진 시각에서 예외 %s" % type(ex).__name__)
+def time_of(s):
+    import datetime
+    return datetime.datetime.strptime(s, "%Y-%m-%d %H:%M").timestamp()
 if __name__ == "__main__":
     for n, f in sorted(globals().items()):
         if n.startswith("test_"): f()
