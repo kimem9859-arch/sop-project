@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# SessionStart 훅 — 세션 시작 배너(원격 동기화 + 이어하기 + 미기재 세션 + session_id).
+# SessionStart 훅 — 세션 시작 배너(원격 동기화 + 이어하기 + 기록 안 끝난 세션(미기재·부분기재) + session_id).
 # 목적: 이전 세션의 ⏸중단·▶다음, 양 repo 동기화 상태, 현재 session_id를 하나의 배너로 띄우고
 #       session_id를 모델 컨텍스트에 주입("세션 마무리" 기록·resume 식별용).
 # ※ 시작 HEAD 기록은 2026-07-17 제거(짝이던 SessionEnd commit 훅 폐기 — 자세한 경위는 CC 작업로그).
@@ -66,7 +66,7 @@ fi
   fi
 
   if [ -n "$UNLOGGED" ]; then
-    printf 'R%s📭 미기재 세션(7일)%s%s개\n' "$TAB" "$TAB" "$(printf '%s\n' "$UNLOGGED" | grep -c .)"
+    printf 'R%s📭 기록 안 끝난 세션(7일)%s%s개\n' "$TAB" "$TAB" "$(printf '%s\n' "$UNLOGGED" | grep -c .)"
     printf '%s\n' "$UNLOGGED" | while IFS= read -r u; do printf 'R%s  ·%s%s\n' "$TAB" "$TAB" "$u"; done
   fi
 

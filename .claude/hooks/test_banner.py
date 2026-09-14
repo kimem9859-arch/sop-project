@@ -14,9 +14,9 @@ with tempfile.NamedTemporaryFile("w", suffix=".md", delete=False, encoding="utf-
 P = "R\t📌 대기 항목 출처\t작업로그 최신 블록 2026-09-13 — 낡았을 수 있다\n"
 full = ("T\t🚀 세션 시작 점검\nH\t%s\nR\t🔄 sop-project\tbehind 2 ahead 1 로컬변경 \nR\t🔄 Rpi5\t로컬변경 \n" % tbl + P +
         "R\t⏸ 🔴 **인터락 결선 미복구** — 09-05 실패\t\nR\t⏸ ⚠️ gpio 결함\t\nR\t⏸ 🔴 디스크 부족 — 93%\t\n"
-        "R\t▶ 다음\t①인터락 NO 개정 실행 ②정본 반영\nR\t📭 미기재 세션(7일)\t3개\nR\t  ·\tabc 09-10 첫 지시\nN\t🆔 sid-123\n")
+        "R\t▶ 다음\t①인터락 NO 개정 실행 ②정본 반영\nR\t📭 기록 안 끝난 세션(7일)\t3개\nR\t  ·\tabc 09-10 첫 지시\nN\t🆔 sid-123\n")
 msg, ctx = run(full)
-eq("C1 전체", msg, "🚀 SOP 가디언 · 2차 평가 D-41 (10-24)\n📅 09-13 기록 · ⏸️ 대기 3 · 🔴 인터락 결선 미복구 외 1\n▶️ 다음 인터락 NO 개정 실행\n⚠️ sop-project behind 2 · 미기재 세션 3")
+eq("C1 전체", msg, "🚀 SOP 가디언 · 2차 평가 D-41 (10-24)\n📅 09-13 기록 · ⏸️ 대기 3 · 🔴 인터락 결선 미복구 외 1\n▶️ 다음 인터락 NO 개정 실행\n⚠️ sop-project behind 2 · 기록 안 끝난 세션 3")
 fails += ["C1 입력 누락 %s" % s for s in ("sop-project", "gpio 결함", "②정본 반영", "abc 09-10", "sid-123") if s not in ctx]
 fails += ["C1 정렬 표 잔존"] if ("┌" in ctx or "│" in ctx) else []
 clean = ("T\t🚀 세션 시작 점검\nH\t/없는/경로.md\nR\t🔄 sop-project\tahead 3 로컬변경 \nR\t🔄 Rpi5\t동기화됨\n" + P + "R\t⏸ ⚠️ gpio 결함\t\n")

@@ -79,7 +79,7 @@ def summary(rows, hanium, now):
                 if state and state != "동기화됨":
                     issues.append("%s %s" % (name, state))
         elif k.startswith("📭"):
-            issues.append("미기재 세션 " + re.sub(r"\D", "", v))
+            issues.append("기록 안 끝난 세션 " + re.sub(r"\D", "", v))  # 미기재 + 부분기재(spec 2026-09-14-작업마무리-이어받기 §5)
     if issues:
         lines.append("⚠️ " + " · ".join(issues))
     return "\n".join(re.sub(r" {2,}", " ", l) for l in lines)
