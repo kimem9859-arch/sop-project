@@ -244,13 +244,16 @@ def pending(project_dir, id8, now=None):
         except OSError:
             out.append("- %s (파일 없음)" % f)
             continue
-        steps = [m.group(1) for line in body.splitlines() if "커밋" in line
+        steps = [m.group(1) for line in body.splitlines() if re.search(r"\*\*Step \d+: 커밋", line)  # 커밋 스텝 줄만
                  for m in re.finditer(r"`([a-z]+(?:\([^)`]*\))?: [^`]+)`", line)]
         name = os.path.relpath(f, project_dir) if f.startswith(project_dir) else f
         if not steps:
             out.append("- %s — 계획서에 커밋 제목이 없어 판단 불가" % name)
             continue
-        made = [t for t in steps if t[:100] in known or any(k.startswith(t[:40]) for k in known)]
+        def made_(t):  # 커밋할 때 「 — 」 뒤 설명은 다듬기도 한다 → 앞부분(무엇을 했나)으로 대조. 짧으면 전체 일치만
+            head = t.split(" — ")[0].strip()
+            return t[:100] in known or (len(head) >= 15 and any(k.split(" — ")[0].strip() == head for k in known))
+        made = [t for t in steps if made_(t)]
         todo = [t for t in steps if t not in made]
         out.append("- %s — 커밋 스텝 %d/%d%s" % (name, len(made), len(steps), (" · 첫 미완: " + todo[0][:120]) if todo else " · 전부 커밋됨"))
     out.append("## 마지막 발화")

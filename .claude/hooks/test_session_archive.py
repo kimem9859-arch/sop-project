@@ -69,11 +69,14 @@ def test_1d_bad_lines():
 def test_2_scope():
     session(B, 3); session(C, 2); session(D, 3); session(E, 3, sub=".trash"); session(F, 3, ep="sdk-cli")
     plan = os.path.join(PROJ, "docs", "superpowers", "plans", "p.md"); os.makedirs(os.path.dirname(plan), exist_ok=True)
-    open(plan, "w").write("- [ ] **Step 5: 커밋** — `feat: 뒤작업`\n- [ ] **Step 9: 커밋** — `feat: 아직 안 한 커밋`\n")
+    open(plan, "w").write("- [ ] **Step 1** — frontmatter `name: 가짜` · 커밋 형식 `docs(정본): …` 설명 줄\n"
+                          "- [ ] **Step 5: 커밋** — `feat: 뒤작업`\n- [ ] **Step 7: 커밋** — `feat: 대시 뒤가 달라진 긴 커밋 제목 사례 — 계획 때 적은 설명`\n"
+                          "- [ ] **Step 9: 커밋** — `feat: 아직 안 한 커밋`\n")
     session(H, 3, [tool("Edit", {"file_path": plan}), tool("Bash", {"command": 'git commit -m "feat: 뒤작업"'})])
     session(I, 3, [tool("Bash", {"command": 'git commit -m "feat: 저장소에 없는 제목"'})])
     session(J, 3, [tool("Bash", {"command": 'git commit -m "docs(세션마무리): x"'})])
     ha = git_commit("feat: 보존"); git_commit("feat: 뒤작업"); git_commit("docs(세션마무리): x")
+    git_commit("feat: 대시 뒤가 달라진 긴 커밋 제목 사례 — 커밋할 때 다듬은 설명")
     open(os.path.join(PROJ, "docs", "작업로그.md"), "w").write(
         "## 2026-09-13 · session %s (테스트)\n미기재 %s 남음\n- 🔗 커밋: `%s`\n## 2026-09-13 · session %s\n## 2026-09-13 · session %s\n## 2026-09-13 · session %s\n" % (A, B[:8], ha[:7], H, I, J))
     r = sa.run(PROJ, D, now=T0); arch = os.environ["SESSION_ARCHIVE_DIR"]
@@ -133,7 +136,7 @@ def test_9c_pending():
     hv = next(l.split()[0] for l in log.splitlines() if l.endswith("feat: 뒤작업"))
     check("마지막 활동" in out, "pending 에 마지막 활동: %r" % out[:120])
     check(hv[:7] in out, "pending 에 미기록 커밋 해시")
-    check("커밋 스텝 1/2" in out and "첫 미완: feat: 아직 안 한 커밋" in out, "pending 에 계획서 커밋 스텝 1/2: %r" % out[-300:])
+    check("커밋 스텝 2/3" in out and "첫 미완: feat: 아직 안 한 커밋" in out, "pending 에 계획서 커밋 스텝 2/3(설명 줄 제외 · 대시 뒤 달라도 인정): %r" % out[-300:])
     check("세션 번호는" in sa.pending(PROJ, "", now=T0) and "세션 번호는" in sa.pending(PROJ, "*", now=T0), "빈·짧은·글롭 세션 번호는 거부")
     out_i = sa.pending(PROJ, "iiiiiiii", now=T0)
     check("해시 못 찾은 커밋 명령 1건" in out_i and "feat: 저장소에 없는 제목" in out_i, "pending 에 해시 못 찾은 명령은 따로 표시: %r" % out_i[:200])
