@@ -133,6 +133,8 @@ def test_8c_exit_only_is_not_active():
     row = next((l for l in idx.splitlines() if sid in l), "")
     check("\t미기재\t" in row, "/exit·/rename·이어받기 줄만 붙은 세션은 진행중이 아니다: %r" % row[-40:])
     check(row.split("\t")[-1] == sa.local_time("2026-09-13T01:00:02Z"), "마지막 활동은 실제 대화 시각: %r" % row[-20:])
+    slash = {"type": "user", "timestamp": iso(n), "message": {"content": "<command-message>이어하기</command-message>\n<command-name>/이어하기</command-name>"}}
+    check(not sa.not_activity(slash, slash["message"], slash["message"]["content"]), "스킬·프롬프트 슬래시 호출(<command-message> 앞머리)은 활동으로 남는다")
 def test_9a_empty_scan_keeps_index():
     arch = os.environ["SESSION_ARCHIVE_DIR"]
     before = open(os.path.join(arch, "INDEX.tsv")).read(); stamp = open(os.path.join(arch, ".last-scan")).read()
