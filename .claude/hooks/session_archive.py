@@ -26,6 +26,13 @@ def local_time(ts):
     except (ValueError, AttributeError):
         return (ts or "?")[:16]
 
+def epoch(ts):
+    """세션 기록의 시각 → 유닉스 초. 깨졌으면 None."""
+    try:
+        return datetime.datetime.fromisoformat(ts.replace("Z", "+00:00")).timestamp()
+    except (ValueError, AttributeError):
+        return None
+
 def commits_in(cmd):
     """셸 명령에서 실제 git commit 의 제목만 뽑는다. heredoc 본문·다른 명령의 인자 속 문자열은 무시."""
     lines = cmd.replace("\\\n", " ").split("\n")
@@ -179,7 +186,8 @@ def run(project_dir, current_id, now=None):
             dst = os.path.join(ARCHIVE, "%s_%s.md" % (day, sid[:8]))
             if not os.path.exists(dst) or os.path.getmtime(path) > os.path.getmtime(dst):
                 _write(dst, render(s)); written += 1
-            if now - os.path.getmtime(path) < ACTIVE_SEC:
+            last = epoch(s["ts"][-1]) if s["ts"] else None
+            if last is not None and now - last < ACTIVE_SEC:  # 파일 수정 시각이 아니라 마지막 대화 — 열기만 해도 attachment 가 붙어 수정 시각이 바뀐다(2026-09-14)
                 state = "진행중"  # 병행 세션이 아직 작업 중일 수 있다 — 이어하기가 사용자에게 한 번 묻는다
             elif not is_logged(sid, texts):
                 state = "미기재"

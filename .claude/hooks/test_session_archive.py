@@ -105,12 +105,21 @@ def test_6_unlogged():
 def test_7_corrupt_stamp():
     open(os.path.join(os.environ["SESSION_ARCHIVE_DIR"], ".last-scan"), "w").write("깨짐")
     check(sa.run(PROJ, D, now=T0 + 20000).startswith("scanned"), "깨진 .last-scan 은 0 으로 본다")
+def iso(epoch):
+    import datetime
+    return datetime.datetime.fromtimestamp(epoch, datetime.timezone.utc).isoformat().replace("+00:00", "Z")
 def test_8_active_session():
-    p = session(G, 3); os.utime(p, (T0 + 40000 - 60, T0 + 40000 - 60))
+    p = session(G, 3, [{"type": "user", "timestamp": iso(T0 + 40000 - 60), "message": {"content": "방금 지시"}}]); os.utime(p, (T0 + 40000 - 60, T0 + 40000 - 60))
     sa.run(PROJ, D, now=T0 + 40000)
     idx = open(os.path.join(os.environ["SESSION_ARCHIVE_DIR"], "INDEX.tsv")).read()
     check("%s\t지시 0\t0\t0\t진행중\t" % G in idx, "60분 안에 바뀐 세션은 진행중")
     check(not any(x.startswith("gggggggg") for x in sa.unlogged(36500, now=T0 + 40000)), "진행중은 미기재 목록에서 빠진다")
+def test_8b_opened_only_is_not_active():
+    sid = "nnnnnnnn-0000-0000-0000-000000000014"
+    p = session(sid, 3, [{"type": "attachment", "timestamp": iso(T0 + 50000 - 60)}, {"type": "cost-state"}]); os.utime(p, (T0 + 50000 - 60, T0 + 50000 - 60))
+    sa.run(PROJ, D, now=T0 + 50000)
+    idx = open(os.path.join(os.environ["SESSION_ARCHIVE_DIR"], "INDEX.tsv")).read()
+    check("%s\t지시 0\t0\t0\t미기재\t" % sid in idx, "열기만 한 세션(수정 시각만 최근 · 마지막 대화는 오래됨)은 진행중이 아니다")
 def test_9a_empty_scan_keeps_index():
     arch = os.environ["SESSION_ARCHIVE_DIR"]
     before = open(os.path.join(arch, "INDEX.tsv")).read(); stamp = open(os.path.join(arch, ".last-scan")).read()
