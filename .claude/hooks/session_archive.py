@@ -64,6 +64,13 @@ def user_text(c):
         return ""
     return "\n".join(p for p in parts if p and not p.startswith(("<", "[Request interrupted")))
 
+def not_activity(e, msg, c):
+    """user·assistant 줄 중 대화가 아닌 것 — 세션을 열고 /exit·/rename 하거나 이어받기만 해도 붙는다(2026-09-14 리뷰: 54세션 중 15). 유형 이름이 아니라 표시로 거른다."""
+    if e.get("isMeta") or (isinstance(msg, dict) and msg.get("model") == "<synthetic>"):
+        return True
+    texts = [c] if isinstance(c, str) else [b.get("text") or "" for b in c if isinstance(b, dict) and b.get("type") == "text"] if isinstance(c, list) else []
+    return bool(texts) and len(texts) == len(c if isinstance(c, list) else [c]) and all(x.startswith(("<command-name>", "<local-command")) for x in texts)
+
 def parse_session(path):
     s = {"id": os.path.basename(path)[:-6], "prompts": [], "files": [], "commits": [], "ts": [], "tail": "", "ua": 0}
     for line in open(path, errors="ignore"):
@@ -76,10 +83,10 @@ def parse_session(path):
         if e.get("entrypoint") == "sdk-cli":  # 헤드리스 호출(claude -p 등)은 작업 세션이 아니다
             return None
         s["ua"] += 1
-        if e.get("timestamp"):
-            s["ts"].append(e["timestamp"])
         msg = e.get("message")
         c = msg.get("content") if isinstance(msg, dict) else None
+        if e.get("timestamp") and not not_activity(e, msg, c):
+            s["ts"].append(e["timestamp"])
         if e["type"] == "user" and not e.get("isMeta") and not e.get("isCompactSummary"):
             p = user_text(c)
             if p:

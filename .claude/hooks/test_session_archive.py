@@ -120,6 +120,19 @@ def test_8b_opened_only_is_not_active():
     sa.run(PROJ, D, now=T0 + 50000)
     idx = open(os.path.join(os.environ["SESSION_ARCHIVE_DIR"], "INDEX.tsv")).read()
     check("%s\t지시 0\t0\t0\t미기재\t" % sid in idx, "열기만 한 세션(수정 시각만 최근 · 마지막 대화는 오래됨)은 진행중이 아니다")
+def test_8c_exit_only_is_not_active():
+    sid = "oooooooo-0000-0000-0000-000000000015"; n = T0 + 60000 - 60
+    noise = [{"type": "user", "isMeta": True, "timestamp": iso(n), "message": {"content": "<local-command-caveat>Caveat: …</local-command-caveat>"}},
+             {"type": "user", "timestamp": iso(n), "message": {"content": "<command-name>/exit</command-name>"}},
+             {"type": "user", "timestamp": iso(n), "message": {"content": "<local-command-stdout>Bye!</local-command-stdout>"}},
+             {"type": "assistant", "timestamp": iso(n), "message": {"model": "<synthetic>", "content": [{"type": "text", "text": "No response requested."}]}},
+             {"type": "user", "isMeta": True, "timestamp": iso(n), "message": {"content": [{"type": "text", "text": "Continue from where you left off."}]}}]
+    p = session(sid, 3, noise); os.utime(p, (n, n))
+    sa.run(PROJ, D, now=T0 + 60000)
+    idx = open(os.path.join(os.environ["SESSION_ARCHIVE_DIR"], "INDEX.tsv")).read()
+    row = next((l for l in idx.splitlines() if sid in l), "")
+    check("\t미기재\t" in row, "/exit·/rename·이어받기 줄만 붙은 세션은 진행중이 아니다: %r" % row[-40:])
+    check(row.split("\t")[-1] == sa.local_time("2026-09-13T01:00:02Z"), "마지막 활동은 실제 대화 시각: %r" % row[-20:])
 def test_9a_empty_scan_keeps_index():
     arch = os.environ["SESSION_ARCHIVE_DIR"]
     before = open(os.path.join(arch, "INDEX.tsv")).read(); stamp = open(os.path.join(arch, ".last-scan")).read()
