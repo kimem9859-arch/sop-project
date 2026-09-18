@@ -66,16 +66,16 @@ P="${CLAUDE_PROJECT_DIR:-$(git rev-parse --show-toplevel)}"; cd "$P" && git diff
 python3 - <<'EOF'
 import re
 L = open("docs/통합문서.md", encoding="utf-8").read().splitlines()
-a10 = next(i for i, l in enumerate(L) if l.startswith("## 10. ")); a11 = next(i for i, l in enumerate(L) if l.startswith("## 11. "))
+a12 = next(i for i, l in enumerate(L) if l.startswith("## 12. ")); a13 = next(i for i, l in enumerate(L) if l.startswith("## 13. "))
 def sec(i):
     return next((L[k] for k in range(i, -1, -1) if re.match(r"^#{2,3} ", L[k])), "")
-bad = [i + 1 for i, l in enumerate(L) if not (a10 <= i < a11 or i < 50) and (
-      (re.search(r"D7|IN5|IN1~4|CH1~4|GPIO ?(5|6|13|19|26)\b|공통 GND 한 가닥", l) and not sec(i).startswith("## 12."))
-   or (re.search(r"[48]채널|[48]ch\b", l) and not (sec(i).startswith("### 11.1") or ("통합 작동 테스트" in l and "2026-07-15" in l))))]
-secs = {int(m) for m in re.findall(r"^### 10\.(\d+) ", "\n".join(L), re.M)}
+bad = [i + 1 for i, l in enumerate(L) if not (a12 <= i < a13 or i < 50) and (
+      (re.search(r"D7|IN5|IN1~4|CH1~4|GPIO ?(5|6|13|19|26)\b|공통 GND 한 가닥", l) and not sec(i).startswith("## 15."))
+   or (re.search(r"[48]채널|[48]ch\b", l) and not (sec(i).startswith("### 14.1") or ("통합 작동 테스트" in l and "2026-07-15" in l))))]
+secs = {int(m) for m in re.findall(r"^### 12\.(\d+) ", "\n".join(L), re.M)}
 idx = "\n".join(L)[ "\n".join(L).index("## 🧭 §12 갈래 색인"): "\n".join(L).index("## 🎯 현재 확정값")]
 got = set()
-for a, b in re.findall(r"10\.(\d+)(?:~10\.(\d+))?", idx): got |= set(range(int(a), int(b or a) + 1))
+for a, b in re.findall(r"12\.(\d+)(?:~12\.(\d+))?", idx): got |= set(range(int(a), int(b or a) + 1))
 print("구성 사실 복제", "✅ 없음" if not bad else "❌ %s" % bad, "| 색인 누락", sorted(secs - got) or "✅ 없음")
 EOF
 ```
