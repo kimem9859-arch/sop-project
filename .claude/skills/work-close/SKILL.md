@@ -32,7 +32,7 @@ when_to_use: 공동 확인 직후 · 실패·중단을 사용자와 합의한 �
 
 | 작업 | 기록할 문서 |
 |---|---|
-| 프로젝트(비전·인터락·음성·HW·시연) | `docs/통합문서.md` |
+| 프로젝트(비전·인터락·음성·HW·시연) | `docs/통합문서.md` (측정 절 본문만 `docs/성능검증-저널.md`) |
 | Claude Code 인프라(훅·스킬·규칙) | `docs/claude-code-작업문서.md` |
 | 결과 사실이 없는 작업(조사·질문) · ⏩ 이어감 | 건너뛴다 — 끝 보고에 「정본 기록 없음 — 이유」 |
 
@@ -48,16 +48,18 @@ when_to_use: 공동 확인 직후 · 실패·중단을 사용자와 합의한 �
 
 ### 2.3 결과 사실의 제자리 (통합문서 첫머리 「📐 문서 규칙」 R5·R6)
 
-측정값 → §12 새 절(**해당 갈래 끝 · 절 안 순서 = §12 머리 「🧱 절 구성 규약」** · 제목 다음 줄 유효성 마커 `✅ CURRENT-AS-OF <날짜>`) + §12 머리 `[CURRENT]` 표 + **§12 갈래 색인** · 부품 → §14.1 · 핀·채널·차단 대상 → §15 「핀·채널 배정」 표 · 설계값 → 해당 절 · 남은 일 → §12 🔓 미결 표. 수치에는 **조건을 함께** 쓴다.
+측정값 → **`docs/성능검증-저널.md`** 의 §12 새 절(**해당 갈래 끝 · 절 안 순서 = §12 머리 「🧱 절 구성 규약」** · 제목 다음 줄 유효성 마커 `✅ CURRENT-AS-OF <날짜>`) + **통합문서** §12 머리 `[CURRENT]` 표 + **§12 갈래 색인**(둘 다 통합문서) · 부품 → §14.1 · 핀·채널·차단 대상 → §15 「핀·채널 배정」 표 · 설계값 → 해당 절 · 남은 일 → §12 🔓 미결 표. 수치에는 **조건을 함께** 쓴다.
 
 🔴 **현행 사실을 덮어쓸 때는 지우기 전에 옛 사실을 `docs/변경이력.md` 주제 절로 옮긴다**(R2 — §12 측정 절은 제외, 그쪽은 `⛔` 마커가 담당).
+
+🔴 **측정값을 기록하면 세 문서가 함께 갱신된다** — ①`성능검증-저널.md` 에 새 `§12.N` 절 ②`통합문서.md` 의 갈래 색인 · `[CURRENT]` 표 · 🔓 미결 표 ③`작업로그.md` 🔗 줄에 그 커밋 해시(3단계). 짝맞춤은 **2.5 검사 ④ 가 기계로 막는다** — 저널만 고치고 통합문서를 잊으면 커밋 전에 멈춘다.
 
 ### 2.4 완료 전환 — 전에 ❌·🛑 였던 것이 끝났을 때
 
 | 자리 | 처리 |
 |---|---|
 | 덮어쓰는 현행 사실(§12 밖) | 옛 사실을 먼저 `docs/변경이력.md` 주제 절로 옮기고, 그다음 본문을 현행으로 덮어쓴다 |
-| §12 측정 절 | 새 결과 절을 쓰고 옛 절 마커를 `⛔ SUPERSEDED-BY §12.N` 으로 |
+| §12 측정 절 (`성능검증-저널.md`) | 새 결과 절을 쓰고 옛 절 마커를 `⛔ SUPERSEDED-BY §12.N` 으로 |
 | §14·§15 같은 현행 사실 절 | 완료 사실로 덮어쓰고 이력 한 줄 — `2026-09-05 ❌ 결선 실패 → <날짜> 완료` |
 | 🔓 미결 표 | 행을 지우고 근거 절에 결론을 적는다 |
 | spec·plan 상태 줄 | `🛑 중단 → ✅ 완료(<날짜>)` |
@@ -65,23 +67,38 @@ when_to_use: 공동 확인 직후 · 실패·중단을 사용자와 합의한 �
 ### 2.5 자가 점검 (커밋 전)
 
 ```bash
-P="${CLAUDE_PROJECT_DIR:-$(git rev-parse --show-toplevel)}"; cd "$P" && git diff HEAD -U0 -- docs/통합문서.md | grep -E '^[-+]' | grep -vE '^(\+\+\+|---)' | head -40   # 바뀐 줄 눈으로 확인
+P="${CLAUDE_PROJECT_DIR:-$(git rev-parse --show-toplevel)}"; cd "$P" && git diff HEAD -U0 -- docs/통합문서.md docs/성능검증-저널.md | grep -E '^[-+]' | grep -vE '^(\+\+\+|---)' | head -40   # 바뀐 줄 눈으로 확인
 python3 - <<'EOF'
-import re
+import re, subprocess
 L = open("docs/통합문서.md", encoding="utf-8").read().splitlines()
+J = open("docs/성능검증-저널.md", encoding="utf-8").read()   # 측정 절 본문은 저널에 있다(R3)
 a12 = next(i for i, l in enumerate(L) if l.startswith("## 12. ")); a13 = next(i for i, l in enumerate(L) if l.startswith("## 13. "))
 def sec(i):
     return next((L[k] for k in range(i, -1, -1) if re.match(r"^#{2,3} ", L[k])), "")
 bad = [i + 1 for i, l in enumerate(L) if not (a12 <= i < a13 or i < 50) and (
       (re.search(r"D7|IN5|IN1~4|CH1~4|GPIO ?(5|6|13|19|26)\b|공통 GND 한 가닥", l) and not sec(i).startswith("## 15."))
    or (re.search(r"[48]채널|[48]ch\b", l) and not (sec(i).startswith("### 14.1") or ("통합 작동 테스트" in l and "2026-07-15" in l))))]
-secs = {int(m) for m in re.findall(r"^### 12\.(\d+) ", "\n".join(L), re.M)}
-idx = "\n".join(L)[ "\n".join(L).index("## 🧭 §12 갈래 색인"): "\n".join(L).index("## 🎯 현재 확정값")]
-got = set()
+M = "\n".join(L)
+secs = {int(m) for m in re.findall(r"^### 12\.(\d+) ", J, re.M)}                      # 저널에 실재하는 절
+idx  = M[M.index("## 🧭 §12 갈래 색인"): M.index("## 🎯 현재 확정값")]
+got  = set()
 for a, b in re.findall(r"12\.(\d+)(?:~12\.(\d+))?", idx): got |= set(range(int(a), int(b or a) + 1))
-print("구성 사실 복제", "✅ 없음" if not bad else "❌ %s" % bad, "| 색인 누락", sorted(secs - got) or "✅ 없음")
+head = M[M.index("## 🎯 현재 확정값"): M.index("## Ⅲ. 구현 수단")]                    # [CURRENT] · 🔓 미결 · 🧱 규약
+ref  = {int(m) for m in re.findall(r"§12\.(\d+)", head)}
+g = lambda *a: subprocess.run(["git", "diff", "HEAD", "--"] + list(a), capture_output=True, text=True).stdout
+new_secs = {int(m) for m in re.findall(r"^\+### 12\.(\d+) ", g("docs/성능검증-저널.md"), re.M)}   # 이번에 추가된 절
+dm = g("docs/통합문서.md")
+unpaired = sorted(n for n in new_secs if "12.%d" % n not in dm)
+print("절(저널) %d / 색인(통합문서) %d" % (len(secs), len(got)))
+print("구성 사실 복제", "✅ 없음" if not bad else "❌ %s" % bad)
+print("① 색인 누락   ", sorted(secs - got) or "✅ 없음")
+print("② 색인 유령   ", sorted(got - secs) or "✅ 없음")
+print("③ 근거 절 없음", sorted(ref - secs) or "✅ 실재")
+print("④ 짝 커밋     ", "❌ 저널에 새 §12.%s 를 썼는데 통합문서가 안 바뀜" % unpaired if unpaired else "✅ 맞음")
 EOF
 ```
+
+🔴 **하나라도 ❌ 면 커밋하지 않는다.** ④ 가 ❌ 면 통합문서의 갈래 색인 · `[CURRENT]` 표 · 🔓 미결 표를 함께 고치고 다시 점검한다. ④ 는 **새 `### 12.N` 절이 추가됐을 때만** 본다 — 오타 정정·`⛔` 마커만 다는 변경은 통과시킨다(거짓 경보가 잦은 관문은 무시되기 때문이다).
 
 - 기존 §12.x 본문은 **마커 줄 외 바뀌지 않았다** · 🔓 행의 근거 절이 실재한다 · 새 §12 절이 색인에 올랐다.
 - CC작업문서 기록이면 위 스크립트 대신 바뀐 줄 확인만.
