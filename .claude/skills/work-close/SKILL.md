@@ -76,14 +76,14 @@ a12 = next(i for i, l in enumerate(L) if l.startswith("## 12. ")); a13 = next(i 
 def sec(i):
     return next((L[k] for k in range(i, -1, -1) if re.match(r"^#{2,3} ", L[k])), "")
 bad = [i + 1 for i, l in enumerate(L) if not (a12 <= i < a13 or i < 50) and (
-      (re.search(r"D7|IN5|IN1~4|CH1~4|GPIO ?(5|6|13|19|26)\b|공통 GND 한 가닥", l) and not sec(i).startswith("## 15."))
+      (re.search(r"D7|IN5|IN1~4|CH1~4|GPIO ?(5|6|13|19|26)\b|공통 GND 한 가닥", l) and not re.match(r"^#{2,3} 15[. ]", sec(i)))   # §15 는 ## 15. 과 ### 15.N 둘 다
    or (re.search(r"[48]채널|[48]ch\b", l) and not (sec(i).startswith("### 14.1") or ("통합 작동 테스트" in l and "2026-07-15" in l))))]
 M = "\n".join(L)
 secs = {int(m) for m in re.findall(r"^### 12\.(\d+) ", J, re.M)}                      # 저널에 실재하는 절
-idx  = M[M.index("## 🧭 §12 갈래 색인"): M.index("## 🎯 현재 확정값")]
+idx  = M[M.index("### 🧭 §12 갈래 색인"): M.index("### 🎯 현재 확정값")]
 got  = set()
 for a, b in re.findall(r"12\.(\d+)(?:~12\.(\d+))?", idx): got |= set(range(int(a), int(b or a) + 1))
-head = M[M.index("## 🎯 현재 확정값"): M.index("## Ⅲ. 구현 수단")]                    # [CURRENT] · 🔓 미결 · 🧱 규약
+head = M[M.index("### 🎯 현재 확정값"): M.index("## Ⅲ. 구현 수단")]                    # [CURRENT] · 🔓 미결 · 🧱 규약
 ref  = {int(m) for m in re.findall(r"§12\.(\d+)", head)}
 g = lambda *a: subprocess.run(["git", "diff", "HEAD", "--"] + list(a), capture_output=True, text=True).stdout
 new_secs = {int(m) for m in re.findall(r"^\+### 12\.(\d+) ", g("docs/성능검증-저널.md"), re.M)}   # 이번에 추가된 절
