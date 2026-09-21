@@ -28,5 +28,15 @@ paths: [".claude/**"]
 ## 도구를 쓸 때
 
 - **바로 쓰는 것**(조회·보고)과 **승인받는 것**(설정 파일 생성·장시간 실행)을 가른다.
-- ⚠️ `context7` 은 **외부 전송**이다 · `hookify` 는 **규칙 파일을 만든다**(승인 후) · `session-report` 산출물은 **커밋하지 않는다** · `ralph-loop` 는 **횟수 상한 필수**.
 - 도구를 쓰면 **답변에 한 줄로 밝힌다.**
+- ⚠️ `context7` 은 **외부 전송**이다 · `session-report` 산출물은 **커밋하지 않는다** · `ralph-loop` 는 **횟수 상한 필수** · `pyright-lsp` 는 **PyQt6·Hailo 처럼 타입 정보가 없는 라이브러리의 경고가 잡음일 수 있다**.
+
+## 이 머신(파이1)의 플러그인 상태
+
+> 🔴 **플러그인 활성은 머신 로컬이다**(`~/.claude/settings.json`) — repo 로 공유되지 않으므로 **데스크톱은 다를 수 있다.**
+
+**켜짐 6** = `superpowers` · `claude-md-management` · `ralph-loop` · `context7` · `pyright-lsp` · `session-report`
+**꺼짐 9** = `hookify` · `code-review` · `code-simplifier` · `skill-creator` · `claude-code-setup` · `data`·`design`·`engineering`·`cowork-plugin-management`(`@synced`)
+
+- 🔴 **`hookify` 를 끈 근거** — 판정할 규칙 0개인 채로 약 2만 회 실행되고 **적발 0건**이었다(`훅설계.md` 제1원칙). 되살리려면 `~/.claude/settings.json` 에서 `true`.
+- ⚠️ **`code-review`·`simplify` 는 플러그인이 꺼져 있어도 스킬 목록에 보인다** — **Claude Code 내장 스킬**이 같은 이름을 쓴다. 이름이 보인다고 플러그인이 켜진 것이 아니다.
