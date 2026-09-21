@@ -17,7 +17,11 @@ report_repo() {
     printf '🔄 %s\t— (repo 없음)\n' "$label" >> "$TMP"
     return
   fi
-  timeout 15 git -C "$dir" fetch --quiet 2>/dev/null
+  # 🔴 타임아웃은 5초다. fetch 는 네트워크가 막혀도 스스로 포기하지 않고 이 값을 꽉 채운다 —
+  # 저장소가 둘이라 15초였을 때 최악 30초로 부모 훅(session-worklog-brief.sh)의 한도 30초를
+  # 통째로 먹어 배너가 잘렸다(실측: startup 최대 26.1초 · 30초 타임아웃 1회).
+  # 정상일 때 실측 0.5초라 5초도 10배 여유다. 늘리려면 부모 예산부터 본다.
+  timeout 5 git -C "$dir" fetch --quiet 2>/dev/null
   branch=$(git -C "$dir" rev-parse --abbrev-ref HEAD 2>/dev/null)
   upstream=$(git -C "$dir" rev-parse --abbrev-ref --symbolic-full-name '@{u}' 2>/dev/null)
   if [ -z "${upstream:-}" ]; then
