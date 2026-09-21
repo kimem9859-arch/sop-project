@@ -51,7 +51,6 @@
 | 라이브러리 함수를 쓰거나 고치기 직전 | context7 |
 | 「완료」라고 쓰기 직전 | `superpowers:verification-before-completion` |
 | 기능 구현을 넘기기 전 | `superpowers:requesting-code-review` |
-| 같은 종류 실수가 두 번째 | hookify (규칙 제안 → 승인 후 생성) |
 | 토큰·비용·세션 효율을 묻거나 잴 때 | session-report |
 | 완료를 기계가 판정할 수 있는 반복 작업 | ralph-loop (승인 후 · **횟수 상한 필수**) |
 | 공동 확인 직후 · 실패·중단을 합의한 직후 | `work-close` |
