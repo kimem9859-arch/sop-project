@@ -9,7 +9,22 @@
 ## 프로젝트
 **1인칭 Vision AI × 웨어러블 기반 작업자 SOP 순서 위반 실시간 감지·차단.** **반도체 장비** 정비(PM)에서 순서 위반(휴먼 에러)을 버튼 누르기 직전에 사전 감지·차단한다. 콘솔은 **시연용 모조품** — 핵심은 비전 AI 순서위반 감지·차단이고 안전은 그 효과다(프레이밍 B). 시연 시나리오는 **PECVD 정비로 가정**한다. 상세 = 통합문서 §1·§3.
 
-> 정보 위치는 [`README.md`](README.md) 가 답한다 — 어느 문서·폴더에 무엇이 있는지, 폴더 지도, 실행법, 환경 구성.
+> 더 자세한 위치·환경 구성은 [`README.md`](README.md) 가 답한다.
+
+### 명령
+
+| 무엇 | 명령 |
+| --- | --- |
+| 데모 실행(파이) | `bash Rpi5/Demo/run_demo.sh` — 🔴 `Demo/` 안에서 돌아야 상대 import 가 맞는다(런처가 `cd` 한다) |
+| 촬영 시나리오 | `bash Rpi5/Demo/run_scenario.sh` (함정 = `촬영` 스킬) |
+| 벤치 | `bash Rpi5/Demo/run_bench_test.sh` (함정 = `측정도구` 스킬) |
+| 자가 테스트 | `python3 Rpi5/Demo/selftest/test_fsm.py` — ⚠️ **일괄 러너가 없다.** 24개를 개별 실행한다 |
+| SOP 문서 빌드 | `bash docs/SOP-빌드.sh` → `docs/SOP-PECVD정비-표준작업절차서.html`·`.pdf` |
+
+### 구조
+
+`docs/` 문서(정본 = `통합문서.md`) · `dev/` 개발(poc·interlock·fsm·ai_model) · `captures/`·`media/` 자산 · **`Rpi5/` = 파이 런타임 (별도 git repo)**.
+형제 폴더 `../hanium-docs` = 공모전 제출문서(**참고 금지** · 그 폴더에서 세션을 열 때만 규칙이 붙는다).
 
 ---
 
