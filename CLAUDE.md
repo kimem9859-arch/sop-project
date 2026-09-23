@@ -18,7 +18,7 @@
 | 데모 실행(파이) | `bash Rpi5/Demo/run_demo.sh` — 🔴 `Demo/` 안에서 돌아야 상대 import 가 맞는다(런처가 `cd` 한다) |
 | 촬영 시나리오 | `bash Rpi5/Demo/run_scenario.sh` (함정 = `촬영` 스킬) |
 | 벤치 | `bash Rpi5/Demo/run_bench_test.sh` (함정 = `측정도구` 스킬) |
-| 자가 테스트 | `python3 Rpi5/Demo/selftest/test_fsm.py` — ⚠️ **일괄 러너가 없다.** 24개를 개별 실행한다 |
+| 자가 테스트 | `python3 Rpi5/Demo/selftest/test_fsm.py` — ⚠️ **일괄 러너가 없다.** `selftest/test_*.py` 를 개별 실행한다 · `test_voice_tts` 만 `~/env/tts/.venv/bin/python` |
 | SOP 문서 빌드 | `bash docs/SOP-빌드.sh` → `docs/SOP-PECVD정비-표준작업절차서.html`·`.pdf` |
 
 ### 구조
