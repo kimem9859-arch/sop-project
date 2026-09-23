@@ -13,6 +13,7 @@
 | D2 | **GUI 캘리브레이션 버튼과 그 창(CalibrationDialog)을 제거한다** — 캘리브레이션은 `test/calib_capture.py` 로만 | 사용자 |
 | D3 | **VGA 보정 파일 재작성은 나중에**(⏸) — 되돌리면 보정이 틀린 상태임을 기록에 남긴다 | 사용자 |
 | D4 | **실HW 검증까지 이번에 끝낸다** | 사용자 |
+| D5 | **USB 웹캠 기능을 전부 제거한다**(①GUI 스레드·CCTV·카메라 전환 ②시연 녹화의 3인칭 ③촬영 런처의 3인칭 ④음성 데모의 3인칭·웹캠 마이크 ⑤측정 도구의 웹캠 경로) — 지우기 직전 커밋에 git 태그 `backup/webcam-before-removal-20260923` 를 붙여 원격에 올린다 | 사용자 |
 
 ## 2. 설계
 
@@ -34,6 +35,16 @@
 - `safety_console.py` 의 `CalibrationDialog` 클래스 · 버튼 · `_open_calibration_dialog` · `calibration_needed_signal` 처리 · `camera_thread` 의 `raw_frame_signal`·`_calibration_active`(창 전용 경로)를 제거한다.
 - 버튼 색(`BTN_CALIB`) 등 창만 쓰던 설정·테스트 참조를 함께 걷어낸다. `chessboard.png` 는 `calib_capture.py` 가 쓰므로 남긴다.
 - 🔴 `camera_thread` 에서 이름이 사라지므로 **`selftest/test_imports.py` 를 반드시 돌린다**(`Rpi5/CLAUDE.md` 함정).
+
+### 2.3-b USB 웹캠 제거 (D5)
+
+- 백업 = git 태그(원격 push). 꺼낼 때 `git checkout <태그> -- <파일>`.
+- ① `UsbCameraThread` · `safety_console` 의 카메라 전환(`_switch_camera`·`_toggle_camera_source`·USB 프레임 경로) · 메뉴 「CCTV 전환」 · `config.USB_CAMERA_ENABLED`·`CAMERA_SOURCE`.
+- ② `demo_ffmpeg` 의 웹캠 입력·`demo_recorder` 의 「3인칭웹캠」 · `config.DEMO_WEBCAM_SIZE` · 「웹캠만」 회차.
+- ③ `run_scenario.sh`·`촬영런처.sh` 의 웹캠 녹화·웹캠 전용 회차·`SOP_USB_CAMERA=0`.
+- ④ `voice/record_voice_demo.py` 의 3인칭 영상·웹캠 마이크 녹음(🔴 음성 데모의 녹음 수단이 사라진다 — 다시 찍으면 다른 마이크 필요).
+- ⑤ `bench_detector --source usb`(·USB 노출 고정 옵션) · `anim_fps_bench --camera usb` · `test/tune_exposure.py`(웹캠 전용 — 파일 삭제).
+- 🔴 GUI 는 import 검사로 못 잡는 런타임 오류가 있다 — **`run_demo.sh` 실기동(G4)** 이 이 제거의 관문이다.
 
 ### 2.4 픽셀 값 — VGA 기준으로 두고 비례
 
@@ -60,7 +71,7 @@
 | G1 | 자가 테스트 24개 + 보정 선택 단위 테스트(VGA·XGA·없음·크기 불일치) | 전부 통과 |
 | G2 | **XGA + 보정 켬** · 손 모델 켬 · 실콘솔 정지(S1)·좌우이동(S2) 각 3회 | 평균 FPS **≥ 13.9**(§12.67-(6) 필요 기준의 상한) · 15fps 미만 **연속 최장 ≤ 5프레임** |
 | G3 | 실콘솔 버튼 누르기(S6) 2회 · 정지·좌우이동은 G2 데이터 재사용 | 사전 감지율 **≥ 34%**(§12.67-(5) VGA 기준선) · B3→EMO 확정 오분류 **≤ 57건/8,453프레임 비율**(§12.67-(2)) |
-| G4 | `run_demo.sh` 실기동 + 시연 녹화 1회 | 기동·녹화·1인칭 영상 크기가 XGA 로 정상 |
+| G4 | `run_demo.sh` 실기동 + 시연 녹화 1회 | 기동·녹화·1인칭 영상 크기가 XGA 로 정상 · 로그에 웹캠·CCTV 관련 오류 없음 · 녹화 산출물에 「3인칭웹캠」 없음 |
 | G5 | 되돌리기 — 백업(VGA)으로 굽고 `run_demo.sh` 실기동 | VGA 로 정상 기동·보정 파일 선택 로그가 VGA 파일 |
 
 ### 3.2 중단 규칙
