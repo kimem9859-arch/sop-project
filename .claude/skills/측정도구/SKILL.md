@@ -20,7 +20,8 @@ when_to_use: bench_detector·replay_raw·db_import·hoi_probe_batch·hoi_metrics
 
 - ⚠️ **임계 효과는 임계를 실제로 바꿔가며 파이프라인 그대로 측정한다** — 원점수를 보려고 임계를 0.01 로 열면 **가중 NMS 가 저점수 앵커를 섞어 점수를 끌어내려** 반대 결론이 난다.
 - ⚠️ **`cam_probe` 10프레임 표본을 게이트로 쓰지 말 것** — 분산이 커 세션 평균과 어긋난다.
-- **`--source {esp32,usb}`** 로 **카메라만 변수**로 두고 대조한다.
+- 소스는 **ESP32 뿐이다**(`--source usb` 는 웹캠 제거로 없다 — 옛 세션 파일명엔 `usb` 가 남아 있다).
+- **해상도가 섞이면 픽셀 값을 환산한다** — 링은 `frame_orient.ring_px`(VGA 25px × 사진 크기 배율)가 단일 출처이고 `dwell_probe`·`hoi_probe_batch` 가 사진 크기로 자동 환산한다. `bench_detector` manifest 의 `frame_size`·`calibration_file` 로 세션 해상도를 확인한다. 🔴 `hoi_metrics.CLIFF_Y`(337)는 **VGA 좌표**다 — XGA 세션을 hoi.db 에 넣기 전에 환산을 붙일 것.
 - **rawdet 을 본다** — 저신뢰 구간은 **트래킹 이전 raw 검출**에서만 드러난다. confirmed 트랙만 보면 놓친다.
 
 ## 관문

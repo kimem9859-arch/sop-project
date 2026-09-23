@@ -23,11 +23,9 @@ when_to_use: 촬영을 준비하거나 실행할 때 · run_scenario.sh 를 돌�
 
 🔴 **발표용 시연 녹화가 아니라 「HOI·FSM 이 의도대로 도는가」를 눈으로 확인하는 도구**다.
 
-`./run_scenario.sh <번호>` — GUI + 화면녹화 + 웹캠(3인칭)녹화를 한 번에 띄우고, GUI 를 닫으면 녹화도 정리한다.
+`./run_scenario.sh <번호>` — GUI + 화면녹화를 한 번에 띄우고, GUI 를 닫으면 녹화도 정리한다.
 
-🔴 **함정 2개 (둘 다 실제로 물렸다)**
-1. **GUI 가 USB 웹캠을 점유한다** — `UsbCameraThread.run()` 이 CCTV 버튼과 무관하게 시작 즉시 `/dev/video0` 을 연다. 웹캠을 외부 녹화에 쓰려면 `config.USB_CAMERA_ENABLED=False`.
-2. **OpenCV 로 웹캠을 열면 1080p 가 5fps** — 기본 GStreamer 백엔드에서 FOURCC 설정이 무시돼 YUYV 로 떨어진다. **`cv2.VideoCapture(0, cv2.CAP_V4L2)` 를 명시**해야 MJPG 가 잡힌다.
+※ 3인칭 웹캠 녹화는 **없다**(USB 웹캠 제거 — 백업 태그 `backup/webcam-before-removal-20260923`). 🔴 **음성 데모의 영상 소리(웹캠 마이크) 녹음 수단도 없다** — 다시 찍으면 다른 마이크가 필요하다.
 
 ※ `SOP_FULLSCREEN=1` 은 `showMaximized` 다. `showFullScreen` 은 쓰지 않는다 — 제목표시줄이 사라져 창을 못 닫는데 **녹화 종료가 GUI 종료에 묶여 있다.**
 

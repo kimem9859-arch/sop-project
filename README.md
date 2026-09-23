@@ -132,5 +132,6 @@ cd ~/sop-project && claude        # 통합문서 + 코드 한자리
 | 라벨 가림 규칙 조사 원자료(데이터셋 지침·학술 연구·반론 검증·조각 동일성, 재정립 ②) | [`dev/ai_model/조사/가림규칙/`](dev/ai_model/조사/가림규칙/) |
 | 학습 절차·DFC 변환·albumentations 2.x 인자 함정 | [`dev/ai_model/console_v2_학습가이드.md`](dev/ai_model/console_v2_학습가이드.md) |
 | 측정·원인 분석 (B4 미탐지·정반사·저조도 B3 사멸·파랑 스티커) | 통합문서 §12.5~§12.17 (갈래 ②·③) |
+| 카메라 보정 파일(해상도별 `camera_calibration_<w>x<h>.npz` 우선 · 선택 규칙 `frame_orient.calibration_path`) · 만드는 도구 `test/calib_capture.py`(GUI 창은 2026-09-23 제거) · 결과·한계 | `Rpi5/Demo/` · 통합문서 §12.69 |
 | 트랙 A 인터락 코드·전장 E2E·EMO 해제 결함 | 통합문서 §15 · Rpi5 `main` · [`dev/interlock/README.md`](dev/interlock/README.md) |
 | 목적 프레이밍 B·발표 역반영 | 통합문서 §1·§3 (발표자료는 데스크톱 보관, repo 미포함) |
