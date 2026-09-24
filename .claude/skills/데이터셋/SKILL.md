@@ -8,10 +8,11 @@ when_to_use: 데이터셋을 만들거나 Roboflow 에 업로드할 때 · 프�
 
 파이프라인 전체 = `Demo/docs/dataset_pipeline.md` · 라벨링 기준 = `Demo/docs/labeling_guide.md`.
 
-## 🔴 Roboflow 함정 2개 (둘 다 물렸다)
+## 🔴 Roboflow 함정 3개
 
 1. **`annotation_labelmap` 이 없으면 클래스가 숫자("0","1")로 올라간다.**
 2. **`annotation_overwrite=True` 가 없으면** 이미지 해시 캐시 때문에 `already annotated` 로 넘어간다.
+3. **올린 이미지를 JPEG(환산 품질 75)로 재압축해 둔다** — PNG 로 올려도 내려받으면 JPEG 다(§12.73-(3)). 실제 시연 입력은 한 번 압축(≈53)이라 **내려받은 이미지로 학습·평가하면 두 번 압축된 그림을 쓴다** → 라벨만 받아 로컬 원본과 짝짓는다.
 
 ## 분할
 
