@@ -42,7 +42,7 @@ fi
 # 행 데이터를 _banner.py 규약(T/R/N/H)으로 조립해 파이프
 {
   printf 'T%s🚀 세션 시작 점검\n' "$TAB"
-  printf 'H%s%s\n' "$TAB" "$PROJ/../hanium-문서/hanium-장려상/계획.md"   # 마감 D-day 원천(「### 일정」 절 · 없으면 요약에서 생략)
+  printf 'H%s%s\n' "$TAB" "$PROJ/../project-docs/hanium-장려상/계획.md"   # 마감 D-day 원천(「### 일정」 절 · 없으면 요약에서 생략)
 
   # 동기화 행 (sync-check tmp: "🔄 label<TAB>state")
   if [ -s "$SYNC_TMP" ]; then

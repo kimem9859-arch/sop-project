@@ -24,7 +24,7 @@
 | `.claude/output-styles/` | 사용자이해우선 — 답변 방식 | 🔴 **머신마다 한 번 켜야 한다**(선택값이 `settings.local.json`) |
 | `.claude/settings.json` | 권한 allow 15 · deny 6 · SessionStart 훅 2 | 항상 — **기계 강제** |
 | auto memory (토픽 1) | 그 머신 고유 사실만 | 색인은 매 세션 |
-| 문서 작업공간 `.claude/rules/` | 제출문서·학교 문서 작업 규칙 | 그 폴더에서 세션을 열 때 — `~/hanium-문서/` 의 `hanium-장려상/`·`융합프로젝트/` |
+| 문서 작업공간 `.claude/rules/` | 제출문서·학교 문서 작업 규칙 | 그 폴더에서 세션을 열 때 — `~/project-docs/` 의 `hanium-장려상/`·`융합프로젝트/` |
 
 **자리를 정하는 규칙** = [`.claude/rules/규칙배치.md`](../.claude/rules/규칙배치.md) — 공간별 로드 시점 · 경위 금지 · 중복 금지 · 폐기 이관 · 길이 · 소급.
 
