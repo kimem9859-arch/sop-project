@@ -6,6 +6,16 @@
 
 ---
 
+## 2026-09-25 · session b5da6da4-97f8-433c-a905-f65982d9c66f (문서 저장소 이관에 딸린 CC 변경 · `hanium-docs` 계정명 해소)
+
+- ⏸ (앞 유지) 작업 방식 파악 · 자가 테스트 일괄 러너 🛑 · 규칙 로그 한 달 관찰 · 데스크톱 output style
+- ▶ 다음: (앞 유지) ①작업 방식 파악 ②자가 테스트 일괄 러너
+- ✅ **`hanium-docs` 계정명 해소** — 사용자 「그대로 올린다」: 새 원격 `project-docs` 도 같은 계정(kimem9859-arch)·작성자로 올리고, 옛 hanium-docs 는 private·보관 → 이력 재작성 안 함
+- ✅ **배너 D-day 원천 경로** → `../project-docs/hanium-장려상/계획.md` — 임시 계획.md 로 「D-6」 표시 확인 후 삭제 · `test_banner.py` V2 통과
+- ✅ **규칙 공간 표**(규칙배치·CC작업문서) — 「한이음 작업공간 · 지금 없다」 → 문서 작업공간 `~/project-docs/`(hanium-장려상·융합프로젝트) · `수치인용.md` 의 사라진 `hanium-docs/CLAUDE.md` 포인터 제거
+- ✅ **공식 문서 확인**(memory·settings) — 하위 폴더의 `CLAUDE.md`·`.claude/rules/` 는 그 폴더 파일을 읽는 순간 로드된다 → project-docs 백업 안 두 개 이름 변경 · `settings.local.json` 은 Claude Code 가 전역 git 제외에 자동 추가(이 파이 `~/.config/git/ignore` 에 있음) → `.gitignore` 에 안 적음
+- 🔗 커밋: sop-project e54cfa0 · c6f94d6 · bb1fa78 · 6de3d44
+
 ## 2026-09-25 · session ac3b92f1-9819-4af0-ae73-4d46c17509ce (「Prompt is too long」 원인 규명 · 계획서 드라이런 도구 보강)
 
 - ⏸ (앞 유지) 작업 방식 파악 · 자가 테스트 일괄 러너 🛑 · 규칙 로그 한 달 관찰 · 데스크톱 output style · `hanium-docs` 계정명
