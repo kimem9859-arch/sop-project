@@ -74,7 +74,7 @@ gitignore 환경자산(루트): .poc_venv · poc_data · .syslibs — 머신마�
 
 ### 형제 저장소 — `project-docs` (한이음·학교 프로젝트 문서 작업)
 
-옛 `hanium-docs` 의 역할을 이어받는 git 저장소다. 안에 작업공간 둘과 옛 hanium-docs 백업이 있다.
+옛 `hanium-docs` 의 역할을 이어받는 git 저장소다(원격 = private `kimem9859-arch/project-docs` · 데스크톱은 clone 해 sop-project 옆에 둔다). 안에 작업공간 둘과 옛 hanium-docs 백업이 있다.
 
 ```
 /home/pi/sop-project/                ← 여기 (통합문서·코드 = 사실의 정본)
