@@ -4,7 +4,7 @@
 설계 = docs/superpowers/specs/2026-08-13-음성비서-design.md §6 V4.
 Ollama HTTP API 로 재며, 지연·토큰수는 **런타임이 돌려준 값**을 쓴다(자체 추정 금지).
 
-🔴 지표 이름을 섞지 않는다 (CLAUDE.md §5):
+🔴 지표 이름을 섞지 않는다 (.claude/rules/수치인용.md):
   - prefill_ms      = 프롬프트 처리 시간 (ollama `prompt_eval_duration`)
   - ttft_ms         = 첫 토큰까지 = load_duration + prefill
   - decode_tps      = 초당 생성 토큰 수 = eval_count / eval_duration
@@ -59,7 +59,7 @@ PROMPTS = {
 }
 
 WARMUP = 1   # 버림
-REPEATS = 5  # 🔴 단일 실행 값 금지 (CLAUDE.md §5) — 중앙값과 범위를 함께 남긴다
+REPEATS = 5  # 🔴 단일 실행 값 금지 (.claude/rules/수치인용.md) — 중앙값과 범위를 함께 남긴다
 
 
 # ── 유틸 ──────────────────────────────────────────────────────────────

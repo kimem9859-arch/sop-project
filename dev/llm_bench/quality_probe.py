@@ -10,7 +10,7 @@
    섞지 않는다. 나머지 조건(system·temperature·seed·num_ctx·think:false)은 동일하다.
 
 🔴 **`bench_llm.generate()` 를 그대로 쓴다 — 여기서 HTTP 를 다시 짜지 않는다.**
-   도구가 제 나름의 기본값을 갖는 바람에 네 번 물렸다(CLAUDE.md §5). 호출 경로가
+   도구가 제 나름의 기본값을 갖는 바람에 네 번 물렸다(측정도구 스킬). 호출 경로가
    다르면 「같은 조건」이라는 말이 성립하지 않는다.
 
 🔴 **반복 실행하지 않는다** — `temperature 0` + `seed` 고정이라 몇 번을 돌려도 같은
@@ -120,7 +120,7 @@ def collect(models, save=None):
             cut = " ⚠️잘림" if r.get("done_reason") == "length" else ""
             head = r["response"].replace("\n", " ")[:60]
             print(f"  {pid:12s} {r['decode_tokens']:3d}tok{cut}  {head}", flush=True)
-        # 자원 사용률을 남긴다 — 뒤늦게 되짚지 않아도 그 자리에서 보이게(CLAUDE.md §5).
+        # 자원 사용률을 남긴다 — 뒤늦게 되짚지 않아도 그 자리에서 보이게(CLAUDE.md §3).
         print(f"  메모리: {bench_llm.ps_mem(model)} | {bench_llm.system_state()}", flush=True)
         bench_llm.unload(model)
         if save:
