@@ -6,6 +6,15 @@
 
 ---
 
+## 2026-09-27 · 🖥️ 데스크톱 · session 4add685e-50d3-4a36-8efe-255cacd2852b (🛑 project-docs 정리 뒤 낡은 규칙 점검 — 목록만 · 수정 보류)
+- ✅ **점검 범위** — sop-project `CLAUDE.md`·`CLAUDE.local.md`·`README.md`·`.claude/`(rules·skills·hooks·output-styles·settings) · `Rpi5/CLAUDE.md` · project-docs README 4·작업규칙·hwp편집 · 데스크톱 auto memory
+- ⏸ 🔴 **project-docs 가 절차 밖** — ①`work-close` 4단계 push 점검 `for r in . Rpi5`(SKILL.md:119) ②`session-sync-check.sh:44-45` 시작 점검 두 저장소뿐 ③`session-wrap` 소급 점검 「양 repo」(SKILL.md:25) ④`CLAUDE.md:70` 커밋 구분에 project-docs 없음
+- ⏸ 🟠 **파이 기준 경로** — ⑤`~/sop-project`(데스크톱 = `~/projects`): project-docs `README.md:17`·`융합프로젝트/README.md:4`·sop-project `README.md:80,105-108`·`make_code_images.py` 기본값 ⑥`~/Documents/한이음-제출문서/` 데스크톱에 없음: `CLAUDE.md:27`·`README.md:85`·project-docs `README.md:19,23`·`hanium-장려상/README.md:3`
+- ⏸ 🟡 **옛 이름·색인 누락** — ⑦`_banner.py:22` 주석 `hanium-docs`(D-day 원천 `hanium-장려상/계획.md` 없음은 README 에 기재됨) ⑧메모리 `no-overwrite-user-workspace`·`figure-sizing-user-adjusts` 가 `MEMORY.md` 색인에서 빠짐 + 본문 경로 낡음
+- ⏸ 🔵 **방침 충돌(사용자 결정)** — ⑨`hanium-장려상/제작설계서/작업규칙.md` 「통합문서를 정본으로 삼지 않는다」 ↔ 전체 「통합문서가 정본」 · 추천 = 제출본 대조 작업에만 한정
+- ⏸ **문서 작업 세션 빈틈** — `융합프로젝트/` 에서 연 세션에는 `hwp편집.md` 만 붙음(CLAUDE.md·local·output style·메모리·스킬·훅·deny 없음 · `claude -p` 확인) · 추천 = project-docs 루트 CLAUDE.md 로 sop-project 규칙을 불러오기
+- ✋ **사용자 결정** — 「실습 계획서 작성이 우선이라서 규칙 수정은 나중에」
+
 ## 2026-09-27 · Rpi1 · session 942ec837-0ce9-464e-a03e-3adec5dccad9 (✅ output style ⑤ — 같은 종류 결정은 추천표로 한 번에 · 프로젝트 작업은 작업로그 같은 블록)
 - ⏸ **파이1** — `CLAUDE.local.md` 만들기(「이 기기 = 🍓 파이1」 · 데스크톱이 남긴 할 일)
 - ⏸ (앞 유지) 작업 방식 파악 · 규칙 로그 한 달 관찰 · 낡은 참조 전수 검사 — 데스크톱 output style 은 데스크톱이 켰다(아래 `d31d3bab` 블록)
