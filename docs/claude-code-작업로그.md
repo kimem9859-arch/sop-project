@@ -6,6 +6,13 @@
 
 ---
 
+## 2026-09-27 · 🖥️ 데스크톱 · session 4add685e-50d3-4a36-8efe-255cacd2852b (✅ 문서 도구 설치 — korean-skills 플러그인 · rhwp)
+- ✅ **korean-skills 플러그인** — 마켓플레이스 `DaleSeo/korean-skills` 추가(user settings) · 플러그인 `--scope local` 설치 → `~/project-docs/.claude/settings.local.json`(전역 gitignore 로 git 제외) · 되돌리기 = `claude plugin uninstall korean-skills@korean-skills --scope local`
+- 🔎 **local scope 는 실행한 폴더가 아니라 git 루트에 기록된다** — `융합프로젝트/` 에서 설치했는데 `~/project-docs/.claude/` 에 써져 한이음 작업공간에도 켜짐
+- 🔎 **문서 작업공간 하위 폴더의 `.claude/rules/` 는 그 폴더에서 연 세션에 붙는다** — `claude -p` 새 세션으로 규칙 인용·스킬 목록 확인
+- ✅ **rhwp v0.8.6** — `~/.local/bin/rhwp`(단일 바이너리) · 쓰는 규칙 = project-docs `융합프로젝트/.claude/rules/hwp편집.md` · 경위 = `작업로그.md` 같은 세션 블록
+- 🔗 커밋: project-docs `94e7c8f` · `2a0d6b9`
+
 ## 2026-09-27 · 🖥️ 데스크톱 · session d31d3bab-50da-418a-a5a4-9a21d6180b28 (✅ 데스크톱 역할 = CLAUDE.local.md · 데스크톱 output style 켬 · 작업로그 기기 태그)
 - ✅ **받아온 규칙 변화 대조**(사용자 「규칙과 지시사항 그리고 현재 기기인 데스크탑 역할 위주로」) — 304커밋 중 규칙 개편(CLAUDE.md 축소 · rules 7 · 스킬 4 신설 · output style · 훅 ③) 확인 · 데스크톱 빈틈 3 = output style 꺼짐 · `project-docs` 없음 · README 「두 환경」 역할 표가 `d2c9389` 에서 기록 없이 빠짐
 - ✅ **데스크톱 역할 → `CLAUDE.local.md`**(사용자 「PoC는 제외 … "참조만"으로」 · 「데스크탑만 로컬로 기록해도」 · 설계 승인 「그렇게 진행해줘」) — 근거 = 공식 memory 문서("Personal project-specific preferences" · CLAUDE.md 와 같은 무게) · 역할 ①제출문서(Word·PPT) 편집 ②모델 학습·DFC 변환 ③Rpi5 참조만 · git 제외 = `.git/info/exclude` · 규칙배치 공간 표 행 · 데스크톱 auto memory 정리(「파이 plan은 검토만」 삭제 → ③ · 「SOP 가디언」 낡은 포인터 3개)
