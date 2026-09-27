@@ -6,12 +6,34 @@
 
 ---
 
-## 2026-09-27 · session 942ec837-0ce9-464e-a03e-3adec5dccad9 (✅ output style ⑤ — 같은 종류 결정은 추천표로 한 번에 · 프로젝트 작업은 작업로그 같은 블록)
-- ⏸ (앞 유지) 작업 방식 파악 · 규칙 로그 한 달 관찰 · 데스크톱 output style · 낡은 참조 전수 검사
+## 2026-09-27 · Rpi1 · session 942ec837-0ce9-464e-a03e-3adec5dccad9 (✅ output style ⑤ — 같은 종류 결정은 추천표로 한 번에 · 프로젝트 작업은 작업로그 같은 블록)
+- ⏸ **파이1** — `CLAUDE.local.md` 만들기(「이 기기 = 🍓 파이1」 · 데스크톱이 남긴 할 일)
+- ⏸ (앞 유지) 작업 방식 파악 · 규칙 로그 한 달 관찰 · 낡은 참조 전수 검사 — 데스크톱 output style 은 데스크톱이 켰다(아래 `d31d3bab` 블록)
 - ▶ 다음: ①작업 방식 파악 ②낡은 참조 전수 검사
 - ✅ **output style ⑤ 에 한 줄**(사용자 정정 「목표값 하나씩 물어보지 말고 정하지 않은 목표값에 대해서는 추천 목표값을 표로 제시해줘」) — 같은 종류의 ⓐ 결정(목표값·임계 등)이 여러 개면 하나씩 묻지 않고 「추천값 · 근거」 표 하나로 · `.claude/output-styles/사용자이해우선.md`
 - ✋ **자리 판단** — 처음 auto memory 에 적었다가 `MEMORY.md` 머리 주석(규칙·선호는 git 공유 자리로 — 데스크톱이 못 본다)에 따라 output style 로 옮기고 메모리 파일은 지웠다
 - 🔗 커밋: sop-project `fc96eef`
+
+## 2026-09-27 · 🖥️ 데스크톱 · session 4add685e-50d3-4a36-8efe-255cacd2852b (✅ 문서 도구 설치 — korean-skills 플러그인 · rhwp)
+- ✅ **korean-skills 플러그인** — 마켓플레이스 `DaleSeo/korean-skills` 추가(user settings) · 플러그인 `--scope local` 설치 → `~/project-docs/.claude/settings.local.json`(전역 gitignore 로 git 제외) · 되돌리기 = `claude plugin uninstall korean-skills@korean-skills --scope local`
+- 🔎 **local scope 는 실행한 폴더가 아니라 git 루트에 기록된다** — `융합프로젝트/` 에서 설치했는데 `~/project-docs/.claude/` 에 써져 한이음 작업공간에도 켜짐
+- 🔎 **문서 작업공간 하위 폴더의 `.claude/rules/` 는 그 폴더에서 연 세션에 붙는다** — `claude -p` 새 세션으로 규칙 인용·스킬 목록 확인
+- ✅ **rhwp v0.8.6** — `~/.local/bin/rhwp`(단일 바이너리) · 쓰는 규칙 = project-docs `융합프로젝트/.claude/rules/hwp편집.md` · 경위 = `작업로그.md` 같은 세션 블록
+- 🔗 커밋: project-docs `94e7c8f` · `2a0d6b9`
+
+## 2026-09-27 · 🖥️ 데스크톱 · session d31d3bab-50da-418a-a5a4-9a21d6180b28 (✅ 데스크톱 역할 = CLAUDE.local.md · 데스크톱 output style 켬 · 작업로그 기기 태그)
+- ✅ **받아온 규칙 변화 대조**(사용자 「규칙과 지시사항 그리고 현재 기기인 데스크탑 역할 위주로」) — 304커밋 중 규칙 개편(CLAUDE.md 축소 · rules 7 · 스킬 4 신설 · output style · 훅 ③) 확인 · 데스크톱 빈틈 3 = output style 꺼짐 · `project-docs` 없음 · README 「두 환경」 역할 표가 `d2c9389` 에서 기록 없이 빠짐
+- ✅ **데스크톱 역할 → `CLAUDE.local.md`**(사용자 「PoC는 제외 … "참조만"으로」 · 「데스크탑만 로컬로 기록해도」 · 설계 승인 「그렇게 진행해줘」) — 근거 = 공식 memory 문서("Personal project-specific preferences" · CLAUDE.md 와 같은 무게) · 역할 ①제출문서(Word·PPT) 편집 ②모델 학습·DFC 변환 ③Rpi5 참조만 · git 제외 = `.git/info/exclude` · 규칙배치 공간 표 행 · 데스크톱 auto memory 정리(「파이 plan은 검토만」 삭제 → ③ · 「SOP 가디언」 낡은 포인터 3개)
+  - 검증 — 새 세션 2개가 시작 때 `CLAUDE.local.md` 로드(`~/lab/rule-loads` 19:36) · 이 세션 재시작 때 지시 파일로 로드
+- ✅ **데스크톱 output style 켬** — `.claude/settings.local.json` `outputStyle` = 스타일 파일 `name` 그대로(공식: 틀리면 경고 없이 기본) · 같은 exclude · 공동 확인 = 사용자 「새 세션에서 output-style 켜기 적용 확인 하였고 정상적으로 적용 된것을 확인했어」 → 앞 블록 ⏸ 「데스크톱 output style」 해소
+- ✅ **작업로그 기기 태그**(사용자 「데스크탑과 파이와 기록 구분을 하기 위해 … 태그」 · 설계 승인 「이대로 진행」) — `session-wrap` 제목 형식 `## <날짜> · <기기 태그> · session …` · 이름 = 그 기기 `CLAUDE.local.md`, 없으면 hostname · 배너 날짜 읽기(`awk $2`) 시험 통과 · statusline·session_archive·session-resume 은 세션 번호만 찾아 영향 없음(코드 대조) · 첫 적용 = 이 블록 · 작업로그 머리말의 형식 설명도 맞춤
+- ✋ **Claude 판단** — git 제외를 공유 `.gitignore` 대신 `.git/info/exclude`(원격·파이 변화 0) · 커밋에는 기기 표시 안 함(블록 🔗 줄로 추적) · 과거 블록 소급 안 함
+- ✋ **관찰(기록만)** — 저장소 `.gitignore` 에 `.claude/settings.local.json` 이 없다(파이에선 미추적으로 보일 수 있음) · 데스크톱 플러그인은 13개 전부 켜짐(`hookify` 포함 · 규칙 0개 — 파이는 끔)
+- ✋ **정정** — 이 세션 초반 답변마다 「결정 요청 (하나만)」을 붙였다 — 09-22 에 폐기된 옛 ⑤ 다(세션 시작 때 옛 CLAUDE.md 가 읽힘)
+- ⏸ **파이1** — `CLAUDE.local.md` 만들기(「이 기기 = 🍓 파이1」)
+- ⏸ (앞 유지) 작업 방식 파악 · 규칙 로그 한 달 관찰 · 낡은 참조 전수 검사
+- ▶ 다음: ①작업 방식 파악 ②낡은 참조 전수 검사
+- 🔗 커밋: sop-project `d8da34e` · `08c3467` · `60044af`(CC정본)
 
 ## 2026-09-26~27 · session 31064e06-f30c-4c54-a10d-a040fccb4aae (✅ 자가 테스트 일괄 러너 · 낡은 CLAUDE.md 참조 13곳 · 완료 규칙 변경은 보류)
 - ⏸ (앞 유지) 작업 방식 파악 · 규칙 로그 한 달 관찰 · 데스크톱 output style
