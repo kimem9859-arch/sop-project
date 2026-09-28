@@ -6,6 +6,13 @@
 
 ---
 
+## 2026-09-28 · Rpi1 · session 84c1bb42-f8eb-487d-a559-3643c3c626c8 (✅ 시험 세트 라벨 규칙 개정 — CLAUDE.md 한 줄 · 데이터셋 스킬 정본 · 옛 규칙 변경이력)
+- ✅ **시험 세트 규칙**(사용자 승인) — CLAUDE.md §3 「test 세트에 모델 프리라벨 금지」 → 「평가 대상 모델을 쓰지 않는다(정답·재검 선정) · 조건 = 데이터셋 스킬」 · 데이터셋 스킬에 조건·이유 · 옛 규칙은 `docs/변경이력.md` §11 로 이관(규칙배치: 경위·spec 경로는 규칙 문서에 쓰지 않음 — 처음 쓴 판에서 걷어냄)
+- ✅ 프로젝트 작업(반자동 라벨링)은 작업로그 같은 날 블록
+- ⏸ (앞 유지) 파이1 `CLAUDE.local.md` · 작업 방식 파악 · 규칙 로그 한 달 관찰 · 낡은 참조 전수 검사
+- ▶ 다음: ①작업 방식 파악 ②낡은 참조 전수 검사
+- 🔗 커밋: sop-project `ada41d9`
+
 ## 2026-09-27 · 🖥️ 데스크톱 · session 4add685e-50d3-4a36-8efe-255cacd2852b (🛑 project-docs 정리 뒤 낡은 규칙 점검 — 목록만 · 수정 보류)
 - ✅ **점검 범위** — sop-project `CLAUDE.md`·`CLAUDE.local.md`·`README.md`·`.claude/`(rules·skills·hooks·output-styles·settings) · `Rpi5/CLAUDE.md` · project-docs README 4·작업규칙·hwp편집 · 데스크톱 auto memory
 - ⏸ 🔴 **project-docs 가 절차 밖** — ①`work-close` 4단계 push 점검 `for r in . Rpi5`(SKILL.md:119) ②`session-sync-check.sh:44-45` 시작 점검 두 저장소뿐 ③`session-wrap` 소급 점검 「양 repo」(SKILL.md:25) ④`CLAUDE.md:70` 커밋 구분에 project-docs 없음
