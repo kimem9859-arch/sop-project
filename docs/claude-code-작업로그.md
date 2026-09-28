@@ -11,7 +11,7 @@
 - ✅ 프로젝트 작업(반자동 라벨링)은 작업로그 같은 날 블록
 - ⏸ (앞 유지) 파이1 `CLAUDE.local.md` · 작업 방식 파악 · 규칙 로그 한 달 관찰 · 낡은 참조 전수 검사
 - ▶ 다음: ①작업 방식 파악 ②낡은 참조 전수 검사
-- 🔗 커밋: sop-project `ada41d9`
+- 🔗 커밋: sop-project `b8aa011`
 
 ## 2026-09-27 · 🖥️ 데스크톱 · session 4add685e-50d3-4a36-8efe-255cacd2852b (🛑 project-docs 정리 뒤 낡은 규칙 점검 — 목록만 · 수정 보류)
 - ✅ **점검 범위** — sop-project `CLAUDE.md`·`CLAUDE.local.md`·`README.md`·`.claude/`(rules·skills·hooks·output-styles·settings) · `Rpi5/CLAUDE.md` · project-docs README 4·작업규칙·hwp편집 · 데스크톱 auto memory
