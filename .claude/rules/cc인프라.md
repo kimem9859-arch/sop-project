@@ -51,8 +51,9 @@ comm -13 <(cut -f4 ~/lab/rule-loads/*.tsv | sort -u) <(ls .claude/rules/*.md | s
 
 > 🔴 **플러그인 활성은 머신 로컬이다**(`~/.claude/settings.json`) — repo 로 공유되지 않으므로 **데스크톱은 다를 수 있다.**
 
-**켜짐 6** = `superpowers` · `claude-md-management` · `ralph-loop` · `context7` · `pyright-lsp` · `session-report`
+**켜짐 7** = `superpowers` · `claude-md-management` · `ralph-loop` · `context7` · `pyright-lsp` · `session-report` · `korean-skills`(마켓플레이스 `korean-skills` = GitHub `daleseo/korean-skills` · 스킬 humanizer·grammar-checker·style-guide — 한국어 문서 보정)
 **꺼짐 9** = `hookify` · `code-review` · `code-simplifier` · `skill-creator` · `claude-code-setup` · `data`·`design`·`engineering`·`cowork-plugin-management`(`@synced`)
 
 - 🔴 **`hookify` 를 끈 근거** — 판정할 규칙 0개인 채로 약 2만 회 실행되고 **적발 0건**이었다(`훅설계.md` 제1원칙). 되살리려면 `~/.claude/settings.json` 에서 `true`.
+- ⚠️ **명령줄(`claude plugin install`)로 설치한 플러그인은 열린 세션에 바로 안 들어온다** — 사용자가 입력창에서 `/reload-plugins` 를 쳐야 한다(Claude 는 슬래시 명령을 실행할 수 없다). 🔴 **Claude 가 응답하는 도중에 친 `/reload-plugins` 는 글자로만 전달되어 실행되지 않는다** — 응답이 끝난 뒤 다시 친다(2026-09-29 `korean-skills`).
 - ⚠️ **`code-review`·`simplify` 는 플러그인이 꺼져 있어도 스킬 목록에 보인다** — **Claude Code 내장 스킬**이 같은 이름을 쓴다. 이름이 보인다고 플러그인이 켜진 것이 아니다.
