@@ -6,6 +6,14 @@
 
 ---
 
+## 2026-09-29 · Rpi1 · session bd53ab70-ca26-44a2-b0f2-4bc987dddc0c (✅ korean-skills 플러그인 설치 — 한국어 문장 보정 3종 · 명령줄 설치 뒤 /reload-plugins 함정)
+- ✅ 설치(사용자 「플러그인을 설치해서 사용해줘」 · 스킬 원문을 읽어 대신하지 말 것) — `claude plugin marketplace add daleseo/korean-skills` · `claude plugin install korean-skills@korean-skills` · 사용자 범위(`~/.claude/settings.json`) · 켜짐 6 → 7(`cc인프라.md`)
+- 🔎 관찰 — 설치 직후 `Unknown skill` · 사용자가 응답 도중 친 `/reload-plugins` 는 글자로만 전달되어 실행 안 됨 → 다시 불러온 뒤 3종(humanizer·style-guide·grammar-checker) 사용 → `cc인프라.md` 함정 한 줄
+- 🔎 관찰 — 사용자가 처음 부른 이름 「korea-skill」 → 실제 이름 korean-skills(데스크톱은 project-docs local scope 로 이미 씀 · 09-28 블록)
+- ✅ 프로젝트 작업(라벨링 검토 안내서)은 작업로그 같은 날 블록
+- ⏸ (앞 유지) 09-27 데스크톱 블록 project-docs 규칙 9건 · 문서 작업 세션 빈틈 · 파이1 CLAUDE.local.md · 작업 방식 파악 · 규칙 로그 한 달 관찰 · 낡은 참조 전수 검사
+- 🔗 커밋: sop-project `2fbd6cd`(CC정본)
+
 ## 2026-09-28 · 🖥️ 데스크톱 · session 93bafdd0-4874-4dae-8d20-81c1643401ee (✅ 문서 작업을 sop-project 세션에서 — 관찰 2 · 융합프로젝트 규칙에 변경 표시 한 줄)
 - ✅ `융합프로젝트/.claude/rules/hwp편집.md` 「계획서 조판」에 변경 표시 한 줄 — `만들기.py --표시 <기준 커밋>` · 기준 = 사용자가 마지막으로 확인한 판 · 제출본은 옵션 없이
 - 🔎 관찰 — 문서 작업을 `~/projects` 세션에서 함: CLAUDE.md·output style·스킬·훅은 붙고 `hwp편집.md` 는 안 붙음(형제 폴더) → 직접 읽고 진행 · korean-skills(project-docs local scope)는 스킬 목록에 없어 에이전트가 SKILL.md 를 읽어 적용 → ⏸ 「문서 작업 세션 빈틈」 판단 자료
