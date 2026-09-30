@@ -6,6 +6,15 @@
 
 ---
 
+## 2026-09-30 · 🖥️ 데스크톱 · session 7fa8a637-989b-4584-902a-e1f8dc9efcf8 (✅ 발표 제작 플러그인 3종 local 설치 · 🔎 문서 작업공간 세션 빈틈의 실제 영향 · 원격제어 아티팩트 삭제 함정)
+- ✅ 설치(사용자 「html 프레젠테이션 제작에 도움이 되는 도구가 있다면 적극 도입」) — 마켓플레이스 `zarazhangrui/frontend-slides`·`pbakaus/impeccable`(user settings) · `--scope local`: frontend-slides·impeccable → ~/projects·~/project-docs · korean-skills → ~/projects 추가 · 사용자 `/reload-plugins` 후 스킬 목록 확인 · 되돌리기 = 각 저장소에서 `claude plugin uninstall <이름> --scope local`
+- 🔎 impeccable 훅 3개(SessionStart · PostToolUse Edit|Write · Stop)는 local 범위만 · `/impeccable hooks on` 전에는 조용함(손 실행 1.2초·0초·출력 없음) · 엔진 = ~/.impeccable(Node 불필요)
+- 🔎 문서 작업공간 세션 빈틈이 실제로 걸림 — 실행 위치를 ~/project-docs/융합프로젝트 로 추천했다가 사용자 지적(「sop-project의 규칙은 적용되지 않는거 아니야?」)으로 ~/projects 로 정정 · 작업공간 규칙(`발표제작.md`)은 Task 마다 직접 Read
+- 🔎 원격제어(노트북 claude.ai) 중 Artifact delete 확인 창이 노트북에 안 떠 20분 넘게 멈춘 뒤 거절 2회 → 사용자가 claude.ai 에서 직접 삭제 · 데스크톱 메모리 기록
+- 🔎 데스크톱 → 파이1 `ssh pi1` 읽기 가능(키 인증) — 파이 자료는 작업 이전 없이 읽는다
+- ⏸ (앞 유지) 09-27 데스크톱 블록 project-docs 규칙 9건 · 문서 작업 세션 빈틈 · 파이1 CLAUDE.local.md · 작업 방식 파악 · 규칙 로그 한 달 관찰 · 낡은 참조 전수 검사
+- 🔗 커밋: 없음(플러그인 설정 = settings.local.json · git 제외)
+
 ## 2026-09-29 · Rpi1 · session bd53ab70-ca26-44a2-b0f2-4bc987dddc0c (✅ korean-skills 플러그인 설치 — 한국어 문장 보정 3종 · 명령줄 설치 뒤 /reload-plugins 함정)
 - ✅ 설치(사용자 「플러그인을 설치해서 사용해줘」 · 스킬 원문을 읽어 대신하지 말 것) — `claude plugin marketplace add daleseo/korean-skills` · `claude plugin install korean-skills@korean-skills` · 사용자 범위(`~/.claude/settings.json`) · 켜짐 6 → 7(`cc인프라.md`)
 - 🔎 관찰 — 설치 직후 `Unknown skill` · 사용자가 응답 도중 친 `/reload-plugins` 는 글자로만 전달되어 실행 안 됨 → 다시 불러온 뒤 3종(humanizer·style-guide·grammar-checker) 사용 → `cc인프라.md` 함정 한 줄
