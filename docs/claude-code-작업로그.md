@@ -6,6 +6,12 @@
 
 ---
 
+## 2026-10-01 · Rpi1 · session 82ed7706-c88e-4b54-b58f-2a2325d86e83 (🔎 낡은 index.lock 이 work-close 커밋을 막음 — 원인 미확인)
+- ✅ 발견·조치 — sop-project `.git/index.lock`(생성 16:51:25 = 세션 시작 무렵 · 0바이트 · 실행 중 git 없음)이 정본 커밋을 막음 → 확인 뒤 지우고 커밋
+- ⏸ 원인 미확인 — 후보 = 시작 무렵 `git status` 를 도는 `session-sync-check.sh`(34행)·`statusline.py` 가 강제 종료(SIGKILL)되면 잠금이 남는다 · 재발하면 생성 시각을 훅 실행 시각과 대조
+- ⏸ (앞 유지) 09-27 데스크톱 블록 project-docs 규칙 9건 · 문서 작업 세션 빈틈 · 파이1 CLAUDE.local.md · 작업 방식 파악 · 규칙 로그 한 달 관찰 · 낡은 참조 전수 검사
+- 🔗 커밋: 없음(작업로그 기록만)
+
 ## 2026-09-30 · 🖥️ 데스크톱 · session 7fa8a637-989b-4584-902a-e1f8dc9efcf8 (✅ 발표 제작 플러그인 3종 local 설치 · 🔎 문서 작업공간 세션 빈틈의 실제 영향 · 원격제어 아티팩트 삭제 함정)
 - ✅ 설치(사용자 「html 프레젠테이션 제작에 도움이 되는 도구가 있다면 적극 도입」) — 마켓플레이스 `zarazhangrui/frontend-slides`·`pbakaus/impeccable`(user settings) · `--scope local`: frontend-slides·impeccable → ~/projects·~/project-docs · korean-skills → ~/projects 추가 · 사용자 `/reload-plugins` 후 스킬 목록 확인 · 되돌리기 = 각 저장소에서 `claude plugin uninstall <이름> --scope local`
 - 🔎 impeccable 훅 3개(SessionStart · PostToolUse Edit|Write · Stop)는 local 범위만 · `/impeccable hooks on` 전에는 조용함(손 실행 1.2초·0초·출력 없음) · 엔진 = ~/.impeccable(Node 불필요)
