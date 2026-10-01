@@ -12,6 +12,13 @@
 - ⏸ (앞 유지) 09-27 데스크톱 블록 project-docs 규칙 9건 · 문서 작업 세션 빈틈 · 파이1 CLAUDE.local.md · 작업 방식 파악 · 규칙 로그 한 달 관찰 · 낡은 참조 전수 검사
 - 🔗 커밋: 없음(작업로그 기록만)
 
+## 2026-10-01 · 🖥️ 데스크톱 · session bb1ed7be-fdd9-4ce5-96ef-8511e6a55f7e (✅ 메모리 「조판 전 디자인 스킬 먼저」 · 🔎 deep-research 첫 사용 비용)
+- ✅ 메모리 `feedback-design-skills-before-typesetting.md` 신설 — 발표·화면 결과물은 배치 전에 frontend-design·frontend-slides·impeccable · 계획서의 스킬 단계를 건너뛰었다가 사용자가 「도구·스킬로 만든 게 맞냐」고 확인
+- 🔎 deep-research 스킬 첫 사용 — 조사 에이전트 4 + 보고서 1 · 약 89만 토큰 · 7~15분씩 · CLAUDE.md 「멀티에이전트 기본 아님」인데 규모를 미리 안내하지 않음 → 다음엔 띄우기 전에 규모를 먼저 말한다
+- 🔎 executing-plans 보조 스크립트(task-start/task-done)는 「Task 숫자」 제목만 찾음 — 「Task R1」 같은 개정 태스크는 손으로 기록
+- ⏸ 없음(CC 후속 없음)
+- 🔗 커밋: 이 로그 커밋
+
 ## 2026-09-30 · 🖥️ 데스크톱 · session 7fa8a637-989b-4584-902a-e1f8dc9efcf8 (✅ 발표 제작 플러그인 3종 local 설치 · 🔎 문서 작업공간 세션 빈틈의 실제 영향 · 원격제어 아티팩트 삭제 함정)
 - ✅ 설치(사용자 「html 프레젠테이션 제작에 도움이 되는 도구가 있다면 적극 도입」) — 마켓플레이스 `zarazhangrui/frontend-slides`·`pbakaus/impeccable`(user settings) · `--scope local`: frontend-slides·impeccable → ~/projects·~/project-docs · korean-skills → ~/projects 추가 · 사용자 `/reload-plugins` 후 스킬 목록 확인 · 되돌리기 = 각 저장소에서 `claude plugin uninstall <이름> --scope local`
 - 🔎 impeccable 훅 3개(SessionStart · PostToolUse Edit|Write · Stop)는 local 범위만 · `/impeccable hooks on` 전에는 조용함(손 실행 1.2초·0초·출력 없음) · 엔진 = ~/.impeccable(Node 불필요)
