@@ -30,6 +30,7 @@
 | **문서에 반영 안 된 작업**(2026-09-11 전수 점검) | [`docs/미기록작업-점검-20260911.md`](docs/미기록작업-점검-20260911.md) — 발견 목록·처리 대기 |
 | Claude Code 인프라 이력 | [`docs/claude-code-작업로그.md`](docs/claude-code-작업로그.md) |
 | 훅 구성·작업 방식·훅 설계 원칙 | [`docs/claude-code-작업문서.md`](docs/claude-code-작업문서.md) |
+| 파이 Claude Code 활용 집계(발표 수치) | [`docs/claude-code-활용집계/`](docs/claude-code-활용집계/) — 결과 · 다시 뽑는 스크립트(파이에서만) |
 | **작업 규칙·금지·함정** | [`CLAUDE.md`](CLAUDE.md) |
 | 파이 홈 폴더 배치·생성 규칙 | [`docs/파이-홈-폴더규칙.md`](docs/파이-홈-폴더규칙.md) |
 | 작업 전 설계 근거 (왜·거부한 대안) | [`docs/superpowers/specs/`](docs/superpowers/specs/) |
