@@ -6,6 +6,17 @@
 
 ---
 
+## 2026-10-03 · Rpi1 · session 7d05be96-b9b0-406e-b7e1-bbb5f29a6f18 (✅ 커밋 비밀 검사 · 세션 시작 자동 켜기 · 낡은 index.lock 원인 규명·수정)
+- 결말 ✅ 완료(사용자 「진행」 → 「지금 하고 있는 보안 관련 건만 진행해주고」 · 10-03)
+- ✅ 점검(값 출력 없음) — 세 저장소 현재·전체 이력: 실제 값 = Rpi5 이력(와이파이 파일 3 + 옛 `camera_stream.ino`) · 나머지 자리표시 · 방어는 파일 이름 제외뿐 · 커밋 전 검사 없음 · Rpi5·sop-project GitHub 공개(10-03 API 확인 · 포크 0)
+- ✅ `.githooks/pre-commit`(sop-project 정본 · Rpi5·project-docs 같은 사본) — ①로컬 자격 증명 실제 값 ②비밀 대입 모양·토큰 접두어·개인 키 머리 ③비밀 파일 → 커밋 멈춤 · 값 출력 없음 · fail-open · `SECRET_SCAN_SKIP=1` · 시험 `test-pre-commit.sh` 19건(먼저 실패 8) · 현재 추적 16만 줄 오탐 0 · 첫 실전 커밋에서 훅이 자기 탐지 줄(개인 키 머리)을 잡아 문자열 이어 붙이기로 고침
+- ✅ `session-sync-check.sh` 가 세 저장소 `core.hooksPath` 자동 켜기(꺼져 있으면 배너 「🔒 … 켬」 · 끈 뒤 돌려 확인) · `훅설계.md` 배포 절 예외·근거 · 규칙 `비밀정보.md` · `.gitignore` 비밀 패턴(세 저장소) · `cc인프라.md` 등록 목록
+- ✅ **낡은 index.lock 원인**(82ed7706 ⏸) — statusline `git status`(timeout 2초)가 CPU 부하 때 강제 종료되며 잠금을 남김(10-03 15:35:36 크기 0 · 2시간 잔류 · git 프로세스 없음 확인 후 삭제) → `--no-optional-locks`(statusline · sync-check). 같은 날 00:07 Rpi5 의 수 초짜리 잠금은 별개(일시 충돌)
+- ⏸ 새 규칙 `비밀정보.md` 가 붙는지 새 세션에서 확인(세션 도중 생성 — 이 세션에선 안 붙음)
+- ⏸ 🖥️ 데스크톱 — pull 뒤 세션 시작에서 자동 켜짐 확인 · project-docs 경로가 `~/project-docs` 가 아니면 `PROJECT_DOCS_DIR`
+- ⏸ (앞 유지) 09-27 데스크톱 블록 project-docs 규칙 9건 · 문서 작업 세션 빈틈 · 작업 방식 파악 · 규칙 로그 한 달 관찰 · 낡은 참조 전수 검사
+- 🔗 커밋: sop-project `4cef9b0` · `(cc인프라 · 이번 커밋)` / Rpi5 `dee9c46` / project-docs `0f81e60`
+
 ## 2026-10-03 · Rpi1 · session edbe92ae-08f0-41df-be0e-86b4148f194b (🔎 /이어하기 에 인자를 주면 스킬 본문의 awk 칸 번호가 인자로 바뀐다)
 - ✅ 관찰 — `/이어하기 라벨링 작업이 b009까지 완료되었어 …` 로 부르자 session-resume 본문의 awk `$2`·`$3`·`$6`·`$7` 이 인자 낱말로 바뀌어 실렸다(예 `substr(b009까지,1,8)` · `$6=="진행중"` → `진행하고=="진행중"`) · 원본 SKILL.md 를 읽어 명령을 그대로 써서 돌아감
 - ⏸ session-resume(와 `$N` 을 쓰는 다른 스킬) 고치기 — 인자 치환 규칙은 공식 문서 원문으로 확인한 뒤(`code.claude.com/docs` · 기억 금지) awk 명령을 스크립트 파일로 옮기는 등 본문에 `$숫자` 가 남지 않게

@@ -17,7 +17,8 @@ paths: [".claude/**"]
 | ② | `hooks/session-prune-stubs.sh` | resume 목록의 tiny·원격제어 스텁을 `.trash` 로 정리 |
 | — | `hooks/session_archive.py` | 세션 **보존·색인**. ①이 배너 전에 **순차 호출**(독립 훅 아님). 산출물은 저장소 밖 `~/lab/session-archive/` |
 | ③ | `hooks/instructions-loaded-log.sh` | **규칙 로드 기록**(`InstructionsLoaded`) — 어떤 규칙이 언제·왜 붙었는지 `~/lab/rule-loads/YYYY-MM.tsv` 에 누적. 저장소 밖 |
-| — | `hooks/session-sync-check.sh` | ⚠️ **독립 훅이 아니다** — ①이 내부에서 순차 호출한다(SessionStart 병렬 경쟁 회피). 양 저장소의 ahead/behind·로컬변경을 점검 |
+| — | `hooks/session-sync-check.sh` | ⚠️ **독립 훅이 아니다** — ①이 내부에서 순차 호출한다(SessionStart 병렬 경쟁 회피). 양 저장소의 ahead/behind·로컬변경을 점검 + **커밋 비밀 검사를 세 저장소에서 자동으로 켠다**(`core.hooksPath`) |
+| — | `.githooks/pre-commit`(git 훅 · sop-project·Rpi5·project-docs 같은 사본) | **커밋 비밀 검사** — 새로 들어가는 줄에서 실제 자격 증명 값·비밀 모양·비밀 파일을 찾으면 커밋을 멈춘다(값 출력 없음 · 건너뛰기 `SECRET_SCAN_SKIP=1`). 시험 `.githooks/test-pre-commit.sh` · 규칙 `비밀정보.md` · git 훅을 쓴 이유 = `훅설계.md` 배포 절 예외 |
 | — | 스킬 `session-wrap` | `work-close` 3단계의 작업로그 기록 절차. 사용자 입구 없음(`user-invocable: false`) |
 | — | 스킬 `work-close` / 커맨드 `/작업마무리` | 작업 단위의 끝 — 결말 확인 → 정본 기록 → 세션 마무리 → push 한 번 |
 | — | 스킬 `session-resume` / 커맨드 `/이어하기` | 이전 작업 이어받기 — 진행중 세션은 한 번 묻고, 멈춘 지점과 추천 하나를 보고하고 멈춘다 |
