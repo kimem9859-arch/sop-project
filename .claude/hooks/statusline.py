@@ -73,7 +73,9 @@ def git_dirty(cwd):
     """커밋 안 한 변경(스테이지·비스테이지·untracked) 파일 수."""
     try:
         out = subprocess.run(
-            ["git", "status", "--porcelain"],
+            # 🔴 --no-optional-locks — status 는 index.lock 을 잠깐 잡는데, timeout(2초)에 걸려 강제 종료되면
+            #    잠금만 남아 다음 커밋이 막혔다(2026-10-03 · CPU 가 바쁠 때 크기 0 잠금 2시간 잔류).
+            ["git", "--no-optional-locks", "status", "--porcelain"],
             cwd=cwd, capture_output=True, text=True, timeout=2,
         )
         if out.returncode != 0:

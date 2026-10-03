@@ -31,7 +31,9 @@ report_repo() {
   counts=$(git -C "$dir" rev-list --left-right --count "${upstream}...HEAD" 2>/dev/null)
   behind=$(printf '%s' "$counts" | awk '{print $1+0}')
   ahead=$(printf '%s' "$counts" | awk '{print $2+0}')
-  dirty=$(git -C "$dir" status --porcelain 2>/dev/null | head -c1)
+  # 🔴 --no-optional-locks — status 가 index.lock 을 잡지 않게. head -c1 이 파이프를 일찍 닫거나 부모 훅이
+  #    시간 초과로 끊으면 잠금이 남아 다음 커밋이 막혔다(statusline 과 같은 원인 · 2026-10-03).
+  dirty=$(git --no-optional-locks -C "$dir" status --porcelain 2>/dev/null | head -c1)
   # 값 문자열은 폭이 일정한 한글/ASCII만 사용(✎⬇⬆ 등 폭 모호 기호 배제 → 표 정렬 안정)
   state=""
   [ "${behind:-0}" -gt 0 ] && state="${state}behind ${behind} "
@@ -43,4 +45,17 @@ report_repo() {
 
 report_repo "sop-project" "$PROJ"
 report_repo "Rpi5" "$PROJ/Rpi5"
+
+# 커밋 비밀 검사(.githooks/pre-commit) 를 저장소마다 켠다 — git 훅은 사본마다 `core.hooksPath` 를 한 번 켜야 해서
+# 설정이 빠진 채 2주간 안 돈 적이 있다(훅설계.md). 꺼져 있으면 여기서 자동으로 켜고 배너에 한 줄 남긴다.
+enable_secret_hook() {
+  local label="$1" dir="$2"
+  [ -x "$dir/.githooks/pre-commit" ] || return 0
+  [ "$(git -C "$dir" config core.hooksPath 2>/dev/null)" = ".githooks" ] && return 0
+  git -C "$dir" config core.hooksPath .githooks 2>/dev/null \
+    && printf '🔒 %s\t커밋 비밀 검사 켬(core.hooksPath)\n' "$label" >> "$TMP"
+}
+enable_secret_hook "sop-project" "$PROJ"
+enable_secret_hook "Rpi5" "$PROJ/Rpi5"
+enable_secret_hook "project-docs" "${PROJECT_DOCS_DIR:-$HOME/project-docs}"
 exit 0
