@@ -11,12 +11,12 @@
 
 ```bash
 cd ~/sop-project/Rpi5/Demo          # 🔴 반드시 Demo/ 에서 — 아래 경로가 전부 상대경로
-ls models/console_v2.hef            # 배포 확인
+ls models/B_v2.hef                  # 배포 확인(옛 console_v2 · 통합문서 §6.4)
 ls test/raw/                        # 🔴 raw 는 git 에 없다 — 파이 로컬에만 존재
 
-python3 test/replay_raw.py test/raw/<저조도 세션> --hef models/console_v2.hef
-python3 test/replay_raw.py test/raw/<정반사 세션> --hef models/console_v2.hef
-python3 test/replay_raw.py test/raw/<기준선 세션> --hef models/console_v2.hef
+python3 test/replay_raw.py test/raw/<저조도 세션> --hef models/B_v2.hef
+python3 test/replay_raw.py test/raw/<정반사 세션> --hef models/B_v2.hef
+python3 test/replay_raw.py test/raw/<기준선 세션> --hef models/B_v2.hef
 ```
 
 `--hef` 가 런타임에 `config.HEF_MODEL_PATH` 를 덮으므로 **config 수정은 불필요**하다. 🔴 **기준선 세션을 꼭 같이 돌려야 세션 간 비교가 된다.**
