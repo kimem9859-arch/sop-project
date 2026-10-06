@@ -88,15 +88,26 @@ ARCAD 5,203장은 실질적으로 **출처 118개**였다 — 3클래스가 **�
 | 경로 | 내용 |
 |---|---|
 | **`~/env/rfenv`** | **Python 3.12 + torch(CPU) + ultralytics + inference.** 파이 기본 3.13 엔 못 깔아서 만든 것(§10.35-(7)). `~/env/rfenv/bin/python <스크립트>` 로 쓴다 |
-| `~/data/ds_6tool` · `~/data/ds_mech83` | **주력 데이터셋 2종** (출처 5,762 · 4,026) |
-| `~/data/ds_vsisj` | 3순위 보강재 (164클래스 → 3종 병합 필요, 미사용) |
-| **`~/data/ds_tool_v3`** | **`6-tool` + `mech83` 병합본**(약 3만 장, train/valid 분할, 관문 통과·체크섬 기록됨) — 학습 입력 |
+| ⛔ `~/data/ds_6tool` · `~/data/ds_mech83` | **주력 데이터셋 2종** (출처 5,762 · 4,026) — 2026-10-06 삭제(아래) |
+| ⛔ `~/data/ds_vsisj` | 3순위 보강재 (164클래스 → 3종 병합 필요, 미사용) — 2026-10-06 삭제 |
+| ⛔ **`~/data/ds_tool_v3`** | **`6-tool` + `mech83` 병합본**(약 3만 장, train/valid 분할, 관문 통과·체크섬 기록됨) — 학습 입력 · 2026-10-06 삭제 |
+| ⛔ `~/data/ds_tool_v4` | `ds_tool_v3` + `x-tool-in-hand-videox` v3 병합본(6클래스 · 리포트 = `ds_tool_v4_report.md`) — 2026-10-06 삭제 |
 | `~/lab/tool-detect/tool_v3_preview` | `preview_labels.py` 눈확인 오버레이(20장) — 병합본 라벨 육안 검수용 |
 | `~/lab/tool-detect/tool_research/` | `classes.json`(**23개 데이터셋 클래스 원자료**) · `preds_*.json`(측정 기록 9종) |
 | `~/lab/tool-detect/tool_eyeball*` · `~/lab/tool-detect/tool_live_shots*` | §10.37·§10.38 판정 근거 오버레이 |
 | `Rpi5/Demo/models/tool_v1.pt`·`tool_v2.pt` | 폐기된 모델(gitignore) — 비교 기준선으로 보존 |
 
 > ⛔ ARCAD(`~/arcad_v9`)·`~/ds_mmmxd`·`~/ds_hmqnl` 은 **삭제했다**(2026-08-12, 4GB 회수). 판정 근거는 §10.39 에 남아 있고 필요하면 몇 분이면 다시 받는다.
+>
+> ⛔ 공개 데이터셋 사본 5개(`ds_6tool` · `ds_mech83` · `ds_vsisj` · `ds_tool_v3` · `ds_tool_v4`)도 **삭제했다**(2026-10-06, 약 5.5GB 회수 — 실콘솔 현장 촬영 디스크 확보 · 사용자 승인). 지금 학습(`Rpi5/학습/` · 자체 촬영 장소1)은 쓰지 않는다. 다시 받는 곳(삭제 전 각 폴더 `data.yaml` 에서 옮김):
+>
+> | 사본 | 원본 | 버전 · 내보낸 날 | 라이선스 |
+> |---|---|---|---|
+> | `ds_6tool` | `https://universe.roboflow.com/karthi-zqreo/6-tool-dataset-bb0ug/dataset/3` | v3 · 2025-10-05 | CC BY 4.0 |
+> | `ds_mech83` | `https://universe.roboflow.com/ruri-binnw/mechanical-tools-83ynn/dataset/2` | v2 · 2025-10-06 | CC BY 4.0 |
+> | `ds_vsisj` | `https://universe.roboflow.com/william-pfeffer-86r2c/tools-vsisj/dataset/5` | v5 · 2023-03-06 | CC BY 4.0 |
+> | `ds_tool_v3` | 위 `ds_6tool` + `ds_mech83` 을 `build_tool_v3_dataset.py` 로 병합 | — | 원본 따름 |
+> | `ds_tool_v4` | `ds_tool_v3` + `commontools` 의 `x-tool-in-hand-videox` v3(Roboflow Universe) — `ds_tool_v4_report.md` | — | CC BY 4.0 |
 
 ## 🔬 진단 도구
 
@@ -126,7 +137,7 @@ colab sessions          # 최초 1회 브라우저 OAuth (대화형 터미널 �
 🔴 **`colab run` 은 스크립트 한 파일의 내용만 VM 으로 보낸다** — 같은 폴더의 다른 모듈(`build_tool_v3_dataset.py` 등)은 따라가지 않는다. 그래서 `train_tool_v3.py` 는 VM 에서 자기 자신이 `sop-project` 를 얕게(shallow) clone 해 필요한 파일을 스스로 확보하도록 짜여 있다.
 
 ## 데이터 귀속
-ARCAD `tools-detection-b2xjk` (Roboflow Universe, **CC BY 4.0**). 출처 표기 의무.
+ARCAD `tools-detection-b2xjk` (Roboflow Universe, **CC BY 4.0**). 출처 표기 의무. 그 밖의 공개 데이터셋(`6-tool-dataset-bb0ug` · `mechanical-tools-83ynn` · `tools-vsisj` · `x-tool-in-hand-videox`)도 모두 CC BY 4.0 — 원본 주소는 위 「파이 로컬 자산」 삭제 표.
 
 ## 설계·계획
 `docs/superpowers/specs/2026-08-10-공구모델-tool_v1-design.md` · `docs/superpowers/plans/2026-08-10-공구모델-tool_v1.md`.
