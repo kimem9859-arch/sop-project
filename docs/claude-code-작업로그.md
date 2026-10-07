@@ -6,6 +6,14 @@
 
 ---
 
+## 2026-10-07 · Rpi1 · session 634b5800-ccc4-4578-a521-4b2dcb692691 (⏩ 발표 작업 도구 — 디자인 플러그인 sop-project 로컬 · LibreOffice Impress · Pretendard)
+- ✅ 플러그인 `--scope local` 추가: frontend-design · frontend-slides · impeccable → ~/sop-project(`.claude/settings.local.json` · 10/7 02:29) · 되돌리기 = `claude plugin uninstall <이름> --scope local`
+- ✅ 파이 패키지: `libreoffice-impress-nogui` · `draw-nogui` 설치 + 함께 올라간 갱신 14건(10/7 11:14) — PowerPoint 없는 파이에서 PPTX 를 그려 대조
+- ✅ 글꼴: Pretendard OTF 6굵기 → `~/.local/share/fonts/Pretendard`(10/7 11:06) — PPTX 그리기 · 브라우저 측정용
+- ✅ 아티팩트 댓글로 장을 집어 고치기 — 사용자 댓글 2건(S08 줄 균형 · 표지 로고)을 읽고 고친 뒤 해결 처리
+- 🔎 문서 작업을 sop-project 에서 연 세션으로 함 — CLAUDE.md 「문서 작업은 그 작업공간 폴더에서 세션을 연다」와 다름(그대로 진행)
+- 🔗 커밋: 없음(설정 · 패키지 · 글꼴은 git 밖)
+
 ## 2026-10-05 · Rpi1 · session 1aecfe30-502d-456e-b4e5-b8a2680ebd8a (✅ 규칙 모델이름.md — 모델·실험은 대조표의 새 이름으로 부른다)
 - ⏸ memory 에는 두지 않음 — MEMORY.md 머리말(규칙·선호는 git 자리로) · 규칙 파일이 정본
 - ✅ `.claude/rules/모델이름.md`(paths = 학습·모델 파일 · config · score_hef · 통합문서) — 범위 = 1단계(2026-10-03)부터 만든 모델 · 이미 정해진 이름은 대조표에만 · 보고는 새 이름 · B·T 뒤 숫자 금지. 세션 중 새로 만든 규칙은 그 세션에서 안 붙었고, 최종 리뷰어(새 세션)에서 붙는 것을 확인(규칙배치.md 「새 세션에서 재확인」 그대로).
