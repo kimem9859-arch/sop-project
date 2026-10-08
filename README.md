@@ -70,7 +70,7 @@
 │  └─ ai_model/           트랙 B — YOLO 버튼 동적검출 (상태는 통합문서 §6.1)
 ├─ captures/              🖼️ 손 검출 샘플 이미지 (테스트 입력용)
 ├─ media/                 🎬 overlay 영상 (정상·스침만 git 추적)
-│  └─ 발표차트/           📊 발표용 차트 SVG·PNG (생성기 = Rpi5/Demo/test/slide_charts.py)
+│  └─ 발표차트/           📊 8월 발표용 차트 SVG·PNG (생성기 = Rpi5/백업/세기-20261009/slide_charts.py · 되돌려 쓴다)
 └─ Rpi5/                  🍓 RPi 데모 (별도 git repo · gitignore)
 
 gitignore 환경자산(루트): .poc_venv · poc_data · .syslibs — 머신마다 재구축
