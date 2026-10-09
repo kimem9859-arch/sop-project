@@ -7,9 +7,11 @@ import type {CalloutDef} from "./callout.ts";
 export type Clip = {take: string; file: string; from: number; to: number; speed: number; overlay: boolean;
   caption?: string; badge?: string; boot?: boolean; hold?: number; intro?: "buttons" | "hand" | "tool" | "overlap" | "dwell" | "end";
   chapter?: {no: string; title: string; desc: string}; section?: {no: string; title: string; desc: string}; run?: string;
-  callout?: CalloutDef; card?: "chapter" | "section"; tip?: boolean; fadeOut?: number; fadeIn?: number};
+  callout?: CalloutDef; card?: "chapter" | "section"; tip?: boolean; fadeOut?: number; fadeIn?: number;
+  subs?: [number, number, string][]};
 // card = 장 · 절 제목 카드(정지 구간 · 화면을 어둡게 하고 제목만) — 시안 2 피드백 「절 제목은 따로 독립 제목 카드로」
 // tip = 검지 끝 빛 꼬리(판정 장면 · 시안 8) · fadeOut · fadeIn = 끝 · 처음 몇 초 동안 검은 화면으로 사라짐 · 검은 화면에서 나타남(로고 인트로 → 안경 장면 · 시안 11 · 12)
+// subs = 구간 안 자막 [시작, 끝, 문장](구간 시작부터 화면 초) — 한 구간 안에서 문장이 바뀔 때 · 구간 전체 한 문장이면 caption
 export type Placed = {clip: Clip; start: number; frames: number};
 
 export function place(clips: Clip[], fps: number): Placed[] {
@@ -37,4 +39,23 @@ export function bootTimes(ps: Placed[], fps: number): ({at: number; runs: boolea
     if (out.runs) t += p.frames / fps;
     return out;
   });
+}
+
+// 자막 트랙 — 구간마다 caption(구간 전체) · subs(구간 안 화면 초)를 편집 전체 프레임으로 펴고, 바로 이어지는 같은 문장은 하나로 묶는다
+//   (같은 문장이 정지 구간 → 재생 구간으로 이어질 때 깜빡이지 않게 · 시안 13 「장면에 맞는 자막」) · 제목 카드 구간에는 자막 없음
+export type Cue = {start: number; end: number; text: string};
+export function captionTrack(ps: Placed[], fps: number): Cue[] {
+  const out: Cue[] = [];
+  for (const p of ps) {
+    if (p.clip.card) continue;
+    const segs: Cue[] = p.clip.caption ? [{start: p.start, end: p.start + p.frames, text: p.clip.caption}] : [];
+    for (const [a, b, text] of p.clip.subs ?? [])
+      segs.push({start: p.start + Math.round(a * fps), end: Math.min(p.start + p.frames, p.start + Math.round(b * fps)), text});
+    for (const c of segs) {
+      const last = out[out.length - 1];
+      if (last && last.end === c.start && last.text === c.text) last.end = c.end;
+      else if (c.end > c.start) out.push({...c});
+    }
+  }
+  return out;
 }

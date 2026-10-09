@@ -10,7 +10,7 @@ import {FactStreams, LockBadge, TipTrail, VoiceWave, type Stream} from "./Fx.tsx
 import {HandSkeleton} from "./HandSkeleton.tsx";
 import {HudBoot} from "./HudBoot.tsx";
 import {JudgeZone} from "./JudgeZone.tsx";
-import {Caption, SpeedBadge, SynthLabel} from "./Overlays.tsx";
+import {SpeedBadge, SynthLabel} from "./Overlays.tsx";
 import {Overlap} from "./Overlap.tsx";
 import {ProgressGauge} from "./ProgressGauge.tsx";
 import {ReleaseButton} from "./ReleaseButton.tsx";
@@ -26,9 +26,9 @@ import {VoiceBubbles} from "./VoiceBubbles.tsx";
 // frozenAge = 화면 정지 구간 안 경과 초 · dwell = 판정 기준 장면의 머묾 타이머(lib/judge) · pressAt = 누른 버튼이 그 순간 가려졌을 때 직전 박스(lastBox)
 // trail = 검지 끝 자취(판정 장면) · impact = 차단 뒤 화면 초(자물쇠 「찰칵」)
 export const Hud: React.FC<{ui: UiState; view: DetView; fit: Fit; t: number; tMs: number; boot: number; handAge: number | null;
-  W: number; H: number; caption?: string; captionOpacity?: number; badge?: string; synth?: string; pressAt?: Box | null; dwell?: Dwell | null;
+  W: number; H: number; badge?: string; synth?: string; pressAt?: Box | null; dwell?: Dwell | null;
   toolIntro?: number | null; overlap?: number | null; frozenAge?: number | null; uiMs?: number; trail?: Pt[] | null; impact?: number | null}> =
-  ({ui, view, fit, t, tMs, boot, handAge, W, H, caption, captionOpacity = 1, badge, synth, pressAt = null, dwell = null,
+  ({ui, view, fit, t, tMs, boot, handAge, W, H, badge, synth, pressAt = null, dwell = null,
     toolIntro = null, overlap = null, frozenAge = null, uiMs = tMs, trail = null, impact = null}) => {
     const bs = boot * BOOT_SEC;
     const panelAge = boot >= 1 ? null : (boot - PANEL_FROM) * BOOT_SEC; // 단계 목록이 나타난 뒤 초(지지직 등장)
@@ -97,7 +97,6 @@ export const Hud: React.FC<{ui: UiState; view: DetView; fit: Fit; t: number; tMs
         <VoiceWave level={wave} t={t} W={W} H={H} />
         <VoiceBubbles voice={ui.voice} t={t} tMs={tMs} />
         <SpeedBadge badge={badge} />
-        <Caption text={caption} opacity={captionOpacity} />
         <SynthLabel text={synth} />
       </>
     );

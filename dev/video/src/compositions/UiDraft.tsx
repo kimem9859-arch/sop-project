@@ -3,6 +3,7 @@ import {detAt, firstHandAt, fitRect, type Dets} from "../lib/dets.ts";
 import type {Ev} from "../lib/timeline.ts";
 import {stateAt} from "../lib/uiState.ts";
 import {Hud} from "../hud/Hud.tsx";
+import {Caption} from "../hud/Overlays.tsx";
 import {BOOT_SEC} from "../lib/boot.ts";
 
 // 🔴 시안 전용 — 바탕 영상(10/8 가로 흉내)과 상태(10/9 Task 9 시험 세션 기록)는 짝이 아니다 · 화면에 표기한다
@@ -52,7 +53,8 @@ const MomentView: React.FC<{m: Moment; tl: TL; dets: Dets; take: string; video: 
       <OffthreadVideo src={staticFile(`footage/${take}/${video}`)} muted trimBefore={Math.round(v0 * fps)}
         style={{width: "100%", height: "100%", objectFit: "contain"}} />
       <Hud ui={ui} view={view} fit={fitRect(dets.w, dets.h, width, height)} t={sec} tMs={tMs}
-        boot={m.boot ? f / len : 1} handAge={handAge} W={width} H={height} caption={m.caption} badge={m.badge} />
+        boot={m.boot ? f / len : 1} handAge={handAge} W={width} H={height} badge={m.badge} />
+      <Caption text={m.caption} opacity={1} />   {/* 자막은 Hud 밖에서(시안 13 — 편집 영상은 Cut 자막 트랙) */}
       <div style={{position: "absolute", left: 40, bottom: 20, color: "#fff", font: "600 20px Pretendard", background: "rgba(0,0,0,.6)", padding: "4px 10px", borderRadius: 6}}>
         {`UI 시안 · 영상과 기록 짝 아님 · ${m.label}`}
       </div>

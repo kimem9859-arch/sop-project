@@ -1,7 +1,7 @@
 import {AbsoluteFill, Freeze, OffthreadVideo, Sequence, staticFile, useCurrentFrame, useVideoConfig, type CalculateMetadataFunction} from "remotion";
 import {BOOT_SEC, BTN_INTRO_SEC, BTN_ORDER, BTN_STEP, btnIntroAge} from "../lib/boot.ts";
 import {detAt, firstHandAt, fitRect, lastBox, tipTrail, type Box, type Dets} from "../lib/dets.ts";
-import {bootTimes, place, srcSec, totalFrames, type Clip, type Placed} from "../lib/edit.ts";
+import {bootTimes, captionTrack, place, srcSec, totalFrames, type Clip, type Placed} from "../lib/edit.ts";
 import {burstAge, insetSpot, screenSince, shake} from "../lib/fx.ts";
 import {dwellAt} from "../lib/judge.ts";
 import {holeMask, holesFor} from "../lib/mask.ts";
@@ -14,6 +14,7 @@ import {EndSummary} from "../hud/EndSummary.tsx";
 import {ChromaFilter, INSET, PixelBurst, ZoomInset} from "../hud/Fx.tsx";
 import {BTN, C, TOOL_KO} from "../hud/theme.ts";
 import {Hud} from "../hud/Hud.tsx";
+import {Caption} from "../hud/Overlays.tsx";
 import {SKELETON} from "../edits/skeleton.ts";
 import {PRETEST, PRETEST_STAGED, PRETEST_SYNTH} from "../edits/pretest.ts";
 import {FEATURE, FEATURE_STAGED, FEATURE_SYNTH} from "../edits/feature.ts";
@@ -66,7 +67,6 @@ const ClipView: React.FC<{p: Placed; d: TakeData | undefined; boot0: {at: number
   const c = p.clip;
   const sec = srcSec(c, f, fps);
   const holdT = c.hold !== undefined ? f / fps : null;  // 정지 구간 안 경과 초(연출 시계)
-  const fadeIn = Math.min(1, f / 10), fadeOut = Math.min(1, (p.frames - f) / 10);
   const fit = d ? fitRect(d.dets.w, d.dets.h, width, height) : null;
   let hud = null;
   let impact: number | null = null;   // 차단이 화면에 처음 나온 뒤 화면 초(lib/fx screenSince)
@@ -94,8 +94,7 @@ const ClipView: React.FC<{p: Placed; d: TakeData | undefined; boot0: {at: number
     const back = trailFrom === null ? TRAIL_SEC : Math.min(TRAIL_SEC, Math.max(0, sec - trailFrom));
     hud = <Hud ui={ui} pressAt={pressAt} dwell={dw} uiMs={uiMs} view={view} fit={fit} impact={impact}
       trail={c.tip ? tipTrail(d.dets, sec, back) : null}
-      t={(p.start + f) / fps} tMs={tMs} boot={boot} handAge={handAge} W={width} H={height} caption={c.caption}
-      captionOpacity={Math.min(fadeIn, fadeOut)} badge={c.badge} synth={synth}
+      t={(p.start + f) / fps} tMs={tMs} boot={boot} handAge={handAge} W={width} H={height} badge={c.badge} synth={synth}
       toolIntro={c.intro === "tool" ? holdT : null} overlap={c.intro === "overlap" ? holdT : null} frozenAge={holdT} />;
   }
   // 탐지 연출 동안 화면을 멈추고 배경을 흐리고 어둡게(10/9 초안 피드백) — 주인공(버튼 · 손 · 공구)은 선명하게 남긴다(시안 1 피드백)
@@ -182,7 +181,8 @@ export const Cut: React.FC<CutProps> = ({edit, data}) => {
   if (!data) return null;
   const ps = place(EDITS[edit], 30);
   const bt = bootTimes(ps, 30);
-  const ba = burstAge(ps, f, fps, BURST);   // 장 제목 카드 첫 0.3초 — 화면 전체 색 번짐 + 픽셀 조각(제목 글자는 그 위)
+  const ba = burstAge(ps, f, fps, BURST);
+  const cue = captionTrack(ps, fps).find((q) => q.start <= f && f < q.end);   // 자막 — 편집 전체 트랙(lib/edit captionTrack)   // 장 제목 카드 첫 0.3초 — 화면 전체 색 번짐 + 픽셀 조각(제목 글자는 그 위)
   return (
     <AbsoluteFill>
       {ba !== null && <ChromaFilter id="ca-burst" dx={BURST_CA * (1 - ba / BURST)} />}
@@ -195,6 +195,7 @@ export const Cut: React.FC<CutProps> = ({edit, data}) => {
         ))}
       </AbsoluteFill>
       {ba !== null && <PixelBurst age={ba} win={BURST} W={width} H={height} />}
+      {cue && <Caption text={cue.text} opacity={Math.min(1, (f - cue.start) / 8, (cue.end - f) / 8)} />}
       <Chapters ps={ps} />
       {edit === "skeleton" && (
         <div style={{position: "absolute", left: 40, bottom: 20, color: "#fff", font: "600 20px Pretendard", background: "rgba(0,0,0,.6)", padding: "4px 10px", borderRadius: 6}}>
