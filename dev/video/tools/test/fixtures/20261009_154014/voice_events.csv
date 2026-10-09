@@ -1,0 +1,103 @@
+t_ms,kind,data
+250008477.629,uplink,"{""bytes"": 0, ""connected"": false}"
+250017015.456,stt,"{""text"": ""아네."", ""stt_ms"": 241, ""utter_sec"": 2.31}"
+250018493.437,uplink,"{""bytes"": 320512, ""connected"": true}"
+250022180.228,stt,"{""text"": ""응."", ""stt_ms"": 115, ""utter_sec"": 0.85}"
+250028495.073,uplink,"{""bytes"": 641024, ""connected"": true}"
+250029858.011,stt,"{""text"": """", ""stt_ms"": 397, ""utter_sec"": 3.53}"
+250032829.06,stt,"{""text"": ""응."", ""stt_ms"": 127, ""utter_sec"": 0.95}"
+250036155.657,stt,"{""text"": ""응."", ""stt_ms"": 272, ""utter_sec"": 2.47}"
+250038496.665,uplink,"{""bytes"": 960512, ""connected"": true}"
+250042062.652,stt,"{""text"": """", ""stt_ms"": 523, ""utter_sec"": 4.49}"
+250044873.782,stt,"{""text"": ""응."", ""stt_ms"": 225, ""utter_sec"": 2.01}"
+250047440.703,stt,"{""text"": ""응."", ""stt_ms"": 165, ""utter_sec"": 1.61}"
+250048514.796,uplink,"{""bytes"": 1282048, ""connected"": true}"
+250052316.298,stt,"{""text"": ""응."", ""stt_ms"": 341, ""utter_sec"": 3.41}"
+250055231.889,stt,"{""text"": ""맞아."", ""stt_ms"": 196, ""utter_sec"": 1.69}"
+250058528.354,uplink,"{""bytes"": 1601536, ""connected"": true}"
+250060292.898,alert,"{""key"": ""alert_block_B1"", ""t_pub_ms"": 250060270.259, ""state"": ""BLOCK""}"
+250060293.03,stop_sent,{}
+250061100.103,play_start,{}
+250064313.108,stop_sent,{}
+250064313.233,alert_clear,{}
+250064322.298,play_end,"{""what"": ""중단""}"
+250064322.562,alert_played,"{""key"": ""alert_block_B1"", ""ok"": true}"
+250066177.473,stt,"{""text"": ""아진짜?"", ""stt_ms"": 138, ""utter_sec"": 1.08}"
+250068533.228,uplink,"{""bytes"": 1922048, ""connected"": true}"
+250073092.259,stt,"{""text"": """", ""stt_ms"": 679, ""utter_sec"": 6.01}"
+250076318.925,stt,"{""text"": ""아"", ""stt_ms"": 87, ""utter_sec"": 0.71}"
+250078549.369,uplink,"{""bytes"": 2242560, ""connected"": true}"
+250081946.265,stt,"{""text"": ""응"", ""stt_ms"": 311, ""utter_sec"": 3.15}"
+250086611.315,stt,"{""text"": ""응."", ""stt_ms"": 133, ""utter_sec"": 1.05}"
+250088133.164,stt,"{""text"": ""아"", ""stt_ms"": 63, ""utter_sec"": 0.31}"
+250088564.215,uplink,"{""bytes"": 2563072, ""connected"": true}"
+250092303.765,stt,"{""text"": ""아맞어."", ""stt_ms"": 109, ""utter_sec"": 0.95}"
+250098584.361,uplink,"{""bytes"": 2883584, ""connected"": true}"
+250107957.716,stt,"{""text"": ""아."", ""stt_ms"": 377, ""utter_sec"": 3.25}"
+250108586.362,uplink,"{""bytes"": 3203072, ""connected"": true}"
+250118589.608,uplink,"{""bytes"": 3523584, ""connected"": true}"
+250123191.418,stt,"{""text"": """", ""stt_ms"": 169, ""utter_sec"": 1.41}"
+250126259.258,stt,"{""text"": ""아"", ""stt_ms"": 246, ""utter_sec"": 2.41}"
+250128594.903,uplink,"{""bytes"": 3844096, ""connected"": true}"
+250130357.015,stt,"{""text"": ""가디언"", ""stt_ms"": 150, ""utter_sec"": 1.37}"
+250130507.75,wake,{}
+250133358.315,stt,"{""text"": ""지금몇판이야?"", ""stt_ms"": 101, ""utter_sec"": 0.87}"
+250133730.591,play_start,{}
+250135080.932,play_end,"{""what"": ""완료""}"
+250136846.741,answer,"{""src"": ""LLM"", ""text"": ""지금은 1단계입니다.""}"
+250137180.249,play_start,{}
+250138725.116,play_end,"{""what"": ""완료""}"
+250138725.842,uplink,"{""bytes"": 4168704, ""connected"": true}"
+250144188.193,stt,"{""text"": ""가디관?"", ""stt_ms"": 357, ""utter_sec"": 3.8}"
+250144545.923,wake,{}
+250148728.824,uplink,"{""bytes"": 4488192, ""connected"": true}"
+250152031.224,stt,"{""text"": ""지금몇단계야? 지금몇단계야?"", ""stt_ms"": 645, ""utter_sec"": 6.01}"
+250152934.355,play_start,{}
+250154274.221,play_end,"{""what"": ""완료""}"
+250162569.241,answer,"{""src"": ""LLM"", ""text"": ""지금은 2단계 「펌프/퍼지」가 진행 중입니다.""}"
+250163139.093,play_start,{}
+250166012.18,play_end,"{""what"": ""완료""}"
+250166015.344,uplink,"{""bytes"": 5041152, ""connected"": true}"
+250170422.01,stt,"{""text"": ""응."", ""stt_ms"": 304, ""utter_sec"": 2.84}"
+250174283.962,stt,"{""text"": ""응."", ""stt_ms"": 284, ""utter_sec"": 2.59}"
+250176032.321,uplink,"{""bytes"": 5361664, ""connected"": true}"
+250177101.579,stt,"{""text"": ""오케이."", ""stt_ms"": 178, ""utter_sec"": 1.93}"
+250183267.112,stt,"{""text"": ""응."", ""stt_ms"": 301, ""utter_sec"": 2.93}"
+250184085.279,stt,"{""text"": ""아."", ""stt_ms"": 74, ""utter_sec"": 0.51}"
+250186046.209,uplink,"{""bytes"": 5682176, ""connected"": true}"
+250190516.198,stt,"{""text"": ""아그럼? 가미안."", ""stt_ms"": 546, ""utter_sec"": 5.27}"
+250194141.935,stt,"{""text"": ""가디관?"", ""stt_ms"": 192, ""utter_sec"": 2.07}"
+250194335.054,wake,{}
+250196058.811,uplink,"{""bytes"": 6002688, ""connected"": true}"
+250197215.328,stt,"{""text"": ""지금내딴게."", ""stt_ms"": 98, ""utter_sec"": 0.87}"
+250197579.117,play_start,{}
+250198921.632,play_end,"{""what"": ""완료""}"
+250207051.161,answer,"{""src"": ""LLM"", ""text"": ""지금 B3 버튼을 눌러주셔야 합니다.""}"
+250207583.095,play_start,{}
+250210164.852,play_end,"{""what"": ""완료""}"
+250210168.665,uplink,"{""bytes"": 6454272, ""connected"": true}"
+250213053.219,stt,"{""text"": ""응."", ""stt_ms"": 153, ""utter_sec"": 1.3}"
+250216380.729,stt,"{""text"": ""응."", ""stt_ms"": 207, ""utter_sec"": 1.69}"
+250220181.873,uplink,"{""bytes"": 6774784, ""connected"": true}"
+250224314.042,stt,"{""text"": ""가자."", ""stt_ms"": 101, ""utter_sec"": 0.61}"
+250230182.934,uplink,"{""bytes"": 7095296, ""connected"": true}"
+250231495.88,stt,"{""text"": ""가디언가디언."", ""stt_ms"": 391, ""utter_sec"": 3.87}"
+250231887.185,wake,{}
+250232669.181,play_start,{}
+250234001.481,play_end,"{""what"": ""완료""}"
+250240467.254,answer,"{""src"": ""LLM"", ""text"": ""가디언가디언에 대해 확인할 수 없습니다.""}"
+250240971.366,play_start,{}
+250243438.211,play_end,"{""what"": ""완료""}"
+250243439.798,uplink,"{""bytes"": 7519232, ""connected"": true}"
+250246580.116,stt,"{""text"": ""가디야?"", ""stt_ms"": 112, ""utter_sec"": 0.63}"
+250246692.791,wake,{}
+250249577.058,stt,"{""text"": ""지금몇단계야."", ""stt_ms"": 131, ""utter_sec"": 0.89}"
+250249997.265,play_start,{}
+250251337.476,play_end,"{""what"": ""완료""}"
+250254327.901,answer,"{""src"": ""LLM"", ""text"": ""현재 4단계인 챔버 벤트 단계입니다.""}"
+250254865.782,play_start,{}
+250257464.76,play_end,"{""what"": ""완료""}"
+250257465.736,uplink,"{""bytes"": 7967744, ""connected"": true}"
+250260336.711,stt,"{""text"": ""아."", ""stt_ms"": 157, ""utter_sec"": 1.36}"
+250264695.762,stt,"{""text"": """", ""stt_ms"": 176, ""utter_sec"": 2.79}"
+250266922.222,measure_end,"{""dropped"": 0, ""failed"": false}"
