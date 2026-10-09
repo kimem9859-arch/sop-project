@@ -1,6 +1,6 @@
 // RFC 4180 CSV — 측정 기록의 data 칸(JSON)에 쉼표·겹따옴표가 들어 있다
 export function parseCsv(text: string): string[][] {
-  const s = text.replace(/^﻿/, "");
+  const s = text.replace(/^\uFEFF/, "");
   const rows: string[][] = [];
   let row: string[] = [];
   let field = "";

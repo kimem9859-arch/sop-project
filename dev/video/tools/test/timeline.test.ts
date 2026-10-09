@@ -7,7 +7,7 @@ import {mergeEvents, parseEvents, runs} from "../../src/lib/timeline.ts";
 const fx = (f: string) => readFileSync(new URL(`./fixtures/20261009_154014/${f}`, import.meta.url), "utf8");
 
 test("CSV — 따옴표 안 쉼표·겹따옴표·BOM·CRLF", () => {
-  assert.deepEqual(parseCsv('﻿a,b\r\n1,"{""k"": ""x,y""}"\r\n'), [["a", "b"], ["1", '{"k": "x,y"}']]);
+  assert.deepEqual(parseCsv('\uFEFFa,b\r\n1,"{""k"": ""x,y""}"\r\n'), [["a", "b"], ["1", '{"k": "x,y"}']]);
 });
 test("머리줄이 다르면 멈춘다", () => {
   assert.throws(() => parseEvents("x,y\n1,2\n", "main"), /머리줄/);
