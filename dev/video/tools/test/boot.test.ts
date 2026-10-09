@@ -29,7 +29,7 @@ test("버튼 강조는 스캔 왕복이 끝난 뒤에 시작한다", () => {
   assert.equal(scanY(SCAN_END + 0.05, 1080), null);
 });
 test("단계 목록은 점검 완료 뒤 · 버튼 탐지(정지 구간) 전에 나타난다", () => {
-  assert.ok(PANEL_FROM * BOOT_SEC >= BANNER_TO);
+  assert.ok(PANEL_FROM * BOOT_SEC >= BANNER_TO - 1e-9); // 비율 → 초 되돌림의 부동소수 오차(6.15 → 6.1499…) 허용
   assert.ok(PANEL_FROM * BOOT_SEC < CHECK_SEC);
 });
 test("가상 세계가 펼쳐진 뒤에 점검 목록이 시작한다", () => {

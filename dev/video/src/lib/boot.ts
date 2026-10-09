@@ -7,13 +7,14 @@
 //   CHECK_SEC ~ + SCAN_HOLD_SEC 화면 정지 — 스캔 선 위 → 아래 → 위 한 번 → 그다음 버튼 강조 B1 → … → EMO(지지직 없음)
 //   끝나면 단계 목록 「작업 시작」 → 「감시 중」
 // 시안 6 피드백 「영상 길이 … 1분 30초 정도」 → 점검 줄 · 버튼 차례를 줄임 · 「가상 세계를 좀 더 화려하게」 → WORLD_SEC 늘림
+// 시안 7 피드백 「버튼 탐지 절 스캔 속도를 조금만 더 빠르게」 → SCAN_HALF 1.0 → 0.75(왕복 2.0 → 1.5초)
 export const WORLD_SEC = 2.6;
 export const HEAD_AT = 2.5, ROW_AT = 3.0, ROW_GAP = 0.45, ROW_CHECK = 0.35;
 export const LIST_END = 5.1, BANNER_FROM = 5.35, BANNER_TO = 6.15;
 export const CHECK_SEC = BANNER_TO + 0.8;
 export const BTN_ORDER = ["B1", "B2", "B3", "B4", "EMO"];
 export const BTN_INTRO_SEC = 1.0;               // 버튼 하나의 강조 연출 길이
-const SCAN_AT = 0.1, SCAN_HALF = 1.0;           // 스캔 시작(정지 구간 기준) · 내려가는(올라오는) 데 걸리는 초
+const SCAN_AT = 0.1, SCAN_HALF = 0.75;          // 스캔 시작(정지 구간 기준) · 내려가는(올라오는) 데 걸리는 초
 export const SCAN_END = CHECK_SEC + SCAN_AT + 2 * SCAN_HALF;
 const BTN_FIRST = SCAN_AT + 2 * SCAN_HALF + 0.1, BTN_STEP = 0.45; // 스캔이 끝난 뒤 첫 버튼 · 버튼 사이 간격
 export const SCAN_HOLD_SEC = BTN_FIRST + BTN_STEP * (BTN_ORDER.length - 1) + BTN_INTRO_SEC + 0.3;
