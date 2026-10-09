@@ -8,7 +8,7 @@ import {C, FONT, easeOut, rnd} from "./theme.ts";
 //     (시안 1 피드백 「문구 효과로 지지직 … 너무 화려하고 과해」 → 옅게 밀려 들어옴 · 체크가 톡)
 //   LIST_END~ 띠가 내려가며 사라짐 → BANNER 「점검 완료 · 버튼 탐지를 시작합니다」 따로 → 정지 구간 스캔 선(위 → 아래 → 위)
 const CHECKS = ["카메라 센서 상태", "비전 감지 모델 실행", "인터락 연결 점검", "작업 레시피 불러오기"];
-const HEAD_AT = 0.15, ROW_AT = 0.6, ROW_GAP = 0.4, ROW_CHECK = 0.3;
+const HEAD_AT = 0.2, ROW_AT = 0.8, ROW_GAP = 0.65, ROW_CHECK = 0.45; // 시안 2 피드백 「천천히」
 const k01 = (x: number) => Math.max(0, Math.min(1, x));
 
 const Spinner: React.FC<{s: number}> = ({s}) => (

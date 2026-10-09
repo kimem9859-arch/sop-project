@@ -1,6 +1,6 @@
 import {test} from "node:test";
 import assert from "node:assert/strict";
-import {place, srcSec, totalFrames, type Clip} from "../../src/lib/edit.ts";
+import {bootTimes, place, srcSec, totalFrames, type Clip} from "../../src/lib/edit.ts";
 
 const c = (from: number, to: number, speed: number): Clip => ({take: "x", file: "original.mp4", from, to, speed, overlay: true});
 test("배속 구간의 길이 = 원본 길이 / 배속", () => {
@@ -25,4 +25,9 @@ test("정지(hold) 구간 — 길이 = hold 초 · 원본 시각은 from 에 고
   assert.equal(srcSec(h, 0, 30), 3.2);
   assert.equal(srcSec(h, 77, 30), 3.2);
   assert.throws(() => place([{...h, hold: 0}], 30), /잘못된 구간/);
+});
+test("켜짐 시계 — boot 구간부터 흐르고 제목 카드(card) 동안은 멈춘다 · boot 전은 null", () => {
+  const h = (hold: number, extra: Partial<Clip> = {}): Clip => ({take: "x", file: "f", from: 3, to: 3, speed: 1, overlay: true, hold, ...extra});
+  const ps = place([c(10, 12, 1), {...c(0, 3, 1), boot: true}, h(2, {card: "chapter"}), h(1.5, {card: "section"}), h(4, {intro: "buttons"}), c(3, 5, 1)], 30);
+  assert.deepEqual(bootTimes(ps, 30), [null, {at: 0, runs: true}, {at: 3, runs: false}, {at: 3, runs: false}, {at: 3, runs: true}, {at: 7, runs: true}]);
 });

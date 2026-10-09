@@ -6,12 +6,22 @@ import {BTN, C, FONT, TOOL_KO, easeOut, rnd, type Fit} from "./theme.ts";
 // intro = 켜짐 스캔 선이 지나간 버튼 → 지난 초(0~BTN_INTRO_SEC) — 탐지 연출(10/9 초안 피드백 「파동이 희미 … 더 선명하게 · 지지직 효과 추가」):
 //   0~0.4 큰 꺾쇠가 버튼으로 좁혀 듦 · 0~0.45 잡음·번쩍·색 어긋남(지지직) · 0~1.0 굵은 파동 두 겹(빛 번짐) · 0~0.6 「B1 인식」 → 그 뒤 점수
 // 누름 파동 = 그 버튼 색(「초록색인데 버튼 오버레이 색과 동일한 색으로」) · 틀린 누름만 빨강
-// toolIntro = 공구 탐지 연출(버튼과 같은 결 · 공구가 보이고 조금 뒤 화면 정지 구간) · frozen = 화면 정지 중(훑는 선이 빨라짐)
+// toolIntro = 공구 탐지 연출(버튼과 같은 결 · 공구가 보이고 조금 뒤 화면 정지 구간)
+// frozenAge = 화면 정지 구간 안 경과 초 — 훑는 선이 위 → 아래 → 위 한 번만(SCAN_TRIP 초 · 시안 2 피드백 「왕복 1회만 … 지금보단 느리지만 빠르게」)
+// 확인 중으로 바뀌어도 박스 크기는 그대로(시안 2 피드백 「갑자기 커지는데 … 기존 크기를 유지」)
 // 공구 이름표·확인 칸 = 박스 왼쪽 위(꺾쇠가 좁혀 오는 것과 무관한 실제 박스 모서리)에 고정 크기 — 박스를 따라가되 크기·간격은 그대로
 //   (시안 1 피드백 「문구와 바가 조절되지 않게 크기 위치를 고정 … 단 오버레이는 따라가게끔」)
 // tool + toolState = 공구 쥠 판정(「공구 오버레이 색이 바뀐다거나 … 완료 시 효과」): 확인 중 = 노랑·맥박·훑는 선·확인 칸 · 쥠 = 초록·번쩍·파동
 type ToolState = {phase: string; age: number; checks: number; wrong: boolean};
 const CONFIRM = 3;
+const SCAN_TRIP = 1.6;
+const inOut = (x: number) => (x < 0.5 ? 2 * x * x : 1 - Math.pow(-2 * x + 2, 2) / 2);
+// 훑는 선 위치(0 = 위 · 1 = 아래) — 정지 중이면 한 번 왕복하고 끝(null) · 아니면 천천히 위 → 아래 되풀이
+const scanPos = (frozenAge: number | null, t: number): number | null => {
+  if (frozenAge === null) return (t * 0.9) % 1;
+  const u = frozenAge / SCAN_TRIP;
+  return u >= 1 ? null : u < 0.5 ? inOut(u * 2) : 1 - inOut((u - 0.5) * 2);
+};
 
 const Rings: React.FC<{cx: number; cy: number; r0: number; age: number; col: string; delays: number[]; dur: number; reach: number; w: number}> =
   ({cx, cy, r0, age, col, delays, dur, reach, w}) => (
@@ -34,9 +44,9 @@ export const ButtonBoxes: React.FC<{
   boxes: Box[]; fit: Fit; t: number; next?: string | null;
   press?: {button: string; age: number; ok: boolean} | null;
   alert?: {button: string | null; kind: "warning" | "block"} | null; revealY?: number; tool?: boolean;
-  intro?: Record<string, number>; toolState?: ToolState | null; pressAt?: Box | null; toolIntro?: number | null; frozen?: boolean;
+  intro?: Record<string, number>; toolState?: ToolState | null; pressAt?: Box | null; toolIntro?: number | null; frozenAge?: number | null;
 }> = ({boxes, fit, t, next = null, press = null, alert = null, revealY = Infinity, tool = false, intro = {}, toolState = null, pressAt = null,
-  toolIntro = null, frozen = false}) => (
+  toolIntro = null, frozenAge = null}) => (
   <svg style={{position: "absolute", inset: 0, width: "100%", height: "100%", overflow: "visible"}}>
     <filter id={tool ? "tool-noise" : "btn-noise"}>
       <feTurbulence type="fractalNoise" baseFrequency="1.1" numOctaves="1" seed={Math.floor(t * 30)} />
@@ -54,7 +64,7 @@ export const ButtonBoxes: React.FC<{
       const noiseId = tool ? "tool-noise" : "btn-noise";
       const ta = ts && (ts.phase === "checking" || ts.phase === "grasped") ? ts.age : undefined; // 공구 단계가 바뀐 뒤 초
       const grow = ia !== undefined ? 0.9 * (1 - easeOut(ia / 0.4))
-        : ta !== undefined && ts?.phase === "checking" ? 0.5 * (1 - easeOut(ta / 0.35)) : 0;
+        : 0;
       const cx = (X1 + X2) / 2, cy = (Y1 + Y2) / 2, bw = X2 - X1, bh = Y2 - Y1;
       const pad = (hit ? 8 : 0) + grow * Math.max(bw, bh);
       const bx1 = X1 - pad, by1 = Y1 - pad, bx2 = X2 + pad, by2 = Y2 + pad;
@@ -97,7 +107,7 @@ export const ButtonBoxes: React.FC<{
             // 쥠 판정 중 — 노랑 맥박 + 위→아래 훑는 선(판정이 돌고 있다)
             <>
               <rect x={bx1} y={by1} width={bx2 - bx1} height={by2 - by1} rx={8} fill={col} opacity={0.1 + 0.1 * Math.sin(t * Math.PI * 4)} />
-              <rect x={bx1} y={by1 + ((t * (frozen ? 2.7 : 0.9)) % 1) * (by2 - by1)} width={bx2 - bx1} height={3} fill={col} opacity={0.75} />
+              {scanPos(frozenAge, t) !== null && <rect x={bx1} y={by1 + scanPos(frozenAge, t)! * (by2 - by1)} width={bx2 - bx1} height={3} fill={col} opacity={0.75} />}
             </>
           )}
           {grasped && ta !== undefined && ta < 0.35 && <rect x={bx1} y={by1} width={bx2 - bx1} height={by2 - by1} rx={8} fill={col} opacity={0.55 * (1 - ta / 0.35)} />}

@@ -6,13 +6,14 @@
 //   CHECK_SEC ~ + SCAN_HOLD_SEC  화면 정지 — 스캔 선 위 → 아래 → 다시 위(「아래로 간 후 다시 위로 한번더」) ·
 //                                버튼 탐지 연출은 B1 → B2 → B3 → B4 → EMO 차례로(「빠르지 않게 순서대로」)
 //   ~ + PANEL_SEC           단계 목록 등장(영상 다시 흐름)
-export const LIST_END = 2.55, BANNER_FROM = 2.85, BANNER_TO = 3.85;
-export const CHECK_SEC = 3.9;
+// 시안 2 피드백 「흐름 전개가 너무 빨라 … 천천히」 → 점검 줄 간격 · 버튼 차례 · 스캔을 늘렸다
+export const LIST_END = 4.0, BANNER_FROM = 4.3, BANNER_TO = 5.3;
+export const CHECK_SEC = 5.4;
 export const BTN_ORDER = ["B1", "B2", "B3", "B4", "EMO"];
-export const BTN_INTRO_SEC = 1.0;               // 버튼 하나의 탐지 연출 길이
-const BTN_FIRST = 0.3, BTN_STEP = 0.5;          // 정지 구간 시작 뒤 첫 버튼 · 버튼 사이 간격
-const SCAN_AT = 0.1, SCAN_HALF = 1.1;           // 스캔 시작(정지 구간 기준) · 내려가는(올라오는) 데 걸리는 초
-export const SCAN_HOLD_SEC = BTN_FIRST + BTN_STEP * (BTN_ORDER.length - 1) + BTN_INTRO_SEC + 0.2;
+export const BTN_INTRO_SEC = 1.2;               // 버튼 하나의 탐지 연출 길이
+const BTN_FIRST = 0.3, BTN_STEP = 0.7;          // 정지 구간 시작 뒤 첫 버튼 · 버튼 사이 간격
+const SCAN_AT = 0.1, SCAN_HALF = 1.5;           // 스캔 시작(정지 구간 기준) · 내려가는(올라오는) 데 걸리는 초
+export const SCAN_HOLD_SEC = BTN_FIRST + BTN_STEP * (BTN_ORDER.length - 1) + BTN_INTRO_SEC + 0.3;
 export const PANEL_SEC = 0.8;
 export const BOOT_SEC = CHECK_SEC + SCAN_HOLD_SEC + PANEL_SEC;
 export const PANEL_FROM = (CHECK_SEC + SCAN_HOLD_SEC) / BOOT_SEC;

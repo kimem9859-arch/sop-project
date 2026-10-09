@@ -7,7 +7,8 @@ import type {CalloutDef} from "./callout.ts";
 export type Clip = {take: string; file: string; from: number; to: number; speed: number; overlay: boolean;
   caption?: string; badge?: string; boot?: boolean; hold?: number; intro?: "buttons" | "hand" | "tool" | "overlap" | "end";
   chapter?: {no: string; title: string; desc: string}; section?: {no: string; title: string; desc: string}; run?: string;
-  callout?: CalloutDef};
+  callout?: CalloutDef; card?: "chapter" | "section"};
+// card = 장 · 절 제목 카드(정지 구간 · 화면을 어둡게 하고 제목만) — 시안 2 피드백 「절 제목은 따로 독립 제목 카드로」
 export type Placed = {clip: Clip; start: number; frames: number};
 
 export function place(clips: Clip[], fps: number): Placed[] {
@@ -23,3 +24,16 @@ export function place(clips: Clip[], fps: number): Placed[] {
 }
 export const srcSec = (c: Clip, local: number, fps: number) => (c.hold !== undefined ? c.from : c.from + (local / fps) * c.speed);
 export const totalFrames = (ps: Placed[]) => ps.reduce((s, p) => s + p.frames, 0);
+
+// 켜짐 시계 — 구간마다 시작 시점의 켜짐 초(at)와 그 구간에서 흐르는지(runs) · boot 구간 앞은 null
+// 제목 카드(card) 동안은 멈춘다 — 점검 목록과 버튼 탐지 사이에 장 · 절 제목 카드를 끼워도 켜짐 순서가 이어진다
+export function bootTimes(ps: Placed[], fps: number): ({at: number; runs: boolean} | null)[] {
+  let t: number | null = null;
+  return ps.map((p) => {
+    if (p.clip.boot && t === null) t = 0;
+    if (t === null) return null;
+    const out = {at: t, runs: !p.clip.card};
+    if (out.runs) t += p.frames / fps;
+    return out;
+  });
+}

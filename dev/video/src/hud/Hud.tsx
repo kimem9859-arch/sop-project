@@ -20,12 +20,12 @@ import {VoiceBubbles} from "./VoiceBubbles.tsx";
 
 // t = 애니메이션 박자(초 · 편집 전체 시계 — 화면 정지 중에도 흐른다) · tMs = 기록 시각(누름·알림 경과) · boot = HUD 켜짐 0~1
 // handAge = 손 탐지 연출 뒤 초 · toolIntro = 공구 탐지 연출 뒤 초(정지 구간) · overlap = 손·공구 겹침 강조 뒤 초(정지 구간)
-// frozen = 화면 정지 중 · dwell = 판정 기준 장면의 머묾 타이머(lib/judge) · pressAt = 누른 버튼이 그 순간 가려졌을 때 직전 박스(lastBox)
+// frozenAge = 화면 정지 구간 안 경과 초 · dwell = 판정 기준 장면의 머묾 타이머(lib/judge) · pressAt = 누른 버튼이 그 순간 가려졌을 때 직전 박스(lastBox)
 export const Hud: React.FC<{ui: UiState; view: DetView; fit: Fit; t: number; tMs: number; boot: number; handAge: number | null;
   W: number; H: number; caption?: string; captionOpacity?: number; badge?: string; synth?: string; pressAt?: Box | null; dwell?: Dwell | null;
-  toolIntro?: number | null; overlap?: number | null; frozen?: boolean}> =
+  toolIntro?: number | null; overlap?: number | null; frozenAge?: number | null}> =
   ({ui, view, fit, t, tMs, boot, handAge, W, H, caption, captionOpacity = 1, badge, synth, pressAt = null, dwell = null,
-    toolIntro = null, overlap = null, frozen = false}) => {
+    toolIntro = null, overlap = null, frozenAge = null}) => {
     const bs = boot * BOOT_SEC;
     const panelAge = boot >= 1 ? null : (boot - PANEL_FROM) * BOOT_SEC; // 단계 목록이 나타난 뒤 초(지지직 등장)
     const panels = boot >= PANEL_FROM;
@@ -54,7 +54,7 @@ export const Hud: React.FC<{ui: UiState; view: DetView; fit: Fit; t: number; tMs
           const b = view.btn.find((x) => x[0] === dwell.button);
           return b ? <JudgeZone box={b} fit={fit} dwell={dwell} t={t} /> : null;
         })()}
-        {(ui.sub || toolIntro !== null) && <ButtonBoxes boxes={view.tool} fit={fit} t={t} tool toolState={tool} toolIntro={toolIntro} frozen={frozen} />}
+        {(ui.sub || toolIntro !== null) && <ButtonBoxes boxes={view.tool} fit={fit} t={t} tool toolState={tool} toolIntro={toolIntro} frozenAge={frozenAge} />}
         {overlap !== null && view.hand && view.tool[0] && <Overlap hand={view.hand} tool={view.tool[0]} fit={fit} age={overlap} t={t} />}
         <HandSkeleton hand={view.hand} fit={fit} t={t} age={handAge} ring={ring} dim={holding && overlap === null} />
         <HudBoot boot={boot} W={W} H={H} />
