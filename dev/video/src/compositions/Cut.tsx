@@ -138,7 +138,8 @@ const ClipView: React.FC<{p: Placed; d: TakeData | undefined; boot0: {at: number
   const hit = impact !== null && impact >= 0 && impact < IMPACT ? 1 - impact / IMPACT : 0;
   const [sx, sy] = hit > 0 ? shake(impact!, 18, IMPACT) : [0, 0];
   const caId = `ca-hit-${p.start}`;
-  const fade = c.fadeOut ? Math.min(1, (p.frames - f) / (c.fadeOut * fps)) : 1;   // 끝에서 검은 화면으로(검은 막을 위에 덮음 — 전체 투명도는 뒤 배경이 비침)
+  // 끝에서 검은 화면으로 · 처음에 검은 화면에서(검은 막을 위에 덮음 — 전체 투명도는 뒤 배경이 비침)
+  const fade = Math.min(c.fadeOut ? Math.min(1, (p.frames - f) / (c.fadeOut * fps)) : 1, c.fadeIn ? Math.min(1, f / (c.fadeIn * fps)) : 1);
   return (
     <AbsoluteFill style={{background: "#000"}}>
       {hit > 0 && <ChromaFilter id={caId} dx={8 * hit} />}
