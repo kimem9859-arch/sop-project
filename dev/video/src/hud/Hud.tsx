@@ -1,4 +1,4 @@
-import type {Box, DetView} from "../lib/dets.ts";
+import type {Box, DetView, Pt} from "../lib/dets.ts";
 import {BOOT_SEC, BTN_INTRO_SEC, PANEL_FROM, btnIntroAge} from "../lib/boot.ts";
 import type {Dwell} from "../lib/judge.ts";
 import {covers} from "../lib/occlusion.ts";
@@ -6,6 +6,7 @@ import type {UiState} from "../lib/uiState.ts";
 import {AlertCard} from "./AlertCard.tsx";
 import {ButtonBoxes} from "./ButtonBoxes.tsx";
 import {FactCard} from "./FactCard.tsx";
+import {HudFrame, LockBadge, TipTrail, VoiceWave} from "./Fx.tsx";
 import {HandSkeleton} from "./HandSkeleton.tsx";
 import {HudBoot} from "./HudBoot.tsx";
 import {JudgeZone} from "./JudgeZone.tsx";
@@ -23,11 +24,12 @@ import {VoiceBubbles} from "./VoiceBubbles.tsx";
 // handAge = 손 탐지 연출 뒤 초 · toolIntro = 공구 탐지 연출 뒤 초(정지 구간) · overlap = 손·공구 겹침 강조 뒤 초(정지 구간)
 // uiMs = 화면 장식의 시계(기록 시각 + 정지 구간 경과) — 정지 중에도 카드 · 알림 연출은 이어진다(시안 3 피드백 「UI는 계속 진행」)
 // frozenAge = 화면 정지 구간 안 경과 초 · dwell = 판정 기준 장면의 머묾 타이머(lib/judge) · pressAt = 누른 버튼이 그 순간 가려졌을 때 직전 박스(lastBox)
+// trail = 검지 끝 자취(판정 장면) · impact = 차단 뒤 화면 초(자물쇠 「찰칵」)
 export const Hud: React.FC<{ui: UiState; view: DetView; fit: Fit; t: number; tMs: number; boot: number; handAge: number | null;
   W: number; H: number; caption?: string; captionOpacity?: number; badge?: string; synth?: string; pressAt?: Box | null; dwell?: Dwell | null;
-  toolIntro?: number | null; overlap?: number | null; frozenAge?: number | null; uiMs?: number}> =
+  toolIntro?: number | null; overlap?: number | null; frozenAge?: number | null; uiMs?: number; trail?: Pt[] | null; impact?: number | null}> =
   ({ui, view, fit, t, tMs, boot, handAge, W, H, caption, captionOpacity = 1, badge, synth, pressAt = null, dwell = null,
-    toolIntro = null, overlap = null, frozenAge = null, uiMs = tMs}) => {
+    toolIntro = null, overlap = null, frozenAge = null, uiMs = tMs, trail = null, impact = null}) => {
     const bs = boot * BOOT_SEC;
     const panelAge = boot >= 1 ? null : (boot - PANEL_FROM) * BOOT_SEC; // 단계 목록이 나타난 뒤 초(지지직 등장)
     const panels = boot >= PANEL_FROM;
@@ -48,6 +50,11 @@ export const Hud: React.FC<{ui: UiState; view: DetView; fit: Fit; t: number; tMs
     const doneAge = ui.lastDone ? (uiMs - ui.lastDone.t) / 1000 : Infinity;
     const doneShown = doneAge >= 0 && doneAge < DONE_SHOW;
     const q = ui.voice.thinkingSince !== null ? (tMs - ui.voice.thinkingSince) / 1000 : -1;
+    // 듣는 중 파동 — 호출 뒤 0.3초에 차오르고 질문이 들어오면 0.5초에 걸쳐 사라짐
+    const v = ui.voice;
+    const wave = v.listening && v.calledSince !== null ? Math.min(1, (tMs - v.calledSince) / 300)
+      : v.thinkingSince !== null && v.answer === null ? Math.max(0, 1 - (tMs - v.thinkingSince) / 500) : 0;
+    const lockBox = ui.alert?.kind === "block" && ui.alert.button ? view.btn.find((b) => b[0] === ui.alert!.button) ?? pressAt : null;
     return (
       <>
         <ButtonBoxes boxes={btns} fit={fit} t={t} next={ui.sub ? null : ui.expected} press={press}
@@ -58,8 +65,12 @@ export const Hud: React.FC<{ui: UiState; view: DetView; fit: Fit; t: number; tMs
         })()}
         {(ui.sub || toolIntro !== null) && <ButtonBoxes boxes={view.tool} fit={fit} t={t} tool toolState={tool} toolIntro={toolIntro} frozenAge={frozenAge} />}
         {overlap !== null && view.hand && view.tool[0] && <Overlap hand={view.hand} tool={view.tool[0]} fit={fit} age={overlap} t={t} />}
+        {/* 검지 끝 자취는 손 뼈대 아래(뼈대 · 판정 박스를 가리지 않게) */}
+        {trail && trail.length > 1 && <TipTrail pts={trail} fit={fit} label={!dwell && !ui.alert} />}
         <HandSkeleton hand={view.hand} fit={fit} t={t} age={handAge} ring={ring} dim={holding && overlap === null} pulse={overlap !== null} />
+        {lockBox && <LockBadge box={lockBox} fit={fit} age={impact ?? 10} t={t} />}
         <HudBoot boot={boot} W={W} H={H} />
+        {boot >= 1 && <HudFrame W={W} H={H} />}
         {panels && <StepPanel state={boot < 1 ? "START" : ui.state} done={ui.done} expected={ui.expected} alert={ui.alert?.kind ?? null} age={panelAge} />}
         {!ui.alert && panels && ui.sub && (
           <ProgressGauge sub={ui.sub} age={(tMs - ui.sub.since) / 1000} first={ui.sub.button === STEPS[0].button && ui.done.length === 0}
@@ -70,6 +81,7 @@ export const Hud: React.FC<{ui: UiState; view: DetView; fit: Fit; t: number; tMs
         <AlertCard alert={ui.alert} age={alertAge} bottom={alertLow} />
         {ui.alert && <ReleaseButton kind={ui.alert.kind} t={t} />}
         {ui.voice.card && ui.voice.thinking && <FactCard lines={ui.voice.card} q={q} W={W} H={H} />}
+        <VoiceWave level={wave} t={t} W={W} H={H} />
         <VoiceBubbles voice={ui.voice} t={t} tMs={tMs} />
         <SpeedBadge badge={badge} />
         <Caption text={caption} opacity={captionOpacity} />

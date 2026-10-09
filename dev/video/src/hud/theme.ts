@@ -20,8 +20,5 @@ export const TOOL_KO: Record<string, string> = {driver: "드라이버", wrench: 
 export type Fit = {s: number; x: number; y: number};
 // 빠르게 시작해 부드럽게 멈춤(지수 감속) · 0~1
 export const easeOut = (x: number) => (x >= 1 ? 1 : x <= 0 ? 0 : 1 - Math.pow(2, -10 * x));
-// 프레임마다 같은 값이 나오는 의사 난수(렌더가 몇 번이든 같은 영상) — 켜짐·손 등장 잡음
-export const rnd = (n: number) => {
-  const x = Math.sin(n * 127.1 + 311.7) * 43758.5453;
-  return x - Math.floor(x);
-};
+// 프레임마다 같은 값이 나오는 의사 난수(렌더가 몇 번이든 같은 영상) — 켜짐·손 등장 잡음 · 정본 = lib/fx(효과 계산과 같이 씀)
+export {rnd} from "../lib/fx.ts";

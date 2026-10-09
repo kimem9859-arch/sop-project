@@ -139,7 +139,6 @@ export const HudBoot: React.FC<{boot: number; W: number; H: number}> = ({boot, W
   const s = boot * BOOT_SEC;
   const L = 160 * easeOut((s - 2.0) / 0.5);
   const y = scanY(s, H);
-  const frameOp = s < BOOT_SEC - 0.5 ? 1 : Math.max(0, (BOOT_SEC - s) / 0.5);
   const corner = (x: number, yy: number, sx: number, sy: number) => (
     <path d={`M ${x} ${yy + sy * L} L ${x} ${yy} L ${x + sx * L} ${yy}`} stroke={C.info} strokeWidth={4} fill="none" strokeLinecap="round" />
   );
@@ -157,7 +156,8 @@ export const HudBoot: React.FC<{boot: number; W: number; H: number}> = ({boot, W
             <stop offset="1" stopColor={C.info} stopOpacity="0.4" />
           </linearGradient>
         </defs>
-        {L > 0 && <g opacity={frameOp}>{corner(24, 24, 1, 1)}{corner(W - 24, 24, -1, 1)}{corner(24, H - 24, 1, -1)}{corner(W - 24, H - 24, -1, -1)}</g>}
+        {/* 켜짐 뒤에도 같은 자리 · 같은 모양으로 HudFrame(Fx) 이 이어 받는다(시안 8 · 화면 질감) */}
+        {L > 0 && <g>{corner(24, 24, 1, 1)}{corner(W - 24, 24, -1, 1)}{corner(24, H - 24, 1, -1)}{corner(W - 24, H - 24, -1, -1)}</g>}
         {y !== null && <rect x={0} y={y - 110} width={W} height={110} fill="url(#scan-dn)" />}
         {y !== null && <rect x={0} y={y - 2} width={W} height={4} fill={C.info} />}
       </svg>

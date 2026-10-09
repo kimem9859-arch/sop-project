@@ -2,7 +2,8 @@ import {CHECK_SEC, SCAN_HOLD_SEC} from "../lib/boot.ts";
 import type {Clip} from "../lib/edit.ts";
 import type {StagedEv, StagedPress} from "../lib/staged.ts";
 
-// 기능 소개 영상 시안 8(2026-10-10 · 시안 7 피드백 「정답 입력 절을 빼고 공구 질문 절을 넣어 1분 30초로」 — 03 = 공구 질문 → 단계 질문(원본 시간 순))
+// 기능 소개 영상 시안 9(2026-10-10 · 시안 8 「연출 · 효과 … 테크적이고 화려하게」 → 추천 5개 — 장 전환 · 화면 질감 · 검지 끝 빛 꼬리 · 경고/차단 순간 · 듣는 중 파동)
+//   · 시안 8(시안 7 피드백 「정답 입력 절을 빼고 공구 질문 절을 넣어 1분 30초로」 — 03 = 공구 질문 → 단계 질문(원본 시간 순))
 //   · 시안 7(시안 6 피드백 「1분 30초 정도」 — 카드 · 정지 · 구간을 줄임) · 시안 4(시안 3 피드백 14건) — 시안 3 「천천히 · 독립 제목 카드」 · 시안 2 「장 · 절」 · 사용자 「발표 자료에 넣을 기능 소개 영상 1개」
 //   인트로(안경 → 가상 세계) → 01 객체 탐지(버튼 · 손 · 공구) → 02 판정 기준(스침 · 경고 · 차단 · 타워램프) → 03 음성 비서(공구 · 단계 질문)
 // 🔴 실제 기록이 없는 시안 — 상태 · 경고 · 음성 · 사실 카드 표시는 화면을 보고 꾸민 연출(lib/staged) · 박스 · 손 · 공구는 실제 검출
@@ -97,6 +98,7 @@ const TOOL_AT = 25.4, TOOL_HOLD = 1.5, OVERLAP_AT = 25.45, OVERLAP_HOLD = 1.8; /
 const WRONG_TOOL_HOLD = 1.1;               // 다른 공구 = 두 번째로 보는 공구 탐지라 짧게(박스 강조 1.0초)
 const CH = 1.8, SC = 1.3, SLOW = 0.4, LAMP_SLOW = 0.5, GRAZE_SLOW = 0.25, DWELL_HOLD = 1.5, BLOCK_HOLD = 3.6, WRONG_HOLD = 2.0;
 // 제목 카드 = 다음 장면 첫 화면을 멈추고 어둡게 한 위에(card · HUD 도 함께 흐리게) — 장 · 절 따로
+// tip = 검지 끝 빛 꼬리(02 판정 장면 — 실제 판정 기준 「검지 끝이 버튼 박스 안」 · 시안 8 「테크적이고 화려하게」 · 타워램프는 램프가 주인공이라 뺌)
 type Ch = NonNullable<Clip["chapter"]>;
 type Sc = NonNullable<Clip["section"]>;
 const chCard = (take: string, at: number, chapter: Ch, run?: string): Clip =>
@@ -142,14 +144,14 @@ export const FEATURE: Clip[] = [
   // 02 판정 기준 — 02-1 정답 버튼 입력은 시안 7 피드백으로 뺐다(T 35.8 → 38.3 · B3 누름 36.95)
   chCard(B34, 6.0, C02, "graze"),
   scCard(B34, 6.0, {no: "1", title: "스침", desc: "0.3초 안에 떠나면 경고하지 않습니다"}, "graze"),
-  {take: B34, run: "graze", file: "proxy.mp4", from: 6.0, to: 6.8, speed: GRAZE_SLOW, overlay: true, badge: "0.25×"},
+  {take: B34, run: "graze", file: "proxy.mp4", from: 6.0, to: 6.8, speed: GRAZE_SLOW, overlay: true, badge: "0.25×", tip: true},
   scCard(B34, 6.8, {no: "2", title: "경고", desc: "오답 버튼에 0.3초 이상 머물면"}, "warn"),
-  {take: B34, run: "warn", file: "proxy.mp4", from: 6.8, to: 7.13, speed: SLOW, overlay: true, badge: "0.4×"},
-  {...hold(B34, 7.13, DWELL_HOLD, {intro: "dwell"}), run: "warn"},             // 손가락이 B3 에 닿은 순간 멈춤 · 0.3초 타이머
-  {take: B34, run: "warn", file: "proxy.mp4", from: 7.13, to: 7.6, speed: SLOW, overlay: true, badge: "0.4×"}, // 경고 → 손이 움직임
+  {take: B34, run: "warn", file: "proxy.mp4", from: 6.8, to: 7.13, speed: SLOW, overlay: true, badge: "0.4×", tip: true},
+  {...hold(B34, 7.13, DWELL_HOLD, {intro: "dwell", tip: true}), run: "warn"},             // 손가락이 B3 에 닿은 순간 멈춤 · 0.3초 타이머
+  {take: B34, run: "warn", file: "proxy.mp4", from: 7.13, to: 7.6, speed: SLOW, overlay: true, badge: "0.4×", tip: true}, // 경고 → 손이 움직임
   scCard(B34, 7.3, {no: "3", title: "차단", desc: "오답 버튼을 누르면 입력을 막습니다"}, "block"),
-  {take: B34, run: "block", file: "proxy.mp4", from: 7.3, to: 8.05, speed: SLOW, overlay: true, badge: "0.4×"}, // B3 옆 → B2 상자 7.88 → 누름 8.0
-  {...hold(B34, 8.05, BLOCK_HOLD), run: "block"},                                // 차단 — 화면 멈춤 · 차단 그래픽 · 음성 알림 · 해제 버튼
+  {take: B34, run: "block", file: "proxy.mp4", from: 7.3, to: 8.05, speed: SLOW, overlay: true, badge: "0.4×", tip: true}, // B3 옆 → B2 상자 7.88 → 누름 8.0
+  {...hold(B34, 8.05, BLOCK_HOLD, {tip: true}), run: "block"},                                // 차단 — 화면 멈춤 · 차단 그래픽 · 음성 알림 · 해제 버튼
   scCard(BP, 70.0, {no: "4", title: "타워램프", desc: "경고와 차단을 램프로도 알립니다"}, "lamp"),
   {take: BP, run: "lamp", file: "proxy.mp4", from: 70.0, to: 71.3, speed: LAMP_SLOW, overlay: true, badge: "0.5×",
     callout: {label: "타워램프", lines: [{text: "경고 → 황색", color: "warn"}, {text: "차단 → 적색 + 부저", color: "danger"}], keys: LAMP}},

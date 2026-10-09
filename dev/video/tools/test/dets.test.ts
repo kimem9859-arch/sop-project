@@ -1,6 +1,6 @@
 import {test} from "node:test";
 import assert from "node:assert/strict";
-import {detAt, fitRect, HOLD_FRAMES, type Box, type Dets, lastBox, type DetRow} from "../../src/lib/dets.ts";
+import {detAt, fitRect, HOLD_FRAMES, type Box, type Dets, lastBox, type DetRow, tipTrail, type Pt} from "../../src/lib/dets.ts";
 
 const B = (n: string, x: number): Box => [n, 0.9, x, 10, x + 20, 30];
 const mk = (rows: Dets["rows"]): Dets => ({src: "t", fps: 30, w: 100, h: 50, rows});
@@ -48,4 +48,21 @@ test("lastBox — 가려진 버튼은 직전에 보인 자리(backSec 안) · �
   assert.deepEqual(lastBox(d, 4 / 30, "B3", 1), b3);
   assert.equal(lastBox(d, 4 / 30, "B3", 0.05), null);
   assert.equal(lastBox(d, 4 / 30, "B1", 1), null);
+});
+
+// 손 21점 중 검지 끝(8)만 x 를 프레임마다 옮긴 손
+const handAt = (x: number): Pt[] => Array.from({length: 21}, (_, i): Pt => (i === 8 ? [x, 5] : [0, 0]));
+test("검지 끝 자취 = 지금부터 back 초 전까지 오래된 것 → 지금 순 · 손이 없는 프레임은 건너뜀", () => {
+  const d = mk([0, 1, 2, 3, 4, 5].map((f): DetRow => ({f, btn: [], tool: [], hand: f === 2 ? null : handAt(f * 10)})));
+  // 2 프레임은 손이 끊겼지만 HOLD_FRAMES 로 1 프레임 손이 이어진다 — 끊김 유지와 같은 손을 쓴다
+  const tr = tipTrail(d, 5 / 30, 3 / 30);
+  assert.equal(tr.length, 4);
+  assert.deepEqual(tr.at(-1), [50, 5]);
+  assert.deepEqual(tr[0], detAt(d, 2 / 30).hand![8]);
+  assert.deepEqual(tipTrail(mk([{f: 0, btn: [], tool: [], hand: null}]), 0, 0.1), []);
+  // HOLD_FRAMES 보다 길게 끊긴 프레임(5)은 자취에서 빠진다
+  const g = mk([0, 1, 2, 3, 4, 5, 6, 7, 8].map((f): DetRow => ({f, btn: [], tool: [], hand: f >= 2 && f <= 5 ? null : handAt(f * 10)})));
+  const tg = tipTrail(g, 8 / 30, 8 / 30);
+  assert.equal(tg.length, 8);
+  assert.deepEqual(tg.slice(-3), [[60, 5], [70, 5], [80, 5]]);
 });

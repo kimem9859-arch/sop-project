@@ -6,8 +6,10 @@ export type ToolView = {phase: string; want: string; wrong: string | null; since
 export type AlertView = {kind: "warning" | "block"; expected: string; button: string | null; since: number};
 // called = 호출어(「가디언」)를 들음 · ack = 질문 뒤 답 전에 재생한 소리(「확인해 보겠습니다」 · 실제 시스템은 LLM 과 겹쳐 튼다)
 // thinking = 질문~답 사이(LLM 생각 중) · card = LLM 에 붙인 사실 카드 줄(시안의 연출 기록에만 있음 — 실제 기록엔 없다)
+// calledSince · answerSince = 호출 · 답 기록 시각(듣는 중 파동 · 답 글자가 써지는 연출의 시계 · 시안 8 피드백 「테크적이고 화려하게」)
 export type VoiceView = {listening: boolean; question: string | null; answer: string | null; speaking: boolean; alert: string | null;
-  called: boolean; ack: boolean; thinking: boolean; thinkingSince: number | null; card: string[] | null};
+  called: boolean; ack: boolean; thinking: boolean; thinkingSince: number | null; card: string[] | null;
+  calledSince: number | null; answerSince: number | null};
 export type PressView = {button: string; t: number; ok: boolean};
 export type UiState = {
   state: string; expected: string | null; done: string[]; sub: SubView | null; tool: ToolView | null;
@@ -42,7 +44,7 @@ export function stateAt(evs: Ev[], runStart: number, t: number): UiState {
   const s: UiState = {
     state: "IDLE", expected: null, done: [], sub: null, tool: null, alert: null,
     voice: {listening: false, question: null, answer: null, speaking: false, alert: null,
-      called: false, ack: false, thinking: false, thinkingSince: null, card: null}, lastPress: null, lastDone: null,
+      called: false, ack: false, thinking: false, thinkingSince: null, card: null, calledSince: null, answerSince: null}, lastPress: null, lastDone: null,
   };
   let subStart: Ev | null = null;
   let answeredAt: number | null = null;
@@ -87,7 +89,8 @@ export function stateAt(evs: Ev[], runStart: number, t: number): UiState {
         s.alert = null;
         break;
       case "wake":
-        s.voice = {...s.voice, listening: true, called: true, question: null, answer: null, ack: false, thinking: false, thinkingSince: null, card: null};
+        s.voice = {...s.voice, listening: true, called: true, question: null, answer: null, ack: false, thinking: false, thinkingSince: null, card: null,
+          calledSince: e.t, answerSince: null};
         answeredAt = null;
         break;
       case "stt":
@@ -100,7 +103,7 @@ export function stateAt(evs: Ev[], runStart: number, t: number): UiState {
         break;
       case "answer":
         s.voice.answer = typeof d.text === "string" && d.text ? d.text : null;
-        s.voice.thinking = false;
+        s.voice.thinking = false; s.voice.answerSince = e.t;
         answeredAt = e.t;
         break;
       case "play_start":
@@ -128,7 +131,8 @@ export function stateAt(evs: Ev[], runStart: number, t: number): UiState {
     s.sub.totalMs = total;
   }
   if (answeredAt !== null && !s.voice.speaking && lastPlayEnd > answeredAt && t - lastPlayEnd > BUBBLE_HOLD_MS) {
-    s.voice = {...s.voice, question: null, answer: null, called: false, ack: false, thinking: false, thinkingSince: null, card: null};
+    s.voice = {...s.voice, question: null, answer: null, called: false, ack: false, thinking: false, thinkingSince: null, card: null,
+      calledSince: null, answerSince: null};
   }
   return s;
 }

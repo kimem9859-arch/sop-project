@@ -94,3 +94,13 @@ test("음성 — 호출 → 듣는 중 → 질문 → 「확인해 보겠습니�
   assert.deepEqual([v(6200).answer, v(6200).thinking, v(6200).ack], ["기다리세요.", false, true]);
   assert.deepEqual([v(11000).called, v(11000).question, v(11000).card], [false, null, null]);
 });
+test("음성 — 호출 시각 · 답 시각(듣는 중 파동 · 답 글자가 써지는 연출의 시계)", () => {
+  const V = (t: number, kind: string, d: Record<string, unknown> = {}): Ev => ({t, kind, d, src: "voice"});
+  const ev = [V(1000, "wake"), V(2500, "stt", {text: "다음 단계 뭐야?"}), V(6000, "answer", {text: "기다리세요."}),
+    V(6100, "play_start"), V(8000, "play_end", {what: "완료"})];
+  const v = (t: number) => stateAt(ev, 0, t).voice;
+  assert.deepEqual([v(500).calledSince, v(500).answerSince], [null, null]);
+  assert.deepEqual([v(1500).calledSince, v(1500).answerSince], [1000, null]);
+  assert.deepEqual([v(6200).calledSince, v(6200).answerSince], [1000, 6000]);
+  assert.deepEqual([v(11000).calledSince, v(11000).answerSince], [null, null]);   // 말풍선이 걷히면 같이
+});

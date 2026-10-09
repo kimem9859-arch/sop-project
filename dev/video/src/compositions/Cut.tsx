@@ -1,7 +1,8 @@
 import {AbsoluteFill, Freeze, OffthreadVideo, Sequence, staticFile, useCurrentFrame, useVideoConfig, type CalculateMetadataFunction} from "remotion";
 import {BOOT_SEC, btnIntroAge} from "../lib/boot.ts";
-import {detAt, firstHandAt, fitRect, lastBox, type Dets} from "../lib/dets.ts";
+import {detAt, firstHandAt, fitRect, lastBox, tipTrail, type Dets} from "../lib/dets.ts";
 import {bootTimes, place, srcSec, totalFrames, type Clip, type Placed} from "../lib/edit.ts";
+import {burstAge, screenSince, shake} from "../lib/fx.ts";
 import {dwellAt} from "../lib/judge.ts";
 import {holeMask, holesFor} from "../lib/mask.ts";
 import type {Ev} from "../lib/timeline.ts";
@@ -10,6 +11,7 @@ import {stateAt} from "../lib/uiState.ts";
 import {Callout} from "../hud/Callout.tsx";
 import {Breadcrumb, ChapterTitle, SectionTitle} from "../hud/ChapterTitle.tsx";
 import {EndSummary} from "../hud/EndSummary.tsx";
+import {ChromaFilter, PixelBurst, Texture} from "../hud/Fx.tsx";
 import {Hud} from "../hud/Hud.tsx";
 import {SKELETON} from "../edits/skeleton.ts";
 import {PRETEST, PRETEST_STAGED, PRETEST_SYNTH} from "../edits/pretest.ts";
@@ -49,9 +51,13 @@ export const calcCut: CalculateMetadataFunction<CutProps> = async ({props}) => {
 const BLUR_RAMP = 6; // 정지 구간 들고 날 때 흐림이 차오르는 프레임
 const DWELL_FILL = 1.5; // 경고 절 정지 중 0.3초 타이머가 차는 데 걸리는 화면 초
 const BLURS = new Set(["buttons", "hand", "tool", "overlap"]); // 흐림 · 어둡게를 쓰는 정지 연출(경고 절 정지는 그냥 멈춤)
+// 테크 효과(시안 8 「테크적이고 화려하게」) — 차단 순간 = 흔들림 · 붉은 번쩍임 · 색 번짐 · 살짝 당겨짐 · 장 전환 = 색 번짐 + 픽셀 조각
+const IMPACT = 0.35, TRAIL_SEC = 0.3, BURST = 0.4;
 
 // boot0 = 이 구간 시작의 켜짐 초와 흐름 여부(lib/edit bootTimes — 제목 카드 동안 멈춤) · null = 켜짐 전
-const ClipView: React.FC<{p: Placed; d: TakeData | undefined; boot0: {at: number; runs: boolean} | null; synth?: string}> = ({p, d, boot0, synth}) => {
+// ps · i = 편집 전체와 이 구간 순번(차단 순간의 화면 시계) · trailFrom = 검지 끝 자취를 이 원본 초부터만(절 카드 바로 뒤 — 안 보인 자취를 그리지 않게)
+const ClipView: React.FC<{p: Placed; d: TakeData | undefined; boot0: {at: number; runs: boolean} | null; synth?: string;
+  ps: Placed[]; i: number; trailFrom: number | null}> = ({p, d, boot0, synth, ps, i, trailFrom}) => {
   const f = useCurrentFrame();
   const {fps, width, height} = useVideoConfig();
   const c = p.clip;
@@ -60,6 +66,7 @@ const ClipView: React.FC<{p: Placed; d: TakeData | undefined; boot0: {at: number
   const fadeIn = Math.min(1, f / 10), fadeOut = Math.min(1, (p.frames - f) / 10);
   const fit = d ? fitRect(d.dets.w, d.dets.h, width, height) : null;
   let hud = null;
+  let impact: number | null = null;   // 차단이 화면에 처음 나온 뒤 화면 초(lib/fx screenSince)
   let view = d ? detAt(d.dets, sec) : null;
   if (c.overlay && d && view && fit && c.intro !== "end") {
     // 공구는 공구 탐지 연출 전에는 숨긴다(손과 같게 · 시안 1 피드백 「바로 공구가 나타나면 실행하지 말고 약간의 지연」)
@@ -80,7 +87,10 @@ const ClipView: React.FC<{p: Placed; d: TakeData | undefined; boot0: {at: number
     const plainHold = c.hold !== undefined && !c.card && !c.intro;
     const dw0 = dwellAt(d.tl.events, d.tl.runStart, plainHold ? uiMs : tMs);
     const dw = c.intro === "dwell" && dw0 && holdT !== null ? {...dw0, progress: Math.min(1, holdT / DWELL_FILL), done: false} : dw0;
-    hud = <Hud ui={ui} pressAt={pressAt} dwell={dw} uiMs={uiMs} view={view} fit={fit}
+    if (ui.alert?.kind === "block") impact = screenSince(ps, i, f, fps, (ui.alert.since - d.offsetMs) / 1000);
+    const back = trailFrom === null ? TRAIL_SEC : Math.min(TRAIL_SEC, Math.max(0, sec - trailFrom));
+    hud = <Hud ui={ui} pressAt={pressAt} dwell={dw} uiMs={uiMs} view={view} fit={fit} impact={impact}
+      trail={c.tip ? tipTrail(d.dets, sec, back) : null}
       t={(p.start + f) / fps} tMs={tMs} boot={boot} handAge={handAge} W={width} H={height} caption={c.caption}
       captionOpacity={Math.min(fadeIn, fadeOut)} badge={c.badge} synth={synth}
       toolIntro={c.intro === "tool" ? holdT : null} overlap={c.intro === "overlap" ? holdT : null} frozenAge={holdT} />;
@@ -107,13 +117,21 @@ const ClipView: React.FC<{p: Placed; d: TakeData | undefined; boot0: {at: number
       {mask && vid({maskImage: `url("${mask}")`, WebkitMaskImage: `url("${mask}")`, maskSize: "100% 100%", WebkitMaskSize: "100% 100%"})}
     </>
   );
+  const hit = impact !== null && impact >= 0 && impact < IMPACT ? 1 - impact / IMPACT : 0;
+  const [sx, sy] = hit > 0 ? shake(impact!, 18, IMPACT) : [0, 0];
+  const caId = `ca-hit-${p.start}`;
   return (
     <AbsoluteFill style={{background: "#000"}}>
-      {c.hold !== undefined ? <Freeze frame={0}>{layers}</Freeze> : layers}
-      {/* 제목 카드 중에도 HUD 를 그리고 배경과 함께 흐리게 · 어둡게(시안 3 피드백 「작업 단계 UI도 같이 배경과 흐려짐」·「제목이 나올 때부터 있는 게」) */}
-      {c.card ? <div style={{position: "absolute", inset: 0, filter: `blur(${(7 * k).toFixed(2)}px) brightness(${(1 - dim * k).toFixed(3)})`}}>{hud}</div> : hud}
-      {c.callout && fit && <Callout def={c.callout} sec={sec} age={f / fps} fit={fit} />}
-      {c.intro === "end" && <EndSummary age={holdT ?? 0} W={width} H={height} />}
+      {hit > 0 && <ChromaFilter id={caId} dx={8 * hit} />}
+      <AbsoluteFill style={hit > 0 ? {transform: `translate(${sx.toFixed(1)}px, ${sy.toFixed(1)}px) scale(${(1 + 0.03 * hit).toFixed(4)})`, filter: `url(#${caId})`} : undefined}>
+        {c.hold !== undefined ? <Freeze frame={0}>{layers}</Freeze> : layers}
+        {c.overlay && <Texture t={(p.start + f) / fps} H={height} />}
+        {/* 제목 카드 중에도 HUD 를 그리고 배경과 함께 흐리게 · 어둡게(시안 3 피드백 「작업 단계 UI도 같이 배경과 흐려짐」·「제목이 나올 때부터 있는 게」) */}
+        {c.card ? <div style={{position: "absolute", inset: 0, filter: `blur(${(7 * k).toFixed(2)}px) brightness(${(1 - dim * k).toFixed(3)})`}}>{hud}</div> : hud}
+        {c.callout && fit && <Callout def={c.callout} sec={sec} age={f / fps} fit={fit} />}
+        {c.intro === "end" && <EndSummary age={holdT ?? 0} W={width} H={height} />}
+      </AbsoluteFill>
+      {hit > 0 && <div style={{position: "absolute", inset: 0, background: "#ff2a2a", opacity: 0.42 * Math.max(0, 1 - impact! / 0.25), pointerEvents: "none"}} />}
     </AbsoluteFill>
   );
 };
@@ -138,16 +156,24 @@ const Chapters: React.FC<{ps: Placed[]}> = ({ps}) => {
 };
 
 export const Cut: React.FC<CutProps> = ({edit, data}) => {
+  const f = useCurrentFrame();
+  const {fps, width, height} = useVideoConfig();
   if (!data) return null;
   const ps = place(EDITS[edit], 30);
   const bt = bootTimes(ps, 30);
+  const ba = burstAge(ps, f, fps, BURST);   // 장 제목 카드 첫 0.4초 — 화면 전체 색 번짐 + 픽셀 조각(제목 글자는 그 위)
   return (
     <AbsoluteFill>
-      {ps.map((p, i) => (
-        <Sequence key={i} from={p.start} durationInFrames={p.frames}>
-          <ClipView p={p} d={data[keyOf(p.clip)]} boot0={bt[i]} synth={SYNTH[edit]} />
-        </Sequence>
-      ))}
+      {ba !== null && <ChromaFilter id="ca-burst" dx={16 * (1 - ba / BURST)} />}
+      <AbsoluteFill style={ba !== null ? {filter: "url(#ca-burst)"} : undefined}>
+        {ps.map((p, i) => (
+          <Sequence key={i} from={p.start} durationInFrames={p.frames}>
+            <ClipView p={p} d={data[keyOf(p.clip)]} boot0={bt[i]} synth={SYNTH[edit]} ps={ps} i={i}
+            trailFrom={ps[i - 1]?.clip.tip && keyOf(ps[i - 1].clip) === keyOf(p.clip) ? null : p.clip.from} />
+          </Sequence>
+        ))}
+      </AbsoluteFill>
+      {ba !== null && <PixelBurst age={ba} win={BURST} W={width} H={height} />}
       <Chapters ps={ps} />
       {edit === "skeleton" && (
         <div style={{position: "absolute", left: 40, bottom: 20, color: "#fff", font: "600 20px Pretendard", background: "rgba(0,0,0,.6)", padding: "4px 10px", borderRadius: 6}}>

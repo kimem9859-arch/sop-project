@@ -53,7 +53,7 @@ export const SectionTitle: React.FC<{sec: Section; age: number; dur: number; H: 
 };
 
 export const Breadcrumb: React.FC<{ch: Chapter; sec: Section | null}> = ({ch, sec}) => (
-  <div style={{position: "absolute", left: 40, bottom: 22, display: "flex", alignItems: "center", gap: 10, fontFamily: FONT,
+  <div style={{position: "absolute", left: 40, bottom: 38, display: "flex", alignItems: "center", gap: 10, fontFamily: FONT,
     fontSize: 22, fontWeight: 700, color: C.label, textShadow: "0 1px 4px rgba(0,0,0,0.9)"}}>
     <span style={{color: C.info, fontVariantNumeric: "tabular-nums"}}>{ch.no}</span>{ch.title}
     {sec && <><span style={{opacity: 0.6}}>›</span><span style={{color: C.text}}>{sec.title}</span></>}

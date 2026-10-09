@@ -1,3 +1,4 @@
+import {typed} from "../lib/fx.ts";
 import type {VoiceView} from "../lib/uiState.ts";
 import {IconMic, IconSpeaker} from "./icons.tsx";
 import {C, FONT, easeOut} from "./theme.ts";
@@ -23,13 +24,18 @@ export const THINK_ANCHOR = {right: 40, bottom: 160}; // 말풍선 묶음 자리
 
 const SOLID: React.CSSProperties = {borderRadius: 20, boxShadow: "0 10px 28px rgba(0,0,0,0.5)", fontFamily: FONT, color: C.text};
 
-const Bubble: React.FC<{who: string; text: string; mine: boolean; age: number}> = ({who, text, mine, age}) => {
+// typeDur = 글자가 써지는 초(시안 8 「테크적이고 화려하게」) — 다 쓴 글을 투명하게 깔아 말풍선 크기가 흔들리지 않게
+const Bubble: React.FC<{who: string; text: string; mine: boolean; age: number; typeDur?: number}> = ({who, text, mine, age, typeDur}) => {
   const a = easeOut(Math.min(1, Math.max(0, age) / 0.25));
+  const typing = typeDur !== undefined && age < typeDur;
   return (
     <div style={{...SOLID, alignSelf: mine ? "flex-end" : "flex-start", maxWidth: 720, padding: "14px 24px", opacity: a,
       transform: `translateY(${(1 - a) * 12}px)`, background: mine ? "#1d3557" : "#14171c", border: `1px solid ${mine ? "#3d6aa5" : "#3a3f47"}`}}>
       <div style={{fontSize: 20, fontWeight: 700, color: mine ? "#9cc4ff" : C.label}}>{who}</div>
-      <div style={{fontSize: 34, fontWeight: 700, lineHeight: 1.3}}>{text}</div>
+      <div style={{fontSize: 34, fontWeight: 700, lineHeight: 1.3, position: "relative"}}>
+        {typing ? <><span style={{color: "transparent"}}>{text}</span>
+          <span style={{position: "absolute", left: 0, top: 0, right: 0}}>{typed(text, age, typeDur!)}<span style={{color: C.info}}>▍</span></span></> : text}
+      </div>
     </div>
   );
 };
@@ -45,7 +51,7 @@ export const VoiceBubbles: React.FC<{voice: VoiceView; t: number; tMs: number}> 
       background: "#14171c", border: `1px solid ${C.info}`, color: C.info, fontSize: 28, fontWeight: 800}}>
       <IconMic size={30} color={C.info} />듣는 중
     </div>);
-  if (v.question) items.push(<Bubble key="q" who="작업자" text={v.question} mine age={q} />);
+  if (v.question) items.push(<Bubble key="q" who="작업자" text={v.question} mine age={q} typeDur={0.5} />);
   if (v.ack) items.push(<Bubble key="ack" who="가디언" text="확인해 보겠습니다." mine={false} age={q - 0.3} />);
   if (v.thinking && q >= 0.5) {
     const land = q >= CARD_LAND && q < CARD_LAND + 0.5 ? 1 - (q - CARD_LAND) / 0.5 : 0;  // 카드가 들어온 순간 번쩍
@@ -57,7 +63,7 @@ export const VoiceBubbles: React.FC<{voice: VoiceView; t: number; tMs: number}> 
         {q >= CARD_LAND && <span style={{fontSize: 22, fontWeight: 700, color: C.label}}>사실 카드 받음</span>}
       </div>);
   }
-  if (v.answer) items.push(<Bubble key="a" who="가디언" text={v.answer} mine={false} age={q} />);
+  if (v.answer) items.push(<Bubble key="a" who="가디언" text={v.answer} mine={false} age={v.answerSince !== null ? (tMs - v.answerSince) / 1000 : q} typeDur={1.4} />);
   const alertKind = v.alert?.startsWith("alert_block") || v.alert === "alert_emo" ? "block" : v.alert ? "warn" : null;
   const tone = alertKind === "block" ? C.danger : alertKind === "warn" ? C.warn : C.info;
   const bars = [0, 1, 2, 3, 4, 5].map((i) => 10 + (v.speaking || v.alert ? 22 * Math.abs(Math.sin(t * 9 + i * 1.3)) : 0));

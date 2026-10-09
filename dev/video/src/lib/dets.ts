@@ -82,3 +82,15 @@ export function lastBox(d: Dets, sec: number, name: string, backSec: number): Bo
   }
   return null;
 }
+
+// 검지 끝(손 21점의 8번) 자취 — sec 부터 back 초 전까지 프레임마다(오래된 것 → 지금) · 손이 없는 순간은 건너뜀
+// 판정 장면에서 「무엇을 보고 판정하나」(검지 끝이 버튼 박스 안)를 빛 꼬리로 보인다(시안 8 피드백 「테크적이고 화려하게」)
+export function tipTrail(d: Dets, sec: number, back: number): Pt[] {
+  const n = Math.round(back * d.fps);
+  const out: Pt[] = [];
+  for (let i = n; i >= 0; i--) {
+    const h = detAt(d, sec - i / d.fps).hand;
+    if (h && h[8]) out.push(h[8]);
+  }
+  return out;
+}

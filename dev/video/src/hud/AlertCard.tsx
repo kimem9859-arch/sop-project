@@ -12,8 +12,10 @@ export const AlertCard: React.FC<{alert: AlertView | null; age: number; bottom?:
   const k = easeOut(age / 0.35);
   return (
     <>
-      {block && <div style={{position: "absolute", inset: 0, pointerEvents: "none",
-        boxShadow: `inset 0 0 ${120 + 24 * Math.sin(age * 5)}px rgba(255,82,82,0.32)`}} />}
+      {/* 가장자리 맥박 — 차단 빨강 · 경고 주황(시안 8 「테크적이고 화려하게」) · 경고는 처음 0.3초 주황 번쩍(차단 번쩍임 · 흔들림은 Cut) */}
+      <div style={{position: "absolute", inset: 0, pointerEvents: "none", boxShadow: block
+        ? `inset 0 0 ${120 + 24 * Math.sin(age * 5)}px rgba(255,82,82,0.32)` : `inset 0 0 ${110 + 34 * Math.sin(age * 6)}px rgba(255,143,46,0.34)`}} />
+      {!block && age < 0.3 && <div style={{position: "absolute", inset: 0, pointerEvents: "none", background: C.warn, opacity: 0.2 * (1 - age / 0.3)}} />}
       <div style={{...GLASS, position: "absolute", left: "50%", ...(bottom ? {bottom: 150} : {top: 40}), transform: `translateX(-50%) translateY(${(1 - k) * -14}px)`,
         opacity: k, filter: `blur(${(1 - k) * 6}px)`, minWidth: 620, padding: "18px 26px", display: "flex", gap: 18, alignItems: "center",
         background: "rgba(14,10,10,0.78)", border: `1px solid ${block ? "rgba(255,82,82,0.55)" : "rgba(255,143,46,0.55)"}`}}>
