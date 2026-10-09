@@ -23,11 +23,11 @@ when_to_use: 촬영을 준비하거나 실행할 때 · run_scenario.sh 를 돌�
 
 🔴 **발표용 시연 녹화가 아니라 「HOI·FSM 이 의도대로 도는가」를 눈으로 확인하는 도구**다.
 
-`./run_scenario.sh <번호>` — GUI + 화면녹화를 한 번에 띄우고, GUI 를 닫으면 녹화도 정리한다.
+`./run_scenario.sh <번호>` — GUI + 화면녹화를 한 번에 띄우고, GUI 를 ESC 로 끄면 녹화도 정리한다.
 
 ※ 3인칭 웹캠 녹화는 **없다**(USB 웹캠 제거 — 백업 태그 `backup/webcam-before-removal-20260923`). 🔴 **음성 데모의 영상 소리(웹캠 마이크) 녹음 수단도 없다** — 다시 찍으면 다른 마이크가 필요하다.
 
-※ `SOP_FULLSCREEN=1` 은 `showMaximized` 다. `showFullScreen` 은 쓰지 않는다 — 제목표시줄이 사라져 창을 못 닫는데 **녹화 종료가 GUI 종료에 묶여 있다.**
+※ 시연 GUI 는 **기본 전체화면**(`showFullScreen` · 2026-10-09 사용자 요청)이다 — 작업표시줄·제목표시줄이 없다. **끄기 = ESC**(열린 창·가운데 안내가 있으면 그것부터 닫고, 없으면 종료 → `closeEvent` 가 녹화·측정 기록을 정리한다). 창으로 띄우려면 `SOP_FULLSCREEN=0`. 촬영 모드(`SOP_DEMO_CAPTURE=1`)만 16:9 고정 창이다. 🔴 GUI 가 멈춰 ESC 가 안 먹으면 터미널에 닿을 수 없다 — 다른 기기에서 ssh 로 `pkill -f 'python3 main.py'`.
 
 ## 검증·정리
 
