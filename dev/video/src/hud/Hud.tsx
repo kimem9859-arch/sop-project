@@ -5,8 +5,8 @@ import {covers} from "../lib/occlusion.ts";
 import type {UiState} from "../lib/uiState.ts";
 import {AlertCard} from "./AlertCard.tsx";
 import {ButtonBoxes} from "./ButtonBoxes.tsx";
-import {FactCard} from "./FactCard.tsx";
-import {HudFrame, LockBadge, TipTrail, VoiceWave} from "./Fx.tsx";
+import {CARD_BOX, FactCard} from "./FactCard.tsx";
+import {FactStreams, LockBadge, TipTrail, VoiceWave, type Stream} from "./Fx.tsx";
 import {HandSkeleton} from "./HandSkeleton.tsx";
 import {HudBoot} from "./HudBoot.tsx";
 import {JudgeZone} from "./JudgeZone.tsx";
@@ -55,6 +55,19 @@ export const Hud: React.FC<{ui: UiState; view: DetView; fit: Fit; t: number; tMs
     const wave = v.listening && v.calledSince !== null ? Math.min(1, (tMs - v.calledSince) / 300)
       : v.thinkingSince !== null && v.answer === null ? Math.max(0, 1 - (tMs - v.thinkingSince) / 500) : 0;
     const lockBox = ui.alert?.kind === "block" && ui.alert.button ? view.btn.find((b) => b[0] === ui.alert!.button) ?? pressAt : null;
+    // 사실 카드로 모이는 빛줄기의 출발점 — 단계 목록 아래 · 공구 카드 아래 · 지금 단계 버튼의 검출 상자(카드에 가리면 뺌)
+    const streams: Stream[] = [];
+    if (v.card && v.thinking) {
+      if (panels) streams.push({x: 260, y: 402, label: "단계 상태", col: C.done});
+      if (panels && ui.tool) streams.push({x: W - 275, y: 205, label: "공구 상태", col: C.current});
+      const at = (x: Box) => [fit.x + ((x[2] + x[4]) / 2) * fit.s, fit.y + x[5] * fit.s];
+      const shown = view.btn.filter((x) => {   // 카드에 가리지 않는 상자 — 지금 단계 버튼이 가리면 다른 버튼에서
+        const [bx, by] = at(x);
+        return !(bx > CARD_BOX.x - 20 && bx < CARD_BOX.x + CARD_BOX.w + 20 && by > CARD_BOX.y - 20 && by < CARD_BOX.y + CARD_BOX.h + 60);
+      });
+      const b = shown.find((x) => x[0] === (ui.sub?.button ?? ui.expected)) ?? shown[0];
+      if (b) streams.push({x: Math.min(Math.max(at(b)[0], 80), W - 80), y: Math.min(at(b)[1], H - 80), label: "검출 결과", col: "#62e6ff"});
+    }
     return (
       <>
         <ButtonBoxes boxes={btns} fit={fit} t={t} next={ui.sub ? null : ui.expected} press={press}
@@ -70,7 +83,6 @@ export const Hud: React.FC<{ui: UiState; view: DetView; fit: Fit; t: number; tMs
         <HandSkeleton hand={view.hand} fit={fit} t={t} age={handAge} ring={ring} dim={holding && overlap === null} pulse={overlap !== null} />
         {lockBox && <LockBadge box={lockBox} fit={fit} age={impact ?? 10} t={t} />}
         <HudBoot boot={boot} W={W} H={H} />
-        {boot >= 1 && <HudFrame W={W} H={H} />}
         {panels && <StepPanel state={boot < 1 ? "START" : ui.state} done={ui.done} expected={ui.expected} alert={ui.alert?.kind ?? null} age={panelAge} />}
         {!ui.alert && panels && ui.sub && (
           <ProgressGauge sub={ui.sub} age={(tMs - ui.sub.since) / 1000} first={ui.sub.button === STEPS[0].button && ui.done.length === 0}
@@ -80,6 +92,7 @@ export const Hud: React.FC<{ui: UiState; view: DetView; fit: Fit; t: number; tMs
         <ToolCard tool={panels ? ui.tool : null} age={ui.tool ? (uiMs - ui.tool.since) / 1000 : null} />
         <AlertCard alert={ui.alert} age={alertAge} bottom={alertLow} />
         {ui.alert && <ReleaseButton kind={ui.alert.kind} t={t} />}
+        {streams.length > 0 && <FactStreams q={q} from={streams} card={CARD_BOX} />}
         {ui.voice.card && ui.voice.thinking && <FactCard lines={ui.voice.card} q={q} W={W} H={H} />}
         <VoiceWave level={wave} t={t} W={W} H={H} />
         <VoiceBubbles voice={ui.voice} t={t} tMs={tMs} />

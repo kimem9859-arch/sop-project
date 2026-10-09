@@ -41,3 +41,29 @@ export function burstAge(ps: Placed[], f: number, fps: number, win: number): num
   const a = (f - p.start) / fps;
   return a < win ? a : null;
 }
+
+// 암호 풀림 — age 초 동안 dur 에 걸쳐 앞에서부터 원문이 드러나고, 나머지는 원문 글자를 섞어 같은 글자 수로(빈칸은 빈칸 — 줄 모양 유지)
+//   seed = 프레임마다 바꾸면 섞인 글자가 깜빡인다 · 사실 카드(시안 10 — 「추천 외에 제안한 효과에 대해서도」)
+export function decode(text: string, age: number, dur: number, seed: number): [string, string] {
+  const cs = Array.from(text);
+  if (age >= dur) return [text, ""];
+  const n = age <= 0 ? 0 : Math.floor((cs.length * age) / dur);
+  const pool = cs.filter((c) => c !== " ");
+  const noise = cs.slice(n).map((c, i) => (c === " " || !pool.length ? c : pool[Math.floor(rnd(seed * 31 + (n + i) * 7.7) * pool.length)]));
+  return [cs.slice(0, n).join(""), noise.join("")];
+}
+
+// 확대 창 자리 — 상자 오른쪽 위 → 왼쪽 위 → 오른쪽 아래 → 왼쪽 아래 → 위 → 오른쪽 → 왼쪽 → 아래 중
+//   화면 안이고 다른 상자(avoid)와 안 겹치는 첫 자리 · 모두 겹치면 가장 덜 가리는 자리(시안 10 — EMO 창이 B4 를 가림)
+export type Rect = {x: number; y: number; w: number; h: number};
+export function insetSpot(box: Rect, S: number, avoid: Rect[], W: number, H: number, gap = 30): {x: number; y: number} {
+  const R = box.x + box.w + gap, L = box.x - gap - S, U = box.y - gap - S, D = box.y + box.h + gap;
+  const cx = box.x + box.w / 2 - S / 2, cy = box.y + box.h / 2 - S / 2;
+  const cand = [{x: R, y: U}, {x: L, y: U}, {x: R, y: D}, {x: L, y: D}, {x: cx, y: U}, {x: R, y: cy}, {x: L, y: cy}, {x: cx, y: D}];
+  const inside = (p: {x: number; y: number}) => p.x >= 20 && p.y >= 20 && p.x + S <= W - 20 && p.y + S <= H - 20;
+  const cover = (p: {x: number; y: number}) => avoid.reduce((s, a) =>
+    s + Math.max(0, Math.min(p.x + S, a.x + a.w) - Math.max(p.x, a.x)) * Math.max(0, Math.min(p.y + S, a.y + a.h) - Math.max(p.y, a.y)), 0);
+  const clamp = (p: {x: number; y: number}) => ({x: Math.min(Math.max(20, p.x), W - 20 - S), y: Math.min(Math.max(20, p.y), H - 20 - S)});
+  const ok = cand.filter(inside), pool = ok.length ? ok : cand.map(clamp);   // 화면 안 자리가 없으면 자리마다 화면 안으로 당김
+  return pool.find((p) => cover(p) === 0) ?? pool.reduce((m, p) => (cover(p) < cover(m) ? p : m));
+}

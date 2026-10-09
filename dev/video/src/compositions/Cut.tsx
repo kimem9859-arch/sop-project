@@ -1,8 +1,8 @@
 import {AbsoluteFill, Freeze, OffthreadVideo, Sequence, staticFile, useCurrentFrame, useVideoConfig, type CalculateMetadataFunction} from "remotion";
-import {BOOT_SEC, btnIntroAge} from "../lib/boot.ts";
-import {detAt, firstHandAt, fitRect, lastBox, tipTrail, type Dets} from "../lib/dets.ts";
+import {BOOT_SEC, BTN_INTRO_SEC, BTN_ORDER, BTN_STEP, btnIntroAge} from "../lib/boot.ts";
+import {detAt, firstHandAt, fitRect, lastBox, tipTrail, type Box, type Dets} from "../lib/dets.ts";
 import {bootTimes, place, srcSec, totalFrames, type Clip, type Placed} from "../lib/edit.ts";
-import {burstAge, screenSince, shake} from "../lib/fx.ts";
+import {burstAge, insetSpot, screenSince, shake} from "../lib/fx.ts";
 import {dwellAt} from "../lib/judge.ts";
 import {holeMask, holesFor} from "../lib/mask.ts";
 import type {Ev} from "../lib/timeline.ts";
@@ -11,7 +11,8 @@ import {stateAt} from "../lib/uiState.ts";
 import {Callout} from "../hud/Callout.tsx";
 import {Breadcrumb, ChapterTitle, SectionTitle} from "../hud/ChapterTitle.tsx";
 import {EndSummary} from "../hud/EndSummary.tsx";
-import {ChromaFilter, PixelBurst, Texture} from "../hud/Fx.tsx";
+import {ChromaFilter, INSET, PixelBurst, ZoomInset} from "../hud/Fx.tsx";
+import {BTN, C, TOOL_KO} from "../hud/theme.ts";
 import {Hud} from "../hud/Hud.tsx";
 import {SKELETON} from "../edits/skeleton.ts";
 import {PRETEST, PRETEST_STAGED, PRETEST_SYNTH} from "../edits/pretest.ts";
@@ -52,7 +53,9 @@ const BLUR_RAMP = 6; // 정지 구간 들고 날 때 흐림이 차오르는 프�
 const DWELL_FILL = 1.5; // 경고 절 정지 중 0.3초 타이머가 차는 데 걸리는 화면 초
 const BLURS = new Set(["buttons", "hand", "tool", "overlap"]); // 흐림 · 어둡게를 쓰는 정지 연출(경고 절 정지는 그냥 멈춤)
 // 테크 효과(시안 8 「테크적이고 화려하게」) — 차단 순간 = 흔들림 · 붉은 번쩍임 · 색 번짐 · 살짝 당겨짐 · 장 전환 = 색 번짐 + 픽셀 조각
-const IMPACT = 0.35, TRAIL_SEC = 0.3, BURST = 0.4;
+//   시안 9 「장 전환 효과가 너무 강한 것 같아」 → 0.3초 · 색 번짐 5 px(PixelBurst 도 옅게)
+const IMPACT = 0.35, TRAIL_SEC = 0.3, BURST = 0.3, BURST_CA = 5;
+const PANEL = {x: 40, y: 40, w: 440, h: 360};   // 왼쪽 위 단계 목록(확대 창이 피할 자리)
 
 // boot0 = 이 구간 시작의 켜짐 초와 흐름 여부(lib/edit bootTimes — 제목 카드 동안 멈춤) · null = 켜짐 전
 // ps · i = 편집 전체와 이 구간 순번(차단 순간의 화면 시계) · trailFrom = 검지 끝 자취를 이 원본 초부터만(절 카드 바로 뒤 — 안 보인 자취를 그리지 않게)
@@ -117,6 +120,21 @@ const ClipView: React.FC<{p: Placed; d: TakeData | undefined; boot0: {at: number
       {mask && vid({maskImage: `url("${mask}")`, WebkitMaskImage: `url("${mask}")`, maskSize: "100% 100%", WebkitMaskSize: "100% 100%"})}
     </>
   );
+  // ⑦ 탐지 확대 창(시안 10 「추천 외에 제안한 효과」) — 버튼 정지 = 강조 차례마다 그 버튼 하나씩 · 공구 정지 = 그 공구 · 다른 상자 · 단계 목록을 피한 자리
+  let insets: React.ReactNode[] = [];
+  if (view && fit && holdT !== null && (c.intro === "buttons" || c.intro === "tool")) {
+    const R = (b: Box) => ({x: fit.x + b[2] * fit.s, y: fit.y + b[3] * fit.s, w: (b[4] - b[2]) * fit.s, h: (b[5] - b[3]) * fit.s});
+    const one = (b: Box, age: number, dur: number, col: string, name: string) => {
+      const r = R(b), zoom = Math.min(3, Math.max(1.3, (INSET * 0.85) / Math.max(r.w, r.h)));
+      const spot = insetSpot(r, INSET + 34, [PANEL, ...view!.btn.filter((x) => x !== b).map(R)], width, height, 60);   // +34 = 아래 이름표 · 60 = 강조 고리 밖
+      return <ZoomInset key={name} video={vid({})} box={b} fit={fit} spot={spot} zoom={zoom} col={col} name={name} age={age} dur={dur} W={width} H={height} />;
+    };
+    if (c.intro === "buttons") insets = BTN_ORDER.map((n, i) => {
+      const b = view!.btn.find((x) => x[0] === n), age = btnIntroAge(n, bootSec);
+      return b && age !== null ? one(b, age, i < BTN_ORDER.length - 1 ? BTN_STEP : BTN_INTRO_SEC + 0.3, BTN[n], n) : null;
+    });
+    else if (view.tool[0]) insets = [one(view.tool[0], holdT - 0.15, c.hold! - 0.15, C.current, TOOL_KO[view.tool[0][0]] ?? view.tool[0][0])];
+  }
   const hit = impact !== null && impact >= 0 && impact < IMPACT ? 1 - impact / IMPACT : 0;
   const [sx, sy] = hit > 0 ? shake(impact!, 18, IMPACT) : [0, 0];
   const caId = `ca-hit-${p.start}`;
@@ -125,9 +143,9 @@ const ClipView: React.FC<{p: Placed; d: TakeData | undefined; boot0: {at: number
       {hit > 0 && <ChromaFilter id={caId} dx={8 * hit} />}
       <AbsoluteFill style={hit > 0 ? {transform: `translate(${sx.toFixed(1)}px, ${sy.toFixed(1)}px) scale(${(1 + 0.03 * hit).toFixed(4)})`, filter: `url(#${caId})`} : undefined}>
         {c.hold !== undefined ? <Freeze frame={0}>{layers}</Freeze> : layers}
-        {c.overlay && <Texture t={(p.start + f) / fps} H={height} />}
         {/* 제목 카드 중에도 HUD 를 그리고 배경과 함께 흐리게 · 어둡게(시안 3 피드백 「작업 단계 UI도 같이 배경과 흐려짐」·「제목이 나올 때부터 있는 게」) */}
         {c.card ? <div style={{position: "absolute", inset: 0, filter: `blur(${(7 * k).toFixed(2)}px) brightness(${(1 - dim * k).toFixed(3)})`}}>{hud}</div> : hud}
+        {insets.length > 0 && <Freeze frame={0}>{insets}</Freeze>}   {/* 확대 창은 정지 구간에만 */}
         {c.callout && fit && <Callout def={c.callout} sec={sec} age={f / fps} fit={fit} />}
         {c.intro === "end" && <EndSummary age={holdT ?? 0} W={width} H={height} />}
       </AbsoluteFill>
@@ -161,10 +179,10 @@ export const Cut: React.FC<CutProps> = ({edit, data}) => {
   if (!data) return null;
   const ps = place(EDITS[edit], 30);
   const bt = bootTimes(ps, 30);
-  const ba = burstAge(ps, f, fps, BURST);   // 장 제목 카드 첫 0.4초 — 화면 전체 색 번짐 + 픽셀 조각(제목 글자는 그 위)
+  const ba = burstAge(ps, f, fps, BURST);   // 장 제목 카드 첫 0.3초 — 화면 전체 색 번짐 + 픽셀 조각(제목 글자는 그 위)
   return (
     <AbsoluteFill>
-      {ba !== null && <ChromaFilter id="ca-burst" dx={16 * (1 - ba / BURST)} />}
+      {ba !== null && <ChromaFilter id="ca-burst" dx={BURST_CA * (1 - ba / BURST)} />}
       <AbsoluteFill style={ba !== null ? {filter: "url(#ca-burst)"} : undefined}>
         {ps.map((p, i) => (
           <Sequence key={i} from={p.start} durationInFrames={p.frames}>

@@ -16,7 +16,8 @@ export const BTN_ORDER = ["B1", "B2", "B3", "B4", "EMO"];
 export const BTN_INTRO_SEC = 1.0;               // 버튼 하나의 강조 연출 길이
 const SCAN_AT = 0.1, SCAN_HALF = 0.75;          // 스캔 시작(정지 구간 기준) · 내려가는(올라오는) 데 걸리는 초
 export const SCAN_END = CHECK_SEC + SCAN_AT + 2 * SCAN_HALF;
-const BTN_FIRST = SCAN_AT + 2 * SCAN_HALF + 0.1, BTN_STEP = 0.45; // 스캔이 끝난 뒤 첫 버튼 · 버튼 사이 간격
+const BTN_FIRST = SCAN_AT + 2 * SCAN_HALF + 0.1;
+export const BTN_STEP = 0.45; // 스캔이 끝난 뒤 첫 버튼 · 버튼 사이 간격
 export const SCAN_HOLD_SEC = BTN_FIRST + BTN_STEP * (BTN_ORDER.length - 1) + BTN_INTRO_SEC + 0.3;
 export const BOOT_SEC = CHECK_SEC + SCAN_HOLD_SEC;
 export const PANEL_FROM = BANNER_TO / BOOT_SEC;
