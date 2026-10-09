@@ -7,7 +7,8 @@ import type {StagedEv, StagedPress} from "../lib/staged.ts";
 // 🔴 실제 기록이 없는 시안 — 상태 · 경고 · 음성 · 사실 카드 표시는 화면을 보고 꾸민 연출(lib/staged) · 박스 · 손 · 공구는 실제 검출
 //   재료 = 10/9 정상 시나리오(T) · 10/8 시험 B 가로 띠(B34 — 스침 · 경고 · 차단) · 10/8 시험 B 세로(BP — 다른 공구 · 타워램프)
 //   사실 카드 · 음성 알림 문장 = Rpi5/Demo/voice_card(build_card · alert_texts) 출력 그대로(카드는 줄을 골라 줄임)
-// ⚠️ 실제 시스템과 다른 연출(사용자 결정 대기 — 보고 참조): 다른 공구 앞의 「공구 확인 중」(실제는 바로 경고) · 다른 공구 때 대기 시간 멈춤(실제는 순서 경고 때만)
+// ⚠️ 실제 시스템과 다른 연출(사용자 결정 대기 — 보고 참조): 다른 공구 앞의 「공구 확인 중」(실제는 검지 끝이 그 공구 박스에 든 첫 검사에 바로 경고)
+//   · 대기 시간은 멈추지 않는다 — 다른 공구 경고가 뜨면 화면을 멈추고 경고 연출만 이어 간 뒤 다음 장면(사용자 10/10)
 const G = "20261009_glasses", T = "20261009_pre", B34 = "20261008_phoneB_land34", BP = "20261008_phoneB";
 export const FEATURE_SYNTH = "시안 · 상태 · 경고 · 음성 표시는 영상을 보고 꾸민 연출(실제 기록 아님)";
 const V = "voice" as const;
@@ -65,13 +66,11 @@ const B_BLOCK: StagedEv[] = [
   {t: 8.03, kind: "alert", d: {key: "alert_block_B1", state: "BLOCK"}, src: V},
   {t: 8.1, kind: "play_start", d: {}, src: V},
 ];
-// BP — 차례 B2(렌치 필요) · 손이 공구함으로(37.0~) → 드라이버(39.0~ 검출 · 탐지 정지 39.8) → 겹침 정지(39.85 확인 시작) → 40.35 다른 공구 · 대기 멈춤
+// BP — 차례 B2(렌치 필요) · 손이 공구함으로(37.0~) → 드라이버(39.0~ 검출 · 탐지 정지 39.8) → 겹침 정지(39.85 확인 시작) → 40.35 다른 공구 → 화면 정지
 const BP_TOOL: StagedEv[] = [
   ...[37.0, 38.0, 39.0].map((t): StagedEv => ({t, kind: "tool_scan", d: {hand: true, seen: [], tool: null, phase: "search", want: "wrench"}})),
   {t: 39.85, kind: "tool_scan", d: {hand: true, seen: ["driver"], tool: null, phase: "checking", want: "wrench"}},
   {t: 40.35, kind: "wrong_tool", d: {want: "wrench", got: "driver"}},
-  {t: 40.35, kind: "sub", d: {what: "pause", button: "B2"}},
-  {t: 50.0, kind: "sub", d: {what: "resume", button: "B2"}},      // 장면 밖에서 이어 감(멈춘 동안 남은 초가 그대로 보이게)
 ];
 // BP — 타워램프(검지 B3 70.17~ → 경고 → 램프 황색 70.9) · 시험 촬영 때 고침(사용자)
 const BP_LAMP: StagedEv[] = [
@@ -94,7 +93,7 @@ const GLASSES_OFF = 32.75;                 // 안경 테가 화면에서 완전�
 const BOOT_FROM = 3.24, BOOT_SPEED = BOOT_FROM / CHECK_SEC; // 가상 세계 + 점검 목록 + 단계 목록 = 손이 들어오기 전 3.24초를 느리게
 const HAND_AT = 5.73, HAND_HOLD = 4.3;     // 손 첫 등장 3.23초 + 2.5초 여유 · 연출 4.0초 + 머묾
 const TOOL_AT = 25.4, TOOL_HOLD = 1.8, OVERLAP_AT = 25.45, OVERLAP_HOLD = 2.2; // 렌치 첫 등장 24.6초 + 0.8초 여유
-const CH = 2.8, SC = 2.2, SLOW = 0.4, GRAZE_SLOW = 0.25, DWELL_HOLD = 1.8, BLOCK_HOLD = 4.5;
+const CH = 2.8, SC = 2.2, SLOW = 0.4, GRAZE_SLOW = 0.25, DWELL_HOLD = 1.8, BLOCK_HOLD = 4.5, WRONG_HOLD = 2.4;
 // 제목 카드 = 다음 장면 첫 화면을 멈추고 어둡게 한 위에(card · HUD 도 함께 흐리게) — 장 · 절 따로
 type Ch = NonNullable<Clip["chapter"]>;
 type Sc = NonNullable<Clip["section"]>;
@@ -135,8 +134,8 @@ export const FEATURE: Clip[] = [
   {take: BP, run: "tool", file: "proxy.mp4", from: 37.0, to: 39.8, speed: 1, overlay: true, caption: "필요하지 않은 공구를 쥐면 바로 경고합니다"},
   {...hold(BP, 39.8, TOOL_HOLD, {intro: "tool"}), run: "tool"},
   {...hold(BP, 39.85, OVERLAP_HOLD, {intro: "overlap"}), run: "tool"},
-  {take: BP, run: "tool", file: "proxy.mp4", from: 39.85, to: 40.9, speed: 0.5, overlay: true, badge: "0.5×"}, // 40.35 다른 공구
-  {...hold(BP, 40.9, 1.2), run: "tool"},
+  {take: BP, run: "tool", file: "proxy.mp4", from: 39.85, to: 40.36, speed: 0.5, overlay: true, badge: "0.5×"}, // 40.35 다른 공구
+  {...hold(BP, 40.36, WRONG_HOLD), run: "tool"},                                 // 다른 공구 경고 — 화면 정지 · 경고 연출은 이어 감 → 끝나면 다음 장면
   // 02 판정 기준
   chCard(T, 35.2, C02),
   scCard(T, 35.2, {no: "1", title: "정답 버튼 입력", desc: "차례에 맞는 버튼은 그대로 진행"}),
