@@ -33,22 +33,11 @@ test("프레임 사이(느린 재생)는 같은 이름 박스와 손을 선형 �
 test("fitRect — 세로 사본을 가로 화면 가운데에 맞춤", () => {
   assert.deepEqual(fitRect(720, 1280, 1920, 1080), {s: 0.84375, x: 656.25, y: 0});
 });
-test("handSince — 손이 처음 나타난 뒤 지난 초", async () => {
-  const {handSince} = await import("../../src/lib/dets.ts");
+test("firstHandAt — 그 시각 뒤로 손이 처음 보인 시각(첫 등장 연출은 여기서만)", async () => {
+  const {firstHandAt} = await import("../../src/lib/dets.ts");
   const rows: Dets["rows"] = [];
-  for (let f = 0; f < 40; f++) rows.push({f, btn: [], tool: [], hand: f >= 10 ? [[1, 1]] : null});
-  near(handSince(mk(rows), 25 / 30)!, 0.5);
-});
-test("handSince — 잠깐 끊긴 것(6프레임 이하)은 이어진 것으로 본다", async () => {
-  const {handSince} = await import("../../src/lib/dets.ts");
-  const rows: Dets["rows"] = [];
-  for (let f = 0; f < 40; f++) rows.push({f, btn: [], tool: [], hand: f >= 10 && !(f >= 15 && f <= 19) ? [[1, 1]] : null});
-  near(handSince(mk(rows), 30 / 30)!, 20 / 30);
-});
-test("handSince — 오래 끊겼다 다시 나타나면 다시 센다 · 손이 없으면 null", async () => {
-  const {handSince} = await import("../../src/lib/dets.ts");
-  const rows: Dets["rows"] = [];
-  for (let f = 0; f < 60; f++) rows.push({f, btn: [], tool: [], hand: (f >= 5 && f < 15) || f >= 40 ? [[1, 1]] : null});
-  near(handSince(mk(rows), 45 / 30)!, 5 / 30);
-  assert.equal(handSince(mk(rows), 30 / 30), null);
+  for (let f = 0; f < 60; f++) rows.push({f, btn: [], tool: [], hand: (f >= 10 && f < 20) || f >= 40 ? [[1, 1]] : null});
+  near(firstHandAt(mk(rows), 0)!, 10 / 30);
+  near(firstHandAt(mk(rows), 25 / 30)!, 40 / 30);
+  assert.equal(firstHandAt(mk(rows.map((r) => ({...r, hand: null}))), 0), null);
 });

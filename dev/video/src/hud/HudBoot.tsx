@@ -1,4 +1,4 @@
-import {C, FONT, easeOut} from "./theme.ts";
+import {C, FONT, easeOut, rnd} from "./theme.ts";
 
 // HUD 켜짐(boot 0~1 · BOOT_SEC 초) — 「시스템이 가동됐다」(G3 「배경이 지지직 거리는? 시스템이 가동 되었다는 효과」)
 //   0.00~0.32 잡음·주사선이 화면에 깜빡이며 흐름(지지직) · 모서리 테두리가 그려짐
@@ -6,12 +6,6 @@ import {C, FONT, easeOut} from "./theme.ts";
 //   0.40~0.85 스캔 선이 위→아래(지나간 자리부터 버튼 박스) · 0.85~1 패널
 export const BOOT_SEC = 3;
 export const scanY = (boot: number, H: number) => easeOut((boot - 0.4) / 0.45) * H;
-
-// 프레임마다 같은 값이 나오는 의사 난수(렌더가 몇 번이든 같은 영상)
-const rnd = (n: number) => {
-  const x = Math.sin(n * 127.1 + 311.7) * 43758.5453;
-  return x - Math.floor(x);
-};
 
 export const HudBoot: React.FC<{boot: number; W: number; H: number}> = ({boot, W, H}) => {
   if (boot >= 1) return null;

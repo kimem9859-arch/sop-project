@@ -1,5 +1,5 @@
 import {AbsoluteFill, OffthreadVideo, Sequence, staticFile, useCurrentFrame, useVideoConfig, type CalculateMetadataFunction} from "remotion";
-import {detAt, fitRect, handSince, type Dets} from "../lib/dets.ts";
+import {detAt, firstHandAt, fitRect, type Dets} from "../lib/dets.ts";
 import type {Ev} from "../lib/timeline.ts";
 import {stateAt} from "../lib/uiState.ts";
 import {Hud} from "../hud/Hud.tsx";
@@ -9,12 +9,13 @@ import {BOOT_SEC} from "../hud/HudBoot.tsx";
 type TL = {runStart: number; events: Ev[]};
 export type UiDraftProps = {take: string; video: string; videoSec: number; tls: TL[] | null; dets: Dets | null};
 // vSec = 이 순간의 바탕 영상 시작(초 · 없으면 props.videoSec) · len = 프레임 수(없으면 PER)
-type Moment = {label: string; run: number; tMs: number; vSec?: number; len?: number; boot?: boolean; freeze?: boolean; extra?: Ev[]; caption?: string; badge?: string};
+// intro = 손 첫 등장 연출을 보이는 순간(본편에서는 처음 한 번만 — 다른 순간은 다 그려진 뼈대)
+type Moment = {label: string; run: number; tMs: number; vSec?: number; len?: number; boot?: boolean; intro?: boolean; freeze?: boolean; extra?: Ev[]; caption?: string; badge?: string};
 
 const MOMENTS: Moment[] = [
   // 켜짐 = 손이 없는 3초(B 가로 띠 3.17초~) · 손 등장 = 손이 처음 들어오는 6.2초 직전부터
   {label: "HUD 켜짐", run: 0, tMs: 250011525.954, vSec: 3.17, len: BOOT_SEC * 30, boot: true, caption: "화면 표시는 실제 시스템 기록을 바탕으로 다시 그린 합성입니다"},
-  {label: "손 등장", run: 0, tMs: 250013000, vSec: 5.7, len: 75, caption: "AI 가 버튼과 손을 알아보고 순서를 확인합니다"},
+  {label: "손 등장", run: 0, tMs: 250013000, vSec: 5.7, len: 90, intro: true, caption: "AI 가 버튼과 손을 알아보고 순서를 확인합니다"},
   {label: "B1 누름", run: 0, tMs: 250014400},
   {label: "대기 진행", run: 0, tMs: 250019570, badge: "×4"},
   {label: "공구 확인 중", run: 0, tMs: 250033600, caption: "필요한 공구를 쥐었는지도 확인합니다"},
@@ -43,12 +44,15 @@ const MomentView: React.FC<{m: Moment; tl: TL; dets: Dets; take: string; video: 
   const tMs = m.tMs + (m.boot || m.freeze ? 0 : (f / fps) * 1000);
   const evs = m.extra ? [...tl.events, ...m.extra].sort((a, b) => a.t - b.t) : tl.events;
   const ui = stateAt(evs, tl.runStart, tMs);
+  const view = detAt(dets, sec);
+  const first = m.intro ? firstHandAt(dets, v0) : null;
+  const handAge = !view.hand ? null : m.intro && first !== null ? Math.max(0, sec - first) : 10;
   return (
     <AbsoluteFill style={{background: "#000"}}>
       <OffthreadVideo src={staticFile(`footage/${take}/${video}`)} muted trimBefore={Math.round(v0 * fps)}
         style={{width: "100%", height: "100%", objectFit: "contain"}} />
-      <Hud ui={ui} view={detAt(dets, sec)} fit={fitRect(dets.w, dets.h, width, height)} t={sec} tMs={tMs}
-        boot={m.boot ? f / len : 1} handAge={handSince(dets, sec)} W={width} H={height} caption={m.caption} badge={m.badge} />
+      <Hud ui={ui} view={view} fit={fitRect(dets.w, dets.h, width, height)} t={sec} tMs={tMs}
+        boot={m.boot ? f / len : 1} handAge={handAge} W={width} H={height} caption={m.caption} badge={m.badge} />
       <div style={{position: "absolute", left: 40, bottom: 20, color: "#fff", font: "600 20px Pretendard", background: "rgba(0,0,0,.6)", padding: "4px 10px", borderRadius: 6}}>
         {`UI 시안 · 영상과 기록 짝 아님 · ${m.label}`}
       </div>
