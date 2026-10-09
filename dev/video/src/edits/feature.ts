@@ -92,7 +92,7 @@ export const FEATURE_STAGED = {
 
 const GLASSES_OFF = 32.75;                 // 안경 테가 화면에서 완전히 빠진 순간(32.73 · 흰 픽셀 0)
 const BOOT_FROM = 3.24, BOOT_SPEED = BOOT_FROM / CHECK_SEC; // 가상 세계 + 점검 목록 + 단계 목록 = 손이 들어오기 전 3.24초를 느리게
-const HAND_AT = 5.73, HAND_HOLD = 2.9;     // 손 첫 등장 3.23초 + 2.5초 여유 · 연출 2.6초 + 머묾
+const HAND_AT = 5.73, HAND_HOLD = 4.3;     // 손 첫 등장 3.23초 + 2.5초 여유 · 연출 4.0초 + 머묾
 const TOOL_AT = 25.4, TOOL_HOLD = 1.8, OVERLAP_AT = 25.45, OVERLAP_HOLD = 2.2; // 렌치 첫 등장 24.6초 + 0.8초 여유
 const CH = 2.8, SC = 2.2, SLOW = 0.4, GRAZE_SLOW = 0.25, DWELL_HOLD = 1.8, BLOCK_HOLD = 4.5;
 // 제목 카드 = 다음 장면 첫 화면을 멈추고 어둡게 한 위에(card · HUD 도 함께 흐리게) — 장 · 절 따로

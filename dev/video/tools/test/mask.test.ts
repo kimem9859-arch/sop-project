@@ -10,17 +10,28 @@ const view: DetView = {btn: [["B1", 0.9, 0, 0, 10, 10], ["B2", 0.9, 20, 0, 30, 1
 test("버튼 정지 = 버튼마다 · 손 정지 = 손 상자 · 공구 = 공구 상자 · 겹침 = 손 + 공구 · 그 밖 = 없음(화면 좌표 · 여유 포함)", () => {
   const b = holesFor("buttons", view, fit);
   assert.equal(b.length, 2);
-  assert.deepEqual(b[0], {x: 10 - 16, y: 0 - 16, w: 20 + 32, h: 20 + 32});
+  assert.deepEqual(b[0], {x: 10 - 16, y: 0 - 16, w: 20 + 32, h: 20 + 32, a: 1});
   const h = holesFor("hand", view, fit);
-  assert.deepEqual(h, [{x: 10 + 200 - 30, y: 180 - 30, w: 40 + 60, h: 100 + 60}]);
+  assert.deepEqual(h, [{x: 10 + 200 - 30, y: 180 - 30, w: 40 + 60, h: 100 + 60, a: 1}]);
   assert.equal(holesFor("tool", view, fit).length, 1);
   assert.equal(holesFor("overlap", view, fit).length, 2);
   assert.deepEqual(holesFor(undefined, view, fit), []);
   assert.deepEqual(holesFor("hand", {...view, hand: null}, fit), []);
 });
 test("가림막(mask) = 자리마다 흰 사각형 하나 · 크기는 화면 크기", () => {
-  const url = holeMask([{x: 1, y: 2, w: 3, h: 4}, {x: 5, y: 6, w: 7, h: 8}], 1920, 1080);
+  const url = holeMask([{x: 1, y: 2, w: 3, h: 4, a: 1}, {x: 5, y: 6, w: 7, h: 8, a: 1}], 1920, 1080);
   const svg = decodeURIComponent(url.replace("data:image/svg+xml;charset=utf-8,", ""));
   assert.equal((svg.match(/<rect /g) ?? []).length, 2);
   assert.ok(svg.includes("width='1920'") && svg.includes("height='1080'"));
+});
+test("버튼 정지 — 강조 차례가 온 버튼만 선명해지고(0 → 1로 차오름) · 그 전엔 흐림 속에 남는다", () => {
+  const reveal = (name: string) => (name === "B1" ? 1 : name === "B2" ? 0.4 : 0);
+  const b = holesFor("buttons", view, fit, reveal);
+  assert.deepEqual(b.map((r) => r.a), [1, 0.4]);
+  assert.deepEqual(holesFor("buttons", view, fit, () => 0), []);
+  assert.equal(holesFor("hand", view, fit)[0].a, 1);
+});
+test("가림막 — 자리마다 그 밝기(a)로 칠한다", () => {
+  const svg = decodeURIComponent(holeMask([{x: 1, y: 2, w: 3, h: 4, a: 0.4}], 10, 10).replace("data:image/svg+xml;charset=utf-8,", ""));
+  assert.ok(svg.includes("fill-opacity='0.400'"));
 });

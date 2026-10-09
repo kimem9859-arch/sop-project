@@ -1,5 +1,5 @@
 import {AbsoluteFill, Freeze, OffthreadVideo, Sequence, staticFile, useCurrentFrame, useVideoConfig, type CalculateMetadataFunction} from "remotion";
-import {BOOT_SEC} from "../lib/boot.ts";
+import {BOOT_SEC, btnIntroAge} from "../lib/boot.ts";
 import {detAt, firstHandAt, fitRect, lastBox, type Dets} from "../lib/dets.ts";
 import {bootTimes, place, srcSec, totalFrames, type Clip, type Placed} from "../lib/edit.ts";
 import {dwellAt} from "../lib/judge.ts";
@@ -75,7 +75,10 @@ const ClipView: React.FC<{p: Placed; d: TakeData | undefined; boot0: {at: number
     const pressAt = lp && !view.btn.some((b) => b[0] === lp) ? lastBox(d.dets, sec, lp, 1) : null;
     // 경고 절 — 오답 버튼에 손가락이 닿은 순간 화면을 멈추고 그동안 0.3초 타이머를 채운다(시안 3 피드백 · 기록의 머문 시작과 같은 자리)
     const uiMs = tMs + (holdT ?? 0) * 1000;   // 정지 중에도 흐르는 장식 시계(차단 정지 중 판정 구역이 사라지는 것 등)
-    const dw0 = dwellAt(d.tl.events, d.tl.runStart, c.intro === "dwell" ? tMs : uiMs);
+    // 판정 구역을 찾는 시각 — 그냥 멈춘 구간(차단 정지)만 장식 시계로 · 제목 카드 · 탐지 정지는 기록 시각 그대로
+    //   (제목 카드 동안 장식 시계가 앞서 가 다음 장면의 경고 · 스침 구역이 미리 비치던 것 — 시안 4 피드백 「판정 영역 그래픽이 잠깐 나오는데」)
+    const plainHold = c.hold !== undefined && !c.card && !c.intro;
+    const dw0 = dwellAt(d.tl.events, d.tl.runStart, plainHold ? uiMs : tMs);
     const dw = c.intro === "dwell" && dw0 && holdT !== null ? {...dw0, progress: Math.min(1, holdT / DWELL_FILL), done: false} : dw0;
     hud = <Hud ui={ui} pressAt={pressAt} dwell={dw} uiMs={uiMs} view={view} fit={fit}
       t={(p.start + f) / fps} tMs={tMs} boot={boot} handAge={handAge} W={width} H={height} caption={c.caption}
@@ -91,7 +94,10 @@ const ClipView: React.FC<{p: Placed; d: TakeData | undefined; boot0: {at: number
     <OffthreadVideo src={src} trimBefore={Math.round(c.from * fps)} playbackRate={c.speed} muted={c.speed !== 1 || c.hold !== undefined}
       style={{position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "contain", ...style}} />
   );
-  const holes = k > 0 && view && fit ? holesFor(c.intro, view, fit) : [];
+  // 버튼 정지 — 강조 차례가 온 버튼만 0.3초에 걸쳐 선명해진다(스캔 중에는 버튼도 배경처럼 흐림 · 시안 4 피드백)
+  const bootSec = boot0 ? boot0.at + (boot0.runs ? f / fps : 0) : 0;
+  const reveal = (name: string) => Math.max(0, Math.min(1, (btnIntroAge(name, bootSec) ?? -1) / 0.3));
+  const holes = k > 0 && view && fit ? holesFor(c.intro, view, fit, reveal) : [];
   const mask = holes.length ? holeMask(holes, width, height) : null;
   const portrait = d ? d.dets.h > d.dets.w : false;   // 세로 촬영 = 양옆을 같은 화면의 흐린 확대로 채움
   const layers = (

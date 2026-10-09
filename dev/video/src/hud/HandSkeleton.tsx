@@ -6,14 +6,15 @@ const EDGES = [[0, 1], [1, 2], [2, 3], [3, 4], [0, 5], [5, 6], [6, 7], [7, 8], [
   [9, 13], [13, 14], [14, 15], [15, 16], [13, 17], [17, 18], [18, 19], [19, 20], [0, 17]];
 const DEPTH = [0, 1, 2, 3, 4, 1, 2, 3, 4, 2, 3, 4, 5, 3, 4, 5, 6, 3, 4, 5, 6]; // 손목에서 마디 수(뻗기 연출)
 export const HAND = "#2bea74"; // 선명한 초록 — G3 「흰색이라 잘 보이지 않아」 → 「파랑 버튼 색과 비슷해서 초록색으로」
-export const INTRO_SEC = 2.6;  // 첫 등장 연출 길이 — 끝나면 꺾쇠·표시도 없어지고 뼈대만(G3 「연출이 끝나면 조준 꺾쇠도 없어지는 것으로」)
+export const INTRO_SEC = 4.0;  // 첫 등장 연출 길이 — 끝나면 꺾쇠·표시도 없어지고 뼈대만(G3 「연출이 끝나면 조준 꺾쇠도 없어지는 것으로」)
 
 // age = 본편에서 손이 처음 나타난 뒤 지난 초(firstHandAt) · INTRO_SEC 이 지나면(또는 첫 등장이 아니면 큰 값) 연출 없이 뼈대만
 // 첫 등장 연출(G3 「첫 등장에만」·「손 등장에도 시스템 가동 효과」) — 켜짐과 같은 결:
 //   0~0.35 꺾쇠 안 지지직 잡음·줄무늬 · 0~0.5 꺾쇠가 손으로 좁혀 옴 「손 인식」 · 0.1~0.55 스캔 선이 손을 훑음
 //   0.45~1.1 손목부터 뼈대가 뻗고 관절 점이 튀어나옴 · 0.55~ 「● 손 추적 시작」 · 1.0~1.3 꺾쇠·표시가 사라짐
 // 시안 3 피드백 「손 탐지 실행 연출이 너무 빨라 스캔인지 지지직인지 구분이 안되는데 … 느리게 왕복 1회」 → 잡음·줄무늬 없앰:
-//   0~0.5 꺾쇠가 손으로 좁혀 옴 「손 인식」 · 0.3~1.9 스캔 선 위 → 아래 → 위 한 번 · 0.7~1.7 뼈대가 뻗음 · 1.7~ 「● 손 추적 시작」 · 2.2~2.6 꺾쇠 사라짐
+//   0~0.5 꺾쇠가 손으로 좁혀 옴 「손 인식」 · 0.3~1.9 스캔 선 위 → 아래 → 위 한 번 · 1.9~3.4 스캔이 끝난 뒤 뼈대가 천천히 뻗음
+//   (시안 4 피드백 「21점 오버레이 나타남 속도가 너무 빨라 … 스캔이 끝나면 나타나도록」) · 3.4~ 「● 손 추적 시작」 · 3.6~4.0 꺾쇠 사라짐
 // pulse = 손 전체 맥박(공구 쥠 판정 시작 — 「검지 포인트만 … 손 오버레이 전체에 효과를」) · 그동안 검지 고리는 숨김
 // ring = 검지 끝(8) 고리 색(경고·차단 중엔 그 색)
 // dim = 공구를 쥔 동안 — 뼈대를 옅게 · 검지 고리 숨김: 손 모델이 렌치 막대를 펴진 검지로 읽는다(10/9 초안 원본 프레임 대조 ·
@@ -23,7 +24,7 @@ export const HandSkeleton: React.FC<{hand: Pt[] | null; fit: Fit; t: number; age
     if (!hand || age === null) return null;
     const P = hand.map(([x, y]) => [fit.x + x * fit.s, fit.y + y * fit.s]);
     const intro = age < INTRO_SEC;
-    const grow = intro ? easeOut((age - 0.7) / 1.0) * 6.01 : 6.01;
+    const grow = intro ? Math.max(0, Math.min(1, (age - 1.9) / 1.5)) * 6.01 : 6.01;
     const shown = (i: number) => DEPTH[i] <= grow;
     const pop = (i: number) => Math.min(1, Math.max(0, (grow - DEPTH[i]) / 0.8));
     // 조준 꺾쇠 — 손 둘레 상자
@@ -32,13 +33,13 @@ export const HandSkeleton: React.FC<{hand: Pt[] | null; fit: Fit; t: number; age
     const k = 1.75 - 0.6 * easeOut(age / 0.5);
     const hw = ((Math.max(...xs) - Math.min(...xs)) / 2 + 24) * k, hh = ((Math.max(...ys) - Math.min(...ys)) / 2 + 24) * k;
     const bx = cx - hw, by = cy - hh, bw = hw * 2, bh = hh * 2;
-    const lockOp = age < 2.2 ? Math.min(1, age / 0.15) : Math.max(0, 1 - (age - 2.2) / 0.4);
+    const lockOp = age < 3.6 ? Math.min(1, age / 0.15) : Math.max(0, 1 - (age - 3.6) / 0.4);
     const L = Math.min(hw, hh) * 0.35;
     const corners = [[bx, by, 1, 1], [bx + bw, by, -1, 1], [bx, by + bh, 1, -1], [bx + bw, by + bh, -1, -1]];
     const u = (age - 0.3) / 1.6;   // 스캔 왕복 0~1
     const io = (x: number) => (x < 0.5 ? 2 * x * x : 1 - Math.pow(-2 * x + 2, 2) / 2);
     const scan = u > 0 && u < 1 ? by + (u < 0.5 ? io(u * 2) : 1 - io((u - 0.5) * 2)) * bh : null;
-    const tracking = age >= 1.7;
+    const tracking = age >= 3.4;
     const pz = pulse ? 1 + 0.045 * Math.sin(t * Math.PI * 3) : 1;
     return (
       <svg style={{position: "absolute", inset: 0, width: "100%", height: "100%", overflow: "visible", opacity: dim ? 0.35 : 1}}>
