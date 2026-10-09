@@ -18,7 +18,7 @@ export const ALERT_TEXT: Record<string, string> = {
   alert_warn_B4: "순서가 다르니 손을 떼고 B4 버튼을 누르세요.",
 };
 // 사실 카드가 「LLM 생각 중」 말풍선으로 날아드는 시각표(질문 뒤 초) — FactCard 와 같이 쓴다
-export const CARD_IN = 0.8, CARD_FLY = 3.6, CARD_LAND = 4.3; // 시안 2 「천천히」 — 읽을 틈 2.8초 · 시안 4 피드백 「이전 효과로 롤백」
+export const CARD_IN = 0.6, CARD_FLY = 3.0, CARD_LAND = 3.7; // 시안 4 「이전 효과로 롤백」 · 시안 6 「1분 30초 정도」 — 읽을 틈 2.4초
 export const THINK_ANCHOR = {right: 40, bottom: 160}; // 말풍선 묶음 자리(카드가 날아갈 곳)
 
 const SOLID: React.CSSProperties = {borderRadius: 20, boxShadow: "0 10px 28px rgba(0,0,0,0.5)", fontFamily: FONT, color: C.text};
