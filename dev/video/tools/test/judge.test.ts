@@ -32,3 +32,13 @@ test("스침 — 0.3초 안에 떠난 기록(경고 아님)은 떠난 순간에 
   assert.ok(Math.abs(b.progress - 120 / 300) < 1e-9);
   assert.equal(dwellAt(G.events, G.runStart, 7300), null);
 });
+test("차단 — 0.3초 전에 눌러 차단된 기록(머문 시작 있음)은 판정 구역이 잠깐 보이고 차단 순간 0.3초 안에 사라진다", () => {
+  const K = stagedRun(3, [], {first: "B1", extra: [
+    {t: 8.0, kind: "state", d: {old: "MONITOR", new: "BLOCK", expected: "B1", dwell_roi: "B2", dwell_start_ms: 7880}},
+  ]});
+  const a = dwellAt(K.events, K.runStart, 7940)!;
+  assert.deepEqual([a.kind, a.button, a.done], ["block", "B2", false]);
+  assert.ok(Math.abs(a.progress - 60 / 300) < 1e-9);
+  assert.deepEqual([dwellAt(K.events, K.runStart, 8100)?.kind, dwellAt(K.events, K.runStart, 8100)?.done], ["block", true]);
+  assert.equal(dwellAt(K.events, K.runStart, 8400), null);
+});

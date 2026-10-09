@@ -1,5 +1,5 @@
 import type {Box} from "../lib/dets.ts";
-import {BTN, C, FONT, TOOL_KO, easeOut, rnd, type Fit} from "./theme.ts";
+import {BTN, C, FONT, TOOL_KO, easeOut, type Fit} from "./theme.ts";
 
 // 모서리 꺾쇠 박스 + 이름표 · next = 다음에 누를 버튼(숨쉬기) · press = 방금 누른 버튼과 경과 초(파동)
 // alert = 경고·차단 중 그 버튼 — 🔑 첫 시선은 손과 버튼(PRODUCT 원칙 2): 경고색·굵게·맥박 · revealY = 스캔 선 아래는 숨김
@@ -45,59 +45,42 @@ export const ButtonBoxes: React.FC<{
   press?: {button: string; age: number; ok: boolean} | null;
   alert?: {button: string | null; kind: "warning" | "block"} | null; revealY?: number; tool?: boolean;
   intro?: Record<string, number>; toolState?: ToolState | null; pressAt?: Box | null; toolIntro?: number | null; frozenAge?: number | null;
+  hide?: string | null;
 }> = ({boxes, fit, t, next = null, press = null, alert = null, revealY = Infinity, tool = false, intro = {}, toolState = null, pressAt = null,
-  toolIntro = null, frozenAge = null}) => (
+  toolIntro = null, frozenAge = null, hide = null}) => (
   <svg style={{position: "absolute", inset: 0, width: "100%", height: "100%", overflow: "visible"}}>
-    <filter id={tool ? "tool-noise" : "btn-noise"}>
-      <feTurbulence type="fractalNoise" baseFrequency="1.1" numOctaves="1" seed={Math.floor(t * 30)} />
-      <feColorMatrix type="saturate" values="0" />
-    </filter>
     {boxes.map(([name, score, x1, y1, x2, y2]) => {
       const X1 = fit.x + x1 * fit.s, Y1 = fit.y + y1 * fit.s, X2 = fit.x + x2 * fit.s, Y2 = fit.y + y2 * fit.s;
-      if (Y1 > revealY) return null;
+      if (Y1 > revealY || name === hide) return null;   // hide = 판정 구역이 덮는 버튼(시안 3 피드백 「판정 구역 그래픽이 실행 되면 … 잠시 꺼줘」)
       const ts = tool ? toolState : null;
       const hit = !tool && alert?.button === name;
       const alertCol = alert?.kind === "block" ? C.danger : C.warn;
       const col = hit ? alertCol : !tool ? BTN[name] ?? C.text
-        : ts?.wrong ? C.warn : ts?.phase === "grasped" ? C.done : ts?.phase === "checking" ? C.current : C.info;
+        : ts?.wrong ? C.danger : ts?.phase === "grasped" ? C.done : ts?.phase === "checking" ? C.current : C.info;
       const ia = tool ? (toolIntro ?? undefined) : intro[name];         // 탐지 연출 중이면 지난 초
-      const noiseId = tool ? "tool-noise" : "btn-noise";
-      const ta = ts && (ts.phase === "checking" || ts.phase === "grasped") ? ts.age : undefined; // 공구 단계가 바뀐 뒤 초
+      const ta = ts && (ts.phase === "checking" || ts.phase === "grasped" || ts.wrong) ? ts.age : undefined; // 공구 단계가 바뀐 뒤 초
+      const wrong = Boolean(ts?.wrong);
+      const shake = wrong && ta !== undefined && ta < 0.6 ? Math.sin(ta * 60) * 9 * (1 - ta / 0.6) : 0; // 오답 순간 좌우 흔들림
       const grow = ia !== undefined ? 0.9 * (1 - easeOut(ia / 0.4))
         : 0;
       const cx = (X1 + X2) / 2, cy = (Y1 + Y2) / 2, bw = X2 - X1, bh = Y2 - Y1;
       const pad = (hit ? 8 : 0) + grow * Math.max(bw, bh);
-      const bx1 = X1 - pad, by1 = Y1 - pad, bx2 = X2 + pad, by2 = Y2 + pad;
+      const bx1 = X1 - pad + shake, by1 = Y1 - pad, bx2 = X2 + pad + shake, by2 = Y2 + pad;
       const L = Math.min(bx2 - bx1, by2 - by1) * 0.32;
       const glow = name === next ? 0.35 + 0.35 * Math.sin(t * Math.PI * 1.6) : 0;
       const beat = hit ? 0.5 + 0.5 * Math.sin(t * Math.PI * 4) : 0;
       const corners = [[bx1, by1, 1, 1], [bx2, by1, -1, 1], [bx1, by2, 1, -1], [bx2, by2, -1, -1]];
       const path = (x: number, y: number, sx: number, sy: number) => `M ${x} ${y + sy * L} L ${x} ${y} L ${x + sx * L} ${y}`;
-      const fz = Math.floor(t * 30);
-      const glitch = ia !== undefined && ia < 0.45 ? 1 - ia / 0.45 : 0;   // 지지직 세기
-      const split = glitch * (4 + 4 * rnd(fz + x1));                      // 색 어긋남 폭
       const detecting = ia !== undefined && ia < 0.6;
-      const checking = ts?.phase === "checking", grasped = ts?.phase === "grasped";
-      const sw = hit || checking || grasped ? 6 : 4;
+      const checking = ts?.phase === "checking" && !ts.wrong, grasped = ts?.phase === "grasped";
+      const sw = hit || checking || grasped || wrong ? 6 : 4;
       const label = tool ? (TOOL_KO[name] ?? name) : name;
-      const labelOp = detecting && ia! < 0.3 ? (rnd(fz * 3 + x1) > 0.35 ? 1 : 0.15) : 1;
+      const labelOp = 1;
       return (
         <g key={name}>
-          {glitch > 0 && (
-            <>
-              <rect x={X1} y={Y1} width={bw} height={bh} filter={`url(#${noiseId})`} opacity={(0.6 + 0.3 * rnd(fz)) * glitch} />
-              <rect x={X1} y={Y1} width={bw} height={bh} fill="#fff" opacity={ia! < 0.18 ? 0.5 * (1 - ia! / 0.18) : 0} />
-              {[0, 1].map((i) => (
-                <rect key={i} x={X1 - bw * 0.6} y={Y1 + rnd(fz * 7 + i + x1) * bh} width={bw * 2.2} height={2 + rnd(fz * 5 + i) * 6}
-                  fill={col} opacity={0.6 * glitch} />
-              ))}
-              {corners.map(([x, y, sx, sy], i) => (
-                <g key={i}>
-                  <path d={path(x + split, y, sx, sy)} stroke="rgb(255,40,100)" strokeWidth={4} fill="none" opacity={0.8 * glitch} />
-                  <path d={path(x - split, y, sx, sy)} stroke="rgb(40,220,255)" strokeWidth={4} fill="none" opacity={0.8 * glitch} />
-                </g>
-              ))}
-            </>
+          {ia !== undefined && ia < 0.35 && (
+            // 강조 순간 — 부드러운 빛(지지직 없음 · 시안 3 피드백 「버튼 강조 효과에 지지직 효과는 제거」)
+            <rect x={X1 - 4} y={Y1 - 4} width={bw + 8} height={bh + 8} rx={10} fill={col} opacity={0.35 * (1 - ia / 0.35)} />
           )}
           {ia !== undefined && <Rings cx={cx} cy={cy} r0={Math.max(bw, bh) * 0.6} age={ia} col={col} delays={[0, 0.22]} dur={0.75} reach={120} w={8} />}
           {glow > 0 && <rect x={X1 - 6} y={Y1 - 6} width={bw + 12} height={bh + 12} rx={10} fill={col} opacity={glow * 0.3} />}
@@ -112,6 +95,20 @@ export const ButtonBoxes: React.FC<{
           )}
           {grasped && ta !== undefined && ta < 0.35 && <rect x={bx1} y={by1} width={bx2 - bx1} height={by2 - by1} rx={8} fill={col} opacity={0.55 * (1 - ta / 0.35)} />}
           {grasped && ta !== undefined && <Rings cx={cx} cy={cy} r0={Math.max(bw, bh) * 0.55} age={ta} col={col} delays={[0, 0.2]} dur={0.8} reach={140} w={9} />}
+          {wrong && ta !== undefined && (
+            // 오답 공구 — 빨간 번쩍 · 파동 · ✕(시안 3 피드백 「오답 공구 쥠 판정 시 오답 효과」)
+            <>
+              {ta < 0.4 && <rect x={bx1} y={by1} width={bx2 - bx1} height={by2 - by1} rx={8} fill={col} opacity={0.5 * (1 - ta / 0.4)} />}
+              <Rings cx={cx + shake} cy={cy} r0={Math.max(bw, bh) * 0.55} age={ta} col={col} delays={[0, 0.2]} dur={0.8} reach={140} w={9} />
+              <rect x={bx1} y={by1} width={bx2 - bx1} height={by2 - by1} rx={8} fill={col} opacity={0.12 + 0.08 * Math.sin(t * Math.PI * 4)} />
+              {(() => {
+                const k = Math.min(1, ta / 0.25), r = Math.min(bw, bh) * 0.32 * k;
+                return <g stroke={col} strokeWidth={9} strokeLinecap="round" opacity={0.95}>
+                  <line x1={cx + shake - r} y1={cy - r} x2={cx + shake + r} y2={cy + r} /><line x1={cx + shake + r} y1={cy - r} x2={cx + shake - r} y2={cy + r} />
+                </g>;
+              })()}
+            </>
+          )}
           {corners.map(([x, y, sx, sy], i) => (
             <path key={i} d={path(x, y, sx, sy)} stroke={col} strokeWidth={sw} fill="none" strokeLinecap="round" />
           ))}
@@ -127,6 +124,7 @@ export const ButtonBoxes: React.FC<{
                   {detecting ? <tspan fontWeight={700} dx={8}>인식</tspan>
                     : checking ? <tspan fontWeight={700} dx={8}>쥠 판정 중</tspan>
                     : grasped ? <tspan fontWeight={800} dx={8}>쥠 확인</tspan>
+                    : wrong ? <tspan fontWeight={800} dx={8}>다른 공구</tspan>
                     : <tspan fontWeight={600} fontSize={tool ? 20 : hit ? 22 : 18} dx={8} style={{fontVariantNumeric: "tabular-nums"}}>{score.toFixed(2)}</tspan>}
                 </text>
                 {(checking || grasped) && Array.from({length: CONFIRM}, (_, i) => (

@@ -3,7 +3,7 @@ import {IconCheck} from "./icons.tsx";
 import {BTN, C, GLASS, STEPS} from "./theme.ts";
 
 const LABEL: Record<string, [string, string]> = {
-  IDLE: ["대기", C.label], READY: ["준비", C.info], PROCESS_RUN: ["작업 진행 중", C.done],
+  START: ["작업 시작", C.info], IDLE: ["대기", C.label], READY: ["준비", C.info], PROCESS_RUN: ["작업 진행 중", C.done],
   MONITOR: ["감시 중", C.done], WARNING: ["경고", C.warn], BLOCK: ["차단", C.danger],
 };
 

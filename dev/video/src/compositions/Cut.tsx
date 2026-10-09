@@ -47,6 +47,8 @@ export const calcCut: CalculateMetadataFunction<CutProps> = async ({props}) => {
 };
 
 const BLUR_RAMP = 6; // 정지 구간 들고 날 때 흐림이 차오르는 프레임
+const DWELL_FILL = 1.5; // 경고 절 정지 중 0.3초 타이머가 차는 데 걸리는 화면 초
+const BLURS = new Set(["buttons", "hand", "tool", "overlap"]); // 흐림 · 어둡게를 쓰는 정지 연출(경고 절 정지는 그냥 멈춤)
 
 // boot0 = 이 구간 시작의 켜짐 초와 흐름 여부(lib/edit bootTimes — 제목 카드 동안 멈춤) · null = 켜짐 전
 const ClipView: React.FC<{p: Placed; d: TakeData | undefined; boot0: {at: number; runs: boolean} | null; synth?: string}> = ({p, d, boot0, synth}) => {
@@ -59,7 +61,7 @@ const ClipView: React.FC<{p: Placed; d: TakeData | undefined; boot0: {at: number
   const fit = d ? fitRect(d.dets.w, d.dets.h, width, height) : null;
   let hud = null;
   let view = d ? detAt(d.dets, sec) : null;
-  if (c.overlay && d && view && fit && c.intro !== "end" && !c.card) {
+  if (c.overlay && d && view && fit && c.intro !== "end") {
     // 공구는 공구 탐지 연출 전에는 숨긴다(손과 같게 · 시안 1 피드백 「바로 공구가 나타나면 실행하지 말고 약간의 지연」)
     if (d.toolIntro !== null && d.toolIntro >= 0 && c.intro !== "tool" && sec < d.toolIntro) view = {...view, tool: []};
     const tMs = d.offsetMs + sec * 1000;
@@ -71,14 +73,18 @@ const ClipView: React.FC<{p: Placed; d: TakeData | undefined; boot0: {at: number
     const ui = stateAt(d.tl.events, d.tl.runStart, tMs);
     const lp = ui.lastPress && tMs - ui.lastPress.t < 1000 ? ui.lastPress.button : null;
     const pressAt = lp && !view.btn.some((b) => b[0] === lp) ? lastBox(d.dets, sec, lp, 1) : null;
-    hud = <Hud ui={ui} pressAt={pressAt} dwell={dwellAt(d.tl.events, d.tl.runStart, tMs)} view={view} fit={fit}
+    // 경고 절 — 오답 버튼에 손가락이 닿은 순간 화면을 멈추고 그동안 0.3초 타이머를 채운다(시안 3 피드백 · 기록의 머문 시작과 같은 자리)
+    const uiMs = tMs + (holdT ?? 0) * 1000;   // 정지 중에도 흐르는 장식 시계(차단 정지 중 판정 구역이 사라지는 것 등)
+    const dw0 = dwellAt(d.tl.events, d.tl.runStart, c.intro === "dwell" ? tMs : uiMs);
+    const dw = c.intro === "dwell" && dw0 && holdT !== null ? {...dw0, progress: Math.min(1, holdT / DWELL_FILL), done: false} : dw0;
+    hud = <Hud ui={ui} pressAt={pressAt} dwell={dw} uiMs={uiMs} view={view} fit={fit}
       t={(p.start + f) / fps} tMs={tMs} boot={boot} handAge={handAge} W={width} H={height} caption={c.caption}
       captionOpacity={Math.min(fadeIn, fadeOut)} badge={c.badge} synth={synth}
       toolIntro={c.intro === "tool" ? holdT : null} overlap={c.intro === "overlap" ? holdT : null} frozenAge={holdT} />;
   }
   // 탐지 연출 동안 화면을 멈추고 배경을 흐리고 어둡게(10/9 초안 피드백) — 주인공(버튼 · 손 · 공구)은 선명하게 남긴다(시안 1 피드백)
   //   = 흐린 바탕 + 같은 정지 화면을 주인공 자리만 보이게 한 겹 더 · 들고 날 때 BLUR_RAMP 프레임에 걸쳐 · intro 없는 정지 = 그냥 멈춤
-  const k = c.hold !== undefined && (c.intro || c.card) ? Math.min(1, f / BLUR_RAMP, (p.frames - f) / BLUR_RAMP) : 0;
+  const k = c.hold !== undefined && ((c.intro && BLURS.has(c.intro)) || c.card) ? Math.min(1, f / BLUR_RAMP, (p.frames - f) / BLUR_RAMP) : 0;
   const dim = c.card ? 0.62 : 0.5;  // 제목 카드는 더 어둡게(글이 주인공)
   const src = staticFile(`footage/${c.take}/${c.file}`);
   const vid = (style: React.CSSProperties) => (
@@ -98,7 +104,8 @@ const ClipView: React.FC<{p: Placed; d: TakeData | undefined; boot0: {at: number
   return (
     <AbsoluteFill style={{background: "#000"}}>
       {c.hold !== undefined ? <Freeze frame={0}>{layers}</Freeze> : layers}
-      {hud}
+      {/* 제목 카드 중에도 HUD 를 그리고 배경과 함께 흐리게 · 어둡게(시안 3 피드백 「작업 단계 UI도 같이 배경과 흐려짐」·「제목이 나올 때부터 있는 게」) */}
+      {c.card ? <div style={{position: "absolute", inset: 0, filter: `blur(${(7 * k).toFixed(2)}px) brightness(${(1 - dim * k).toFixed(3)})`}}>{hud}</div> : hud}
       {c.callout && fit && <Callout def={c.callout} sec={sec} age={f / fps} fit={fit} />}
       {c.intro === "end" && <EndSummary age={holdT ?? 0} W={width} H={height} />}
     </AbsoluteFill>

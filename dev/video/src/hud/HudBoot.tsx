@@ -1,14 +1,13 @@
-import {BANNER_FROM, BANNER_TO, BOOT_SEC, CHECK_SEC, LIST_END, PANEL_FROM, scanY} from "../lib/boot.ts";
+import {BANNER_FROM, BANNER_TO, BOOT_SEC, CHECK_SEC, HEAD_AT, LIST_END, ROW_AT, ROW_CHECK, ROW_GAP, WORLD_SEC, scanY} from "../lib/boot.ts";
 import {IconCheck} from "./icons.tsx";
 import {C, FONT, easeOut, rnd} from "./theme.ts";
 
 // HUD 켜짐(boot 0~1 · BOOT_SEC 초) — 시간표 = lib/boot
-//   0~0.8초 화면 잡음·줄무늬(시스템 가동 — 지지직은 여기만) · 모서리 테두리
-//   0.15초~ 가운데 띠: 「비전 감시 시작」 → 점검 4줄이 차례로(확인 중 → 정상) — 글자는 차분하게 나타남
-//     (시안 1 피드백 「문구 효과로 지지직 … 너무 화려하고 과해」 → 옅게 밀려 들어옴 · 체크가 톡)
-//   LIST_END~ 띠가 내려가며 사라짐 → BANNER 「점검 완료 · 버튼 탐지를 시작합니다」 따로 → 정지 구간 스캔 선(위 → 아래 → 위)
+//   0~WORLD_SEC 가상 세계가 펼쳐짐(시안 3 피드백 「안경 프레임이 화면에서 사라진 직후 가상 세계가 펼쳐지는 연출 … 여기까지 인트로」):
+//     가운데 수평선이 번쩍 → 위아래로 눈꺼풀처럼 열리며 원근 격자 · 퍼지는 고리 · 반짝이는 점이 드러났다 걷힘 → 모서리 테두리
+//   HEAD_AT~ 가운데 띠: 「비전 감시 시작」 → 점검 4줄(확인 중 → 정상) — 글자는 차분하게(시안 1 피드백 「지지직 … 과해」)
+//   LIST_END~ 띠가 내려가며 사라짐 → BANNER 「점검 완료 · 버튼 탐지를 시작합니다」 → (단계 목록은 Hud) → 정지 구간 스캔 선(위 → 아래 → 위 한 번)
 const CHECKS = ["카메라 센서 상태", "비전 감지 모델 실행", "인터락 연결 점검", "작업 레시피 불러오기"];
-const HEAD_AT = 0.2, ROW_AT = 0.8, ROW_GAP = 0.65, ROW_CHECK = 0.45; // 시안 2 피드백 「천천히」
 const k01 = (x: number) => Math.max(0, Math.min(1, x));
 
 const Spinner: React.FC<{s: number}> = ({s}) => (
@@ -18,15 +17,69 @@ const Spinner: React.FC<{s: number}> = ({s}) => (
   </svg>
 );
 
+// 가상 세계 펼침 — s = 0~WORLD_SEC
+const World: React.FC<{s: number; W: number; H: number}> = ({s, W, H}) => {
+  if (s >= WORLD_SEC) return null;
+  const y0 = H * 0.52, cx = W / 2;
+  const line = easeOut(k01(s / 0.25));                       // 수평선이 가운데서 양옆으로
+  const open = easeOut(k01((s - 0.2) / 0.6));                // 눈꺼풀이 위아래로 열림
+  const top = y0 - open * (y0 + 20), bot = y0 + open * (H - y0 + 20);
+  const grid = k01((s - 0.25) / 0.3) * (1 - k01((s - 0.9) / 0.6)); // 격자 드러났다 걷힘
+  const ring = k01((s - 0.3) / 0.9);
+  const flash = s < 0.3 ? 0.5 * (1 - s / 0.3) : 0;
+  const vx = Array.from({length: 21}, (_, i) => i - 10);
+  const hy = Array.from({length: 9}, (_, k) => (k + 1) / 9);
+  return (
+    <svg style={{position: "absolute", inset: 0, width: "100%", height: "100%"}}>
+      <defs>
+        <clipPath id="world-open"><rect x={0} y={top} width={W} height={Math.max(0, bot - top)} /></clipPath>
+        <radialGradient id="world-glow" cx="50%" cy="52%" r="60%">
+          <stop offset="0" stopColor={C.info} stopOpacity={0.28} />
+          <stop offset="1" stopColor={C.info} stopOpacity={0} />
+        </radialGradient>
+      </defs>
+      <rect x={0} y={0} width={W} height={Math.max(0, top)} fill="#04070b" opacity={0.75 * (1 - open)} />
+      <rect x={0} y={bot} width={W} height={Math.max(0, H - bot)} fill="#04070b" opacity={0.75 * (1 - open)} />
+      <g clipPath="url(#world-open)" opacity={grid}>
+        <rect width={W} height={H} fill="url(#world-glow)" />
+        {vx.map((i) => (
+          <g key={i} stroke={C.info} strokeWidth={1.5} opacity={0.55}>
+            <line x1={cx + i * 30} y1={y0} x2={cx + i * 420} y2={H} />
+            <line x1={cx + i * 30} y1={y0} x2={cx + i * 420} y2={0} />
+          </g>
+        ))}
+        {hy.map((k, j) => {
+          const d = Math.pow(k, 2.2);
+          return (
+            <g key={j} stroke={C.info} strokeWidth={1.5} opacity={0.5}>
+              <line x1={0} y1={y0 + d * (H - y0)} x2={W} y2={y0 + d * (H - y0)} />
+              <line x1={0} y1={y0 - d * y0} x2={W} y2={y0 - d * y0} />
+            </g>
+          );
+        })}
+        {Array.from({length: 48}, (_, i) => {
+          const tw = k01((s - 0.4 - rnd(i) * 0.4) / 0.25) * (1 - k01((s - 1.0 - rnd(i + 99) * 0.3) / 0.3));
+          return <circle key={i} cx={rnd(i * 3 + 1) * W} cy={rnd(i * 7 + 2) * H} r={1.5 + rnd(i * 5) * 2.5} fill="#cfe6ff" opacity={tw * 0.9} />;
+        })}
+      </g>
+      {ring > 0 && ring < 1 && <circle cx={cx} cy={y0} r={60 + ring * W * 0.6} fill="none" stroke={C.info} strokeWidth={3 * (1 - ring) + 1} opacity={0.7 * (1 - ring)} />}
+      {open < 1 && (
+        <g stroke={C.info} strokeWidth={3} opacity={1 - open * 0.6}>
+          <line x1={cx - cx * line} y1={top} x2={cx + cx * line} y2={top} />
+          <line x1={cx - cx * line} y1={bot} x2={cx + cx * line} y2={bot} />
+        </g>
+      )}
+      {flash > 0 && <rect width={W} height={H} fill="#dfefff" opacity={flash} />}
+    </svg>
+  );
+};
+
 export const HudBoot: React.FC<{boot: number; W: number; H: number}> = ({boot, W, H}) => {
   if (boot >= 1) return null;
   const s = boot * BOOT_SEC;
-  const seed = Math.floor(s * 30);
-  const L = 160 * easeOut(s / 0.6);
+  const L = 160 * easeOut((s - 0.9) / 0.6);
   const y = scanY(s, H);
-  const noise = s < 0.8 ? (0.18 + 0.32 * rnd(seed)) * (1 - s / 0.8) : 0; // 지지직 — 가동 순간만
-  const bands = s < 0.75 ? [0, 1, 2, 3].map((i) => ({y: rnd(seed * 7 + i) * H, h: 2 + rnd(seed * 13 + i) * 14, o: 0.25 + 0.5 * rnd(seed * 3 + i)})) : [];
-  const frameOp = boot < PANEL_FROM ? 1 : Math.max(0, 1 - (boot - PANEL_FROM) / (1 - PANEL_FROM));
+  const frameOp = s < BOOT_SEC - 0.5 ? 1 : Math.max(0, (BOOT_SEC - s) / 0.5);
   const corner = (x: number, yy: number, sx: number, sy: number) => (
     <path d={`M ${x} ${yy + sy * L} L ${x} ${yy} L ${x + sx * L} ${yy}`} stroke={C.info} strokeWidth={4} fill="none" strokeLinecap="round" />
   );
@@ -36,19 +89,7 @@ export const HudBoot: React.FC<{boot: number; W: number; H: number}> = ({boot, W
   const banner = s >= BANNER_FROM && s < BANNER_TO ? Math.min(easeOut(k01((s - BANNER_FROM) / 0.2)), k01((BANNER_TO - s) / 0.25)) : 0;
   return (
     <>
-      {noise > 0 && (
-        <svg style={{position: "absolute", inset: 0, width: "100%", height: "100%", opacity: noise, mixBlendMode: "screen"}}>
-          <filter id="boot-noise">
-            <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" seed={seed} />
-            <feColorMatrix type="saturate" values="0" />
-          </filter>
-          <rect width="100%" height="100%" filter="url(#boot-noise)" />
-        </svg>
-      )}
-      {s < 1.2 && (
-        <div style={{position: "absolute", inset: 0, opacity: 0.18 * (1 - s / 1.2),
-          backgroundImage: "repeating-linear-gradient(0deg, rgba(0,0,0,0.9) 0 2px, transparent 2px 4px)"}} />
-      )}
+      <World s={s} W={W} H={H} />
       <svg style={{position: "absolute", inset: 0, width: "100%", height: "100%"}}>
         <defs>
           <linearGradient id="scan-dn" x1="0" y1="0" x2="0" y2="1">
@@ -56,8 +97,7 @@ export const HudBoot: React.FC<{boot: number; W: number; H: number}> = ({boot, W
             <stop offset="1" stopColor={C.info} stopOpacity="0.4" />
           </linearGradient>
         </defs>
-        {bands.map((b, i) => <rect key={i} x={0} y={b.y} width={W} height={b.h} fill={C.info} opacity={b.o * 0.5} />)}
-        <g opacity={frameOp}>{corner(24, 24, 1, 1)}{corner(W - 24, 24, -1, 1)}{corner(24, H - 24, 1, -1)}{corner(W - 24, H - 24, -1, -1)}</g>
+        {L > 0 && <g opacity={frameOp}>{corner(24, 24, 1, 1)}{corner(W - 24, 24, -1, 1)}{corner(24, H - 24, 1, -1)}{corner(W - 24, H - 24, -1, -1)}</g>}
         {y !== null && <rect x={0} y={y - 110} width={W} height={110} fill="url(#scan-dn)" />}
         {y !== null && <rect x={0} y={y - 2} width={W} height={4} fill={C.info} />}
       </svg>
