@@ -81,3 +81,16 @@ test("단계 완료 — 마지막으로 끝난 단계와 그 시각(lastDone)", 
   assert.equal(stateAt(evs, R1, d.t - 1).lastDone, null);
   assert.deepEqual(stateAt(evs, R1, d.t + 100).lastDone, {button: "B1", order: 1, t: d.t});
 });
+test("음성 — 호출 → 듣는 중 → 질문 → 「확인해 보겠습니다」(답 전 재생) · LLM 생각 중(질문~답) → 답", () => {
+  const V = (t: number, kind: string, d: Record<string, unknown> = {}): Ev => ({t, kind, d, src: "voice"});
+  const ev = [V(1000, "wake"), V(2500, "stt", {text: "다음 단계 뭐야?"}), V(2700, "play_start"), V(3600, "play_end", {what: "완료"}),
+    V(2650, "card", {lines: ["[사실]", "지금 할 일: 기다린다"]}), V(6000, "answer", {text: "기다리세요."}), V(6100, "play_start"), V(8000, "play_end", {what: "완료"})]
+    .sort((a, b) => a.t - b.t);
+  const v = (t: number) => stateAt(ev, 0, t).voice;
+  assert.deepEqual([v(1500).called, v(1500).listening, v(1500).question], [true, true, null]);
+  assert.deepEqual([v(2600).question, v(2600).thinking, v(2600).thinkingSince, v(2600).ack], ["다음 단계 뭐야?", true, 2500, false]);
+  assert.deepEqual([v(3000).ack, v(3000).thinking], [true, true]);
+  assert.deepEqual(v(3000).card, ["[사실]", "지금 할 일: 기다린다"]);
+  assert.deepEqual([v(6200).answer, v(6200).thinking, v(6200).ack], ["기다리세요.", false, true]);
+  assert.deepEqual([v(11000).called, v(11000).question, v(11000).card], [false, null, null]);
+});

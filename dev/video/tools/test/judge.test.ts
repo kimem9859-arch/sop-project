@@ -12,11 +12,23 @@ test("머묾 타이머 — 시작 전엔 없음 · 시작~경고 사이 비율 �
   const m = dwellAt(R.events, R.runStart, 7280)!;
   assert.equal(m.button, "B3");
   assert.ok(Math.abs(m.progress - 0.5) < 1e-9);
-  assert.equal(m.warned, false);
-  assert.deepEqual([dwellAt(R.events, R.runStart, 7900)?.progress, dwellAt(R.events, R.runStart, 7900)?.warned], [1, true]);
+  assert.deepEqual([m.kind, m.done], ["warn", false]);
+  assert.deepEqual([dwellAt(R.events, R.runStart, 7900)?.progress, dwellAt(R.events, R.runStart, 7900)?.done], [1, true]);
   assert.equal(dwellAt(R.events, R.runStart, 8500), null);
 });
 test("머문 시작 기록이 없는 경고는 타이머를 그리지 않는다", () => {
   const X = stagedRun(3, [], {first: "B1", extra: [{t: 7.43, kind: "state", d: {old: "MONITOR", new: "WARNING", expected: "B1", dwell_roi: "B3"}}]});
   assert.equal(dwellAt(X.events, X.runStart, 7300), null);
+});
+test("스침 — 0.3초 안에 떠난 기록(경고 아님)은 떠난 순간에 멈춘 타이머 · 1초 뒤 사라짐", () => {
+  const G = stagedRun(3, [], {first: "B1", extra: [
+    {t: 6.27, kind: "state", d: {old: "MONITOR", new: "PROCESS_RUN", expected: "B1", dwell_roi: "B4", dwell_start_ms: 6150}},
+  ]});
+  const a = dwellAt(G.events, G.runStart, 6200)!;
+  assert.deepEqual([a.kind, a.button, a.done], ["graze", "B4", false]);
+  assert.ok(Math.abs(a.progress - 50 / 300) < 1e-9);
+  const b = dwellAt(G.events, G.runStart, 6800)!;
+  assert.deepEqual([b.kind, b.done], ["graze", true]);
+  assert.ok(Math.abs(b.progress - 120 / 300) < 1e-9);
+  assert.equal(dwellAt(G.events, G.runStart, 7300), null);
 });

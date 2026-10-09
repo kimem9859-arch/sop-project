@@ -4,7 +4,10 @@ export type SubView = {button: string; label: string; progress: number; since: n
 // since = 단계(찾는 중·확인 중·쥠·다른 공구)가 바뀐 기록 시각 · checks = 연속 확인 수(쥠 = confirm 3번)
 export type ToolView = {phase: string; want: string; wrong: string | null; since: number; checks: number};
 export type AlertView = {kind: "warning" | "block"; expected: string; button: string | null; since: number};
-export type VoiceView = {listening: boolean; question: string | null; answer: string | null; speaking: boolean; alert: string | null};
+// called = 호출어(「가디언」)를 들음 · ack = 질문 뒤 답 전에 재생한 소리(「확인해 보겠습니다」 · 실제 시스템은 LLM 과 겹쳐 튼다)
+// thinking = 질문~답 사이(LLM 생각 중) · card = LLM 에 붙인 사실 카드 줄(시안의 연출 기록에만 있음 — 실제 기록엔 없다)
+export type VoiceView = {listening: boolean; question: string | null; answer: string | null; speaking: boolean; alert: string | null;
+  called: boolean; ack: boolean; thinking: boolean; thinkingSince: number | null; card: string[] | null};
 export type PressView = {button: string; t: number; ok: boolean};
 export type UiState = {
   state: string; expected: string | null; done: string[]; sub: SubView | null; tool: ToolView | null;
@@ -38,7 +41,8 @@ const pausedUntil = (paused: [number, number][], t: number) =>
 export function stateAt(evs: Ev[], runStart: number, t: number): UiState {
   const s: UiState = {
     state: "IDLE", expected: null, done: [], sub: null, tool: null, alert: null,
-    voice: {listening: false, question: null, answer: null, speaking: false, alert: null}, lastPress: null, lastDone: null,
+    voice: {listening: false, question: null, answer: null, speaking: false, alert: null,
+      called: false, ack: false, thinking: false, thinkingSince: null, card: null}, lastPress: null, lastDone: null,
   };
   let subStart: Ev | null = null;
   let answeredAt: number | null = null;
@@ -83,17 +87,25 @@ export function stateAt(evs: Ev[], runStart: number, t: number): UiState {
         s.alert = null;
         break;
       case "wake":
-        s.voice.listening = true; s.voice.question = null; s.voice.answer = null; answeredAt = null;
+        s.voice = {...s.voice, listening: true, called: true, question: null, answer: null, ack: false, thinking: false, thinkingSince: null, card: null};
+        answeredAt = null;
         break;
       case "stt":
-        if (s.voice.listening && d.text) { s.voice.question = d.text; s.voice.listening = false; }
+        if (s.voice.listening && d.text) {
+          s.voice.question = d.text; s.voice.listening = false; s.voice.thinking = true; s.voice.thinkingSince = e.t;
+        }
+        break;
+      case "card":
+        s.voice.card = Array.isArray(d.lines) ? d.lines : null;
         break;
       case "answer":
         s.voice.answer = typeof d.text === "string" && d.text ? d.text : null;
+        s.voice.thinking = false;
         answeredAt = e.t;
         break;
       case "play_start":
         s.voice.speaking = true;
+        if (s.voice.question && answeredAt === null) s.voice.ack = true;
         break;
       case "play_end":
         s.voice.speaking = false; lastPlayEnd = e.t;
@@ -116,8 +128,7 @@ export function stateAt(evs: Ev[], runStart: number, t: number): UiState {
     s.sub.totalMs = total;
   }
   if (answeredAt !== null && !s.voice.speaking && lastPlayEnd > answeredAt && t - lastPlayEnd > BUBBLE_HOLD_MS) {
-    s.voice.question = null;
-    s.voice.answer = null;
+    s.voice = {...s.voice, question: null, answer: null, called: false, ack: false, thinking: false, thinkingSince: null, card: null};
   }
   return s;
 }

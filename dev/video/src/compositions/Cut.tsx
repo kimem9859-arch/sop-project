@@ -2,40 +2,46 @@ import {AbsoluteFill, Freeze, OffthreadVideo, Sequence, staticFile, useCurrentFr
 import {BOOT_SEC} from "../lib/boot.ts";
 import {detAt, firstHandAt, fitRect, lastBox, type Dets} from "../lib/dets.ts";
 import {place, srcSec, totalFrames, type Clip, type Placed} from "../lib/edit.ts";
-import type {Ev} from "../lib/timeline.ts";
 import {dwellAt} from "../lib/judge.ts";
+import {holeMask, holesFor} from "../lib/mask.ts";
+import type {Ev} from "../lib/timeline.ts";
 import {stagedRun, type StagedEv, type StagedPress} from "../lib/staged.ts";
 import {stateAt} from "../lib/uiState.ts";
-import {CH_SEC, ChapterTitle} from "../hud/ChapterTitle.tsx";
+import {Callout} from "../hud/Callout.tsx";
+import {Breadcrumb, CH_SEC, ChapterTitle, SEC_SEC, SectionTitle} from "../hud/ChapterTitle.tsx";
 import {EndSummary} from "../hud/EndSummary.tsx";
 import {Hud} from "../hud/Hud.tsx";
 import {SKELETON} from "../edits/skeleton.ts";
 import {PRETEST, PRETEST_STAGED, PRETEST_SYNTH} from "../edits/pretest.ts";
 import {FEATURE, FEATURE_STAGED, FEATURE_SYNTH} from "../edits/feature.ts";
 
-// 촬영마다 — 검출 · 기록 시간표 · 시각 맞춤(영상 0초의 기록 시각) · 손 첫 등장(본편 첫 오버레이 구간 뒤)
-// handIntro = 편집표의 손 탐지 정지 구간 원본 초(있으면 그 전엔 손 뼈대를 숨기고 그때 연출 — 10/9 초안 피드백 「2~3초 여유」)
-type TakeData = {dets: Dets; tl: {runStart: number; events: Ev[]}; offsetMs: number; firstHand: number | null; handIntro: number | null};
+// 자료 묶음마다(촬영 · 연출 기록 갈래 run) — 검출 · 기록 시간표 · 시각 맞춤(영상 0초의 기록 시각) · 손 첫 등장
+// handIntro · toolIntro = 편집표의 손 · 공구 탐지 정지 구간 원본 초(있으면 그 전엔 숨기고 그때 연출 · -1 = 다른 촬영에서 이미 함)
+type TakeData = {dets: Dets; tl: {runStart: number; events: Ev[]}; offsetMs: number; firstHand: number | null;
+  handIntro: number | null; toolIntro: number | null};
 const EDITS: Record<string, Clip[]> = {skeleton: SKELETON, pretest: PRETEST, feature: FEATURE};
-// 측정 기록 없이 찍은 촬영 = 연출 기록(lib/staged)으로 대신(편집 → 촬영) · 그 편집은 「합성」 표기도 바꿔 단다
+// 측정 기록 없이 찍은 촬영 = 연출 기록(lib/staged)으로 대신(편집 → 자료 묶음) · 그 편집은 「합성」 표기도 바꿔 단다
 export type Staged = {start: number; presses: StagedPress[]; first?: string; extra?: StagedEv[]};
 const STAGED: Record<string, Record<string, Staged>> = {pretest: PRETEST_STAGED, feature: FEATURE_STAGED};
 const SYNTH: Record<string, string> = {pretest: PRETEST_SYNTH, feature: FEATURE_SYNTH};
 export type CutProps = {edit: string; data: Record<string, TakeData> | null};
+const keyOf = (c: Clip) => (c.run ? `${c.take}#${c.run}` : c.take);
 
 export const calcCut: CalculateMetadataFunction<CutProps> = async ({props}) => {
   const clips = EDITS[props.edit];
   const data: Record<string, TakeData> = {};
-  for (const take of new Set(clips.filter((c) => c.overlay).map((c) => c.take))) {
+  const introAt = (take: string, kind: Clip["intro"]) => {
+    const own = clips.find((c) => c.take === take && c.intro === kind);
+    return own ? own.from : clips.some((c) => c.intro === kind) ? -1 : null;
+  };
+  for (const key of new Set(clips.filter((c) => c.overlay).map(keyOf))) {
+    const take = key.split("#")[0];
     const j = (f: string) => fetch(staticFile(`footage/${take}/${f}`)).then((r) => r.json());
-    const st = STAGED[props.edit]?.[take];
+    const st = STAGED[props.edit]?.[key];
     const [dets, tl, sy] = st ? [await j("dets.json"), stagedRun(st.start, st.presses, {first: st.first, extra: st.extra}), {offsetMs: 0}]
       : await Promise.all([j("dets.json"), j("timeline.json"), j("sync.json")]);
-    const from = Math.min(...clips.filter((c) => c.overlay && c.take === take).map((c) => c.from));
-    const hi = clips.find((c) => c.take === take && c.intro === "hand");
-    // 다른 촬영에서 손 연출을 이미 했으면 이 촬영은 처음부터 다 그려진 뼈대(-1 = 늘 지난 뒤)
-    const handIntro = hi ? hi.from : clips.some((c) => c.intro === "hand") ? -1 : null;
-    data[take] = {dets, tl, offsetMs: sy.offsetMs, firstHand: firstHandAt(dets, from), handIntro};
+    const from = Math.min(...clips.filter((c) => c.overlay && keyOf(c) === key).map((c) => c.from));
+    data[key] = {dets, tl, offsetMs: sy.offsetMs, firstHand: firstHandAt(dets, from), handIntro: introAt(take, "hand"), toolIntro: introAt(take, "tool")};
   }
   return {props: {...props, data}, durationInFrames: totalFrames(place(clips, 30))};
 };
@@ -49,10 +55,13 @@ const ClipView: React.FC<{p: Placed; d: TakeData | undefined; bootStart: number 
   const sec = srcSec(c, f, fps);
   const holdT = c.hold !== undefined ? f / fps : null;  // 정지 구간 안 경과 초(연출 시계)
   const fadeIn = Math.min(1, f / 10), fadeOut = Math.min(1, (p.frames - f) / 10);
+  const fit = d ? fitRect(d.dets.w, d.dets.h, width, height) : null;
   let hud = null;
-  if (c.overlay && d && c.intro !== "end") {
+  let view = d ? detAt(d.dets, sec) : null;
+  if (c.overlay && d && view && fit && c.intro !== "end") {
+    // 공구는 공구 탐지 연출 전에는 숨긴다(손과 같게 · 시안 1 피드백 「바로 공구가 나타나면 실행하지 말고 약간의 지연」)
+    if (d.toolIntro !== null && d.toolIntro >= 0 && c.intro !== "tool" && sec < d.toolIntro) view = {...view, tool: []};
     const tMs = d.offsetMs + sec * 1000;
-    const view = detAt(d.dets, sec);
     const boot = bootStart === null ? 1 : Math.max(0, Math.min(1, (p.start + f - bootStart) / (BOOT_SEC * fps)));
     // 손 탐지 연출 — 편집표에 손 정지 구간이 있으면 그 구간에서만(그 전엔 숨김) · 없으면 본편 첫 등장 한 번(G3)
     const handAge = !view.hand ? null
@@ -61,34 +70,57 @@ const ClipView: React.FC<{p: Placed; d: TakeData | undefined; bootStart: number 
     const ui = stateAt(d.tl.events, d.tl.runStart, tMs);
     const lp = ui.lastPress && tMs - ui.lastPress.t < 1000 ? ui.lastPress.button : null;
     const pressAt = lp && !view.btn.some((b) => b[0] === lp) ? lastBox(d.dets, sec, lp, 1) : null;
-    hud = <Hud ui={ui} pressAt={pressAt} dwell={dwellAt(d.tl.events, d.tl.runStart, tMs)} view={view} fit={fitRect(d.dets.w, d.dets.h, width, height)}
+    hud = <Hud ui={ui} pressAt={pressAt} dwell={dwellAt(d.tl.events, d.tl.runStart, tMs)} view={view} fit={fit}
       t={(p.start + f) / fps} tMs={tMs} boot={boot} handAge={handAge} W={width} H={height} caption={c.caption}
-      captionOpacity={Math.min(fadeIn, fadeOut)} badge={c.badge} synth={synth} />;
+      captionOpacity={Math.min(fadeIn, fadeOut)} badge={c.badge} synth={synth}
+      toolIntro={c.intro === "tool" ? holdT : null} overlap={c.intro === "overlap" ? holdT : null} frozen={c.hold !== undefined} />;
   }
-  // 탐지 연출 동안 화면을 멈추고 배경을 흐리고 어둡게(10/9 초안 피드백) — 들고 날 때 BLUR_RAMP 프레임에 걸쳐
-  const k = c.hold !== undefined ? Math.min(1, f / BLUR_RAMP, (p.frames - f) / BLUR_RAMP) : 0;
-  const video = (
-    <OffthreadVideo src={staticFile(`footage/${c.take}/${c.file}`)} trimBefore={Math.round(c.from * fps)}
-      playbackRate={c.speed} muted={c.speed !== 1 || c.hold !== undefined}
-      style={{width: "100%", height: "100%", objectFit: "contain", filter: k > 0 ? `blur(${(7 * k).toFixed(2)}px) brightness(${(1 - 0.5 * k).toFixed(3)})` : undefined}} />
+  // 탐지 연출 동안 화면을 멈추고 배경을 흐리고 어둡게(10/9 초안 피드백) — 주인공(버튼 · 손 · 공구)은 선명하게 남긴다(시안 1 피드백)
+  //   = 흐린 바탕 + 같은 정지 화면을 주인공 자리만 보이게 한 겹 더 · 들고 날 때 BLUR_RAMP 프레임에 걸쳐 · intro 없는 정지 = 그냥 멈춤
+  const k = c.hold !== undefined && c.intro ? Math.min(1, f / BLUR_RAMP, (p.frames - f) / BLUR_RAMP) : 0;
+  const src = staticFile(`footage/${c.take}/${c.file}`);
+  const vid = (style: React.CSSProperties) => (
+    <OffthreadVideo src={src} trimBefore={Math.round(c.from * fps)} playbackRate={c.speed} muted={c.speed !== 1 || c.hold !== undefined}
+      style={{position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "contain", ...style}} />
+  );
+  const holes = k > 0 && view && fit ? holesFor(c.intro, view, fit) : [];
+  const mask = holes.length ? holeMask(holes, width, height) : null;
+  const portrait = d ? d.dets.h > d.dets.w : false;   // 세로 촬영 = 양옆을 같은 화면의 흐린 확대로 채움
+  const layers = (
+    <>
+      {portrait && vid({objectFit: "cover", filter: "blur(28px) brightness(0.45)"})}
+      {vid({filter: k > 0 ? `blur(${(7 * k).toFixed(2)}px) brightness(${(1 - 0.5 * k).toFixed(3)})` : undefined})}
+      {mask && vid({maskImage: `url("${mask}")`, WebkitMaskImage: `url("${mask}")`, maskSize: "100% 100%", WebkitMaskSize: "100% 100%"})}
+    </>
   );
   return (
     <AbsoluteFill style={{background: "#000"}}>
-      {c.hold !== undefined ? <Freeze frame={0}>{video}</Freeze> : video}
+      {c.hold !== undefined ? <Freeze frame={0}>{layers}</Freeze> : layers}
       {hud}
+      {c.callout && fit && <Callout def={c.callout} sec={sec} age={f / fps} fit={fit} />}
       {c.intro === "end" && <EndSummary age={holdT ?? 0} W={width} H={height} />}
     </AbsoluteFill>
   );
 };
 
-// 장 제목 — 가장 최근에 시작한 장을 CH_SEC 동안(구간 경계를 넘어 이어진다)
+// 장 · 절 제목 + 길잡이 — 장이 시작하면 장 제목(첫 절 이름 포함) · 같은 장의 다음 절부터는 절 제목 · 길잡이는 늘
 const Chapters: React.FC<{ps: Placed[]}> = ({ps}) => {
   const f = useCurrentFrame();
   const {fps, height} = useVideoConfig();
-  const cur = ps.filter((p) => p.clip.chapter && p.start <= f).pop();
-  if (!cur?.clip.chapter) return null;
-  const age = (f - cur.start) / fps;
-  return age < CH_SEC ? <ChapterTitle ch={cur.clip.chapter} age={age} H={height} /> : null;
+  const ch = ps.filter((p) => p.clip.chapter && p.start <= f).pop();
+  const sc = ps.filter((p) => p.clip.section && p.start <= f).pop();
+  if (!ch?.clip.chapter) return null;
+  const sec = sc && sc.start >= ch.start ? sc : null;
+  const chAge = (f - ch.start) / fps;
+  const secAge = sec ? (f - sec.start) / fps : Infinity;
+  const sameStart = sec !== null && sec.start === ch.start;
+  return (
+    <>
+      {chAge < CH_SEC && <ChapterTitle ch={ch.clip.chapter} sec={sameStart ? sec!.clip.section! : null} age={chAge} H={height} />}
+      {sec && !sameStart && secAge < SEC_SEC && <SectionTitle sec={sec.clip.section!} age={secAge} H={height} />}
+      <Breadcrumb ch={ch.clip.chapter} sec={sec?.clip.section ?? null} />
+    </>
+  );
 };
 
 export const Cut: React.FC<CutProps> = ({edit, data}) => {
@@ -99,7 +131,7 @@ export const Cut: React.FC<CutProps> = ({edit, data}) => {
     <AbsoluteFill>
       {ps.map((p, i) => (
         <Sequence key={i} from={p.start} durationInFrames={p.frames}>
-          <ClipView p={p} d={data[p.clip.take]} bootStart={bootStart} synth={SYNTH[edit]} />
+          <ClipView p={p} d={data[keyOf(p.clip)]} bootStart={bootStart} synth={SYNTH[edit]} />
         </Sequence>
       ))}
       <Chapters ps={ps} />
