@@ -113,7 +113,7 @@ const TOOL_AT = 25.4, TOOL_HOLD = 1.5, OVERLAP_AT = 25.45, OVERLAP_HOLD = 1.8; /
 const WRONG_TOOL_HOLD = 1.1;               // 다른 공구 = 두 번째로 보는 공구 탐지라 짧게(박스 강조 1.0초)
 const CH = 1.8, SC = 1.3, SLOW = 0.4, LAMP_SLOW = 0.5, GRAZE_SLOW = 0.25, DWELL_HOLD = 1.5, WRONG_HOLD = 2.0;
 // 음성 알림(시안 14 — 경고 · 차단도 같은 합성기로) — 효과음이 끝난 뒤 말하고, 말이 끝나면 다음 장면(시안 3 피드백 「음성 알림이 끝나면 다음 영상」)
-const WARN_VOICE = 0.45, BLOCK_VOICE = 0.55;                          // 경고음(0.4초) · 경보음(차단 뒤 0.63초) 뒤
+const WARN_VOICE = 0.5, BLOCK_VOICE = 0.75;                           // 경고음(0.46초) · 경보음(0.85초 — 정지 구간 시작 0.125초 전에 시작) 뒤(시안 15 부드러운 소리 길이)
 const WARN_HOLD = TTS_SEC.warn - ((7.6 - 7.13) / SLOW - WARN_VOICE) + 0.3;   // 경고 구간(0.4×)이 끝난 뒤 말이 남은 만큼 + 0.3초
 const BLOCK_HOLD = BLOCK_VOICE + TTS_SEC.block + 0.3;
 // 제목 카드 = 다음 장면 첫 화면을 멈추고 어둡게 한 위에(card · HUD 도 함께 흐리게) — 장 · 절 따로
