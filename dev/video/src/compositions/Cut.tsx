@@ -56,7 +56,6 @@ const BLURS = new Set(["buttons", "hand", "tool", "overlap"]); // 흐림 · 어�
 // 테크 효과(시안 8 「테크적이고 화려하게」) — 차단 순간 = 흔들림 · 붉은 번쩍임 · 색 번짐 · 살짝 당겨짐 · 장 전환 = 색 번짐 + 픽셀 조각
 //   시안 9 「장 전환 효과가 너무 강한 것 같아」 → 0.3초 · 색 번짐 5 px(PixelBurst 도 옅게)
 const IMPACT = 0.35, TRAIL_SEC = 0.3, BURST = 0.3, BURST_CA = 5;
-const SFX_GAIN = 0.5;   // 효과음 전체 음량(TTS 는 그대로) — 시안 15 「화면이 강렬해서 효과음은 낮고 연하게」 · 약 -6 dB
 const PANEL = {x: 40, y: 40, w: 440, h: 360};   // 왼쪽 위 단계 목록(확대 창이 피할 자리)
 
 // boot0 = 이 구간 시작의 켜짐 초와 흐름 여부(lib/edit bootTimes — 제목 카드 동안 멈춤) · null = 켜짐 전
@@ -199,9 +198,7 @@ export const Cut: React.FC<CutProps> = ({edit, data}) => {
       {cue && <Caption text={cue.text} opacity={Math.min(1, (f - cue.start) / 8, (cue.end - f) / 8)} />}
       {/* 소리 — 효과음 · TTS(lib/edit sfxTrack · public/audio · 시안 14) */}
       {sfxTrack(ps, fps).map((s, i) => (
-        <Sequence key={`sfx${i}`} from={s.frame} layout="none">
-          <Html5Audio src={staticFile(`audio/${s.name}.wav`)} volume={s.name.startsWith("sfx_") ? s.volume * SFX_GAIN : s.volume} />
-        </Sequence>
+        <Sequence key={`sfx${i}`} from={s.frame} layout="none"><Html5Audio src={staticFile(`audio/${s.name}.wav`)} volume={s.volume} /></Sequence>
       ))}
       <Chapters ps={ps} />
       {edit === "skeleton" && (

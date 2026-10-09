@@ -113,7 +113,7 @@ const TOOL_AT = 25.4, TOOL_HOLD = 1.5, OVERLAP_AT = 25.45, OVERLAP_HOLD = 1.8; /
 const WRONG_TOOL_HOLD = 1.1;               // 다른 공구 = 두 번째로 보는 공구 탐지라 짧게(박스 강조 1.0초)
 const CH = 1.8, SC = 1.3, SLOW = 0.4, LAMP_SLOW = 0.5, GRAZE_SLOW = 0.25, DWELL_HOLD = 1.5, WRONG_HOLD = 2.0;
 // 음성 알림(시안 14 — 경고 · 차단도 같은 합성기로) — 효과음이 끝난 뒤 말하고, 말이 끝나면 다음 장면(시안 3 피드백 「음성 알림이 끝나면 다음 영상」)
-const WARN_VOICE = 0.5, BLOCK_VOICE = 0.75;                           // 경고음(0.46초) · 경보음(0.85초 — 정지 구간 시작 0.125초 전에 시작) 뒤(시안 15 부드러운 소리 길이)
+const WARN_VOICE = 0.45, BLOCK_VOICE = 0.55;                          // 경고음(0.4초) · 경보음(차단 뒤 0.63초) 뒤
 const WARN_HOLD = TTS_SEC.warn - ((7.6 - 7.13) / SLOW - WARN_VOICE) + 0.3;   // 경고 구간(0.4×)이 끝난 뒤 말이 남은 만큼 + 0.3초
 const BLOCK_HOLD = BLOCK_VOICE + TTS_SEC.block + 0.3;
 // 제목 카드 = 다음 장면 첫 화면을 멈추고 어둡게 한 위에(card · HUD 도 함께 흐리게) — 장 · 절 따로
@@ -202,14 +202,14 @@ export const FEATURE: Clip[] = [
   {take: B34, run: "warn", file: "proxy.mp4", from: 6.8, to: 7.13, speed: SLOW, overlay: true, badge: "0.4×", tip: true, caption: SUB.warn},
   {...hold(B34, 7.13, DWELL_HOLD, {intro: "dwell", tip: true, caption: SUB.warn, sfx: [[0, "sfx_scan", 0.2]]}), run: "warn"},   // 손가락이 B3 에 닿은 순간 멈춤 · 0.3초 타이머가 차는 동안
   {take: B34, run: "warn", file: "proxy.mp4", from: 7.13, to: 7.6, speed: SLOW, overlay: true, badge: "0.4×", tip: true, caption: SUB.warn,
-    sfx: [[at(7.135, 7.13, SLOW), "sfx_warn", 0.3], [WARN_VOICE, "tts_warn"]]},   // 경고 7.135 → 경고음 → 음성 알림 · 손이 움직임
+    sfx: [[at(7.135, 7.13, SLOW), "sfx_warn", 0.45], [WARN_VOICE, "tts_warn"]]},   // 경고 7.135 → 경고음 → 음성 알림 · 손이 움직임
   {...hold(B34, 7.6, WARN_HOLD, {tip: true, caption: SUB.warn}), run: "warn"},     // 음성 알림이 끝날 때까지 정지(경고 연출은 이어 감)
   scCard(B34, 7.3, {no: "3", title: "차단", desc: "오답 버튼을 누르면 입력을 막습니다"}, "block"),
   {take: B34, run: "block", file: "proxy.mp4", from: 7.3, to: 8.05, speed: SLOW, overlay: true, badge: "0.4×", tip: true, caption: SUB.block, sfx: [[at(8.0, 7.3, SLOW), "sfx_alarm", 0.5]]},   // B3 옆 → B2 상자 7.88 → 누름 8.0
   {...hold(B34, 8.05, BLOCK_HOLD, {tip: true, caption: SUB.block, sfx: [[0.12, "sfx_lock", 0.5], [BLOCK_VOICE, "tts_block"]]}), run: "block"},
   // ↑ 차단 — 화면 멈춤 · 차단 그래픽 · 해제 버튼 · 자물쇠 찰칵 = 차단 뒤 0.24초(정지 구간 시작이 이미 차단 뒤 0.117초라 0.12) · 경보음 뒤 음성 알림 → 끝나면 다음
   scCard(BP, 70.0, {no: "4", title: "타워램프", desc: "경고와 차단을 램프로도 알립니다"}, "lamp"),
-  {take: BP, run: "lamp", file: "proxy.mp4", from: 70.0, to: 71.3, speed: LAMP_SLOW, overlay: true, badge: "0.5×", caption: SUB.lamp, sfx: [[0.96, "sfx_warn", 0.27]],   // 경고 70.47(화면 첫 프레임 = 0.96초 · 음성 알림은 구간이 짧아 뺌)
+  {take: BP, run: "lamp", file: "proxy.mp4", from: 70.0, to: 71.3, speed: LAMP_SLOW, overlay: true, badge: "0.5×", caption: SUB.lamp, sfx: [[0.96, "sfx_warn", 0.4]],   // 경고 70.47(화면 첫 프레임 = 0.96초 · 음성 알림은 구간이 짧아 뺌)
     callout: {label: "타워램프", lines: [{text: "경고 → 황색", color: "warn"}, {text: "차단 → 적색 + 부저", color: "danger"}], keys: LAMP}},
   // 03 음성 비서 — 원본 시간 순(공구 질문 = 2단계 → 단계 질문 = 3단계 · 단계 목록이 거꾸로 돌아가지 않게)
   //   시작 = 앞 누름 파동이 끝난 뒤(B2 20.52 · B3 37.95) · 영상 끝 = 3단계 완료 안내 뒤 2초 여유(시안 3 피드백)
