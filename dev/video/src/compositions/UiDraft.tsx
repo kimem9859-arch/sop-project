@@ -3,7 +3,7 @@ import {detAt, firstHandAt, fitRect, type Dets} from "../lib/dets.ts";
 import type {Ev} from "../lib/timeline.ts";
 import {stateAt} from "../lib/uiState.ts";
 import {Hud} from "../hud/Hud.tsx";
-import {BOOT_SEC} from "../hud/HudBoot.tsx";
+import {BOOT_SEC} from "../lib/boot.ts";
 
 // 🔴 시안 전용 — 바탕 영상(10/8 가로 흉내)과 상태(10/9 Task 9 시험 세션 기록)는 짝이 아니다 · 화면에 표기한다
 type TL = {runStart: number; events: Ev[]};

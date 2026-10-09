@@ -5,13 +5,13 @@ import {C, FONT, easeOut, rnd, type Fit} from "./theme.ts";
 const EDGES = [[0, 1], [1, 2], [2, 3], [3, 4], [0, 5], [5, 6], [6, 7], [7, 8], [5, 9], [9, 10], [10, 11], [11, 12],
   [9, 13], [13, 14], [14, 15], [15, 16], [13, 17], [17, 18], [18, 19], [19, 20], [0, 17]];
 const DEPTH = [0, 1, 2, 3, 4, 1, 2, 3, 4, 2, 3, 4, 5, 3, 4, 5, 6, 3, 4, 5, 6]; // 손목에서 마디 수(뻗기 연출)
-export const HAND = "#2fd3ff"; // 피부·검은 콘솔 위에서 잘 보이는 하늘색(G3 「흰색이라 잘 보이지 않아」)
-export const INTRO_SEC = 1.8;  // 첫 등장 연출 길이 — 이 뒤로는 다 그려진 뼈대만
+export const HAND = "#2bea74"; // 선명한 초록 — G3 「흰색이라 잘 보이지 않아」 → 「파랑 버튼 색과 비슷해서 초록색으로」
+export const INTRO_SEC = 1.3;  // 첫 등장 연출 길이 — 끝나면 꺾쇠·표시도 없어지고 뼈대만(G3 「연출이 끝나면 조준 꺾쇠도 없어지는 것으로」)
 
 // age = 본편에서 손이 처음 나타난 뒤 지난 초(firstHandAt) · INTRO_SEC 이 지나면(또는 첫 등장이 아니면 큰 값) 연출 없이 뼈대만
 // 첫 등장 연출(G3 「첫 등장에만」·「손 등장에도 시스템 가동 효과」) — 켜짐과 같은 결:
 //   0~0.35 꺾쇠 안 지지직 잡음·줄무늬 · 0~0.5 꺾쇠가 손으로 좁혀 옴 「손 인식」 · 0.1~0.55 스캔 선이 손을 훑음
-//   0.45~1.1 손목부터 뼈대가 뻗고 관절 점이 튀어나옴 · 0.55~ 「● 손 추적 시작」 · 1.2~1.8 꺾쇠가 사라짐
+//   0.45~1.1 손목부터 뼈대가 뻗고 관절 점이 튀어나옴 · 0.55~ 「● 손 추적 시작」 · 1.0~1.3 꺾쇠·표시가 사라짐
 // ring = 검지 끝(8) 고리 색(경고·차단 중엔 그 색)
 export const HandSkeleton: React.FC<{hand: Pt[] | null; fit: Fit; t: number; age: number | null; ring?: string}> =
   ({hand, fit, t, age, ring = C.current}) => {
@@ -27,7 +27,7 @@ export const HandSkeleton: React.FC<{hand: Pt[] | null; fit: Fit; t: number; age
     const k = 1.75 - 0.6 * easeOut(age / 0.5);
     const hw = ((Math.max(...xs) - Math.min(...xs)) / 2 + 24) * k, hh = ((Math.max(...ys) - Math.min(...ys)) / 2 + 24) * k;
     const bx = cx - hw, by = cy - hh, bw = hw * 2, bh = hh * 2;
-    const lockOp = age < 1.2 ? Math.min(1, age / 0.12) : Math.max(0, 1 - (age - 1.2) / 0.6);
+    const lockOp = age < 1.0 ? Math.min(1, age / 0.12) : Math.max(0, 1 - (age - 1.0) / 0.3);
     const L = Math.min(hw, hh) * 0.35;
     const corners = [[bx, by, 1, 1], [bx + bw, by, -1, 1], [bx, by + bh, 1, -1], [bx + bw, by + bh, -1, -1]];
     const seed = Math.floor(age * 60);

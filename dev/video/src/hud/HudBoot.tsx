@@ -1,12 +1,10 @@
+import {SCAN_FROM, SCAN_TO, scanY} from "../lib/boot.ts";
 import {C, FONT, easeOut, rnd} from "./theme.ts";
 
 // HUD 켜짐(boot 0~1 · BOOT_SEC 초) — 「시스템이 가동됐다」(G3 「배경이 지지직 거리는? 시스템이 가동 되었다는 효과」)
 //   0.00~0.32 잡음·주사선이 화면에 깜빡이며 흐름(지지직) · 모서리 테두리가 그려짐
 //   0.12~0.80 가운데 「SOP 가디언 · 비전 감시 시작」이 떴다 사라짐
-//   0.40~0.85 스캔 선이 위→아래(지나간 자리부터 버튼 박스) · 0.85~1 패널
-export const BOOT_SEC = 3;
-export const scanY = (boot: number, H: number) => easeOut((boot - 0.4) / 0.45) * H;
-
+//   SCAN_FROM~SCAN_TO 스캔 선이 위→아래(지나가는 버튼마다 탐지 연출 — ButtonBoxes) · 0.85~1 패널
 export const HudBoot: React.FC<{boot: number; W: number; H: number}> = ({boot, W, H}) => {
   if (boot >= 1) return null;
   const seed = Math.floor(boot * 90);
@@ -18,7 +16,7 @@ export const HudBoot: React.FC<{boot: number; W: number; H: number}> = ({boot, W
   const corner = (x: number, yy: number, sx: number, sy: number) => (
     <path d={`M ${x} ${yy + sy * L} L ${x} ${yy} L ${x + sx * L} ${yy}`} stroke={C.info} strokeWidth={4} fill="none" strokeLinecap="round" />
   );
-  const scanning = boot > 0.4 && boot < 0.86;
+  const scanning = boot > SCAN_FROM && boot < SCAN_TO + 0.02;
   return (
     <>
       {noise > 0 && (
