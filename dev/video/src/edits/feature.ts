@@ -1,8 +1,10 @@
-import {CHECK_SEC, SCAN_HOLD_SEC, WORLD_SEC} from "../lib/boot.ts";
+import {BANNER_FROM, BTN_ORDER, CHECK_SEC, ROW_AT, ROW_CHECK, ROW_GAP, SCAN_HOLD_SEC, WORLD_SEC, btnIntroAge} from "../lib/boot.ts";
 import type {Clip} from "../lib/edit.ts";
 import type {StagedEv, StagedPress} from "../lib/staged.ts";
+import {TTS_SEC} from "./ttsSec.ts";
 
-// 기능 소개 영상 시안 13(2026-10-10 · 사용자 「기존 자막을 제거하고 장면에 맞는 자막 · 문장 검토는 korean-skills」 → SUB 표 · 자막 트랙)
+// 기능 소개 영상 시안 14(2026-10-10 · 사용자 「공구 확대 창 제거 · 추천 효과음 · 음성비서 답변 TTS」 → 효과음 sfx · TTS = 실제 시스템 합성기)
+//   · 기능 소개 영상 시안 13(2026-10-10 · 사용자 「기존 자막을 제거하고 장면에 맞는 자막 · 문장 검토는 korean-skills」 → SUB 표 · 자막 트랙)
 //   · 기능 소개 영상 시안 12(2026-10-10 · 사용자 「실제 본 영상이 시작할 때 페이드인」 → 안경 장면 처음 0.5초 검은 화면에서 나타남)
 //   · 기능 소개 영상 시안 11(2026-10-10 · 사용자 「첨부 영상을 영상 맨 앞부분에 … 시간 상관 없이」 → 로고 인트로를 안경 장면 앞에 · 「뒷부분 2초만 잘라서」 = 0~8초 · 소리 그대로 · 끝 0.5초 검게)
 //   · 기능 소개 영상 시안 10(2026-10-10 · 시안 9 효과 검토 — 장 전환 약하게 · 화면 질감과 상시 테두리 뺌 · 사실 카드 빛줄기 + 암호 풀림 · 탐지 확대 창 더함)
@@ -27,16 +29,24 @@ const T_PRESSES: StagedPress[] = [
   {button: "B3", t: 36.95, sub: {label: "전극 온도 하강", sec: 10}},
   {button: "B4", t: 50.98},
 ];
-// 음성 질의 — 호출 → (sttGap) 질문 · 사실 카드 → 「확인해 보겠습니다」(LLM 과 겹쳐 재생) → 카드가 말풍선에 들어간 뒤(질문 + 4.2초) 답
-const ask = (wake: number, sttGap: number, q: string, card: string[], a: string, aEnd: number): StagedEv[] => [
+// 음성비서가 말하는 문장 — 화면 말풍선과 TTS 소리(tools/tts.py · 실제 시스템 합성기)가 같은 글을 쓴다(시안 14)
+export const TTS_LINES = {
+  ack: "확인해 보겠습니다.",
+  tool: "이 단계에는 렌치가 필요하니 렌치를 찾아 손으로 쥐세요.",
+  step: "지금은 전극 온도를 낮추는 중이니 끝날 때까지 기다리세요.",
+};
+// 음성 질의 — 호출 → (sttGap) 질문 · 사실 카드 → 「확인해 보겠습니다」(LLM 과 겹쳐 재생) → 카드가 말풍선에 들어간 뒤(질문 + 4.0초) 답
+//   말 끝 = 재생 시작 + TTS 길이(ttsSec.ts — tools/tts.py 가 wav 를 재서 쓴다 · 손으로 옮기지 않는다)
+export const ASK_ACK = 0.3, ASK_ANSWER = 4.0, ASK_PLAY = 4.1;   // 질문 뒤 「확인해 보겠습니다」 재생 · 답 · 답 재생
+const ask = (wake: number, sttGap: number, q: string, card: string[], key: "tool" | "step"): StagedEv[] => [
   {t: wake, kind: "wake", d: {}, src: V},
   {t: wake + sttGap, kind: "stt", d: {text: q}, src: V},
   {t: wake + sttGap + 0.05, kind: "card", d: {lines: card}, src: V},
-  {t: wake + sttGap + 0.3, kind: "play_start", d: {}, src: V},
-  {t: wake + sttGap + 1.4, kind: "play_end", d: {what: "완료"}, src: V},
-  {t: wake + sttGap + 4.2, kind: "answer", d: {src: "llm", text: a}, src: V},
-  {t: wake + sttGap + 4.3, kind: "play_start", d: {}, src: V},
-  {t: aEnd, kind: "play_end", d: {what: "완료"}, src: V},
+  {t: wake + sttGap + ASK_ACK, kind: "play_start", d: {}, src: V},
+  {t: wake + sttGap + ASK_ACK + TTS_SEC.ack, kind: "play_end", d: {what: "완료"}, src: V},
+  {t: wake + sttGap + ASK_ANSWER, kind: "answer", d: {src: "llm", text: TTS_LINES[key]}, src: V},
+  {t: wake + sttGap + ASK_PLAY, kind: "play_start", d: {}, src: V},
+  {t: wake + sttGap + ASK_PLAY + TTS_SEC[key], kind: "play_end", d: {what: "완료"}, src: V},
 ];
 const T_VOICE: StagedEv[] = [
   ...ask(20.7, 1.3, "지금 필요한 공구가 뭐야?", [
@@ -46,15 +56,15 @@ const T_VOICE: StagedEv[] = [
     "공구 상황: 렌치를 찾아야 한다",
     "카메라에 지금 보이는 공구: 없음 (보고 있지만 아무 공구도 안 보인다)",
     "이 시스템이 모르는 것: 가스·압력·온도 같은 장비 센서 값 · 다른 작업자",
-  ], "이 단계에는 렌치가 필요하니 렌치를 찾아 손으로 쥐세요.", 29.8),
-  ...ask(38.2, 1.2, "다음 단계 뭐야?", [
+  ], "tool"),
+  ...ask(38.2, 0.85, "다음 단계 뭐야?", [   // 질문 0.85초 — 답 TTS 가 3단계 완료(46.95) 전에 끝나게(시험 sound.test)
     "지금 할 일: 기다린다 — 약 8초 뒤 자동으로 4단계로 넘어간다",
     "현재 진행 중인 단계: 3단계 「전극 냉각」 — 아직 끝나지 않음 · 이 단계의 버튼: B3",
     "끝난 단계: 1단계 「클린·가스차단」 · 2단계 「펌프/퍼지」",
     "순서 판정: 정상 (경고·차단 없음)",
     "그 다음에 올 단계: 4단계 「챔버 벤트」 · 버튼 B4 (현재 단계가 끝난 뒤에만 누른다)",
     "이 시스템이 모르는 것: 가스·압력·온도 같은 장비 센서 값 · 다른 작업자",
-  ], "지금은 전극 온도를 낮추는 중이니 끝날 때까지 기다리세요.", 46.4),
+  ], "step"),
 ];
 // B34 — 차례 B1 · 스침(검지가 B4 상자에 6.17~6.24) · 경고(B3 상자 7.13~ — 화면을 멈추고 타이머를 채운 뒤 바로 경고) · 차단(B2 상자 7.88~ → 8.0 누름)
 const B_GRAZE: StagedEv[] = [
@@ -101,15 +111,19 @@ const BOOT_FROM = 3.24, BOOT_SPEED = BOOT_FROM / CHECK_SEC; // 가상 세계 + �
 const HAND_AT = 5.73, HAND_HOLD = 3.2;     // 손 첫 등장 3.23초 + 2.5초 여유 · 연출 3.0초 + 머묾
 const TOOL_AT = 25.4, TOOL_HOLD = 1.5, OVERLAP_AT = 25.45, OVERLAP_HOLD = 1.8; // 렌치 첫 등장 24.6초 + 0.8초 여유 · 겹침 = 훑는 선 왕복 1.6초
 const WRONG_TOOL_HOLD = 1.1;               // 다른 공구 = 두 번째로 보는 공구 탐지라 짧게(박스 강조 1.0초)
-const CH = 1.8, SC = 1.3, SLOW = 0.4, LAMP_SLOW = 0.5, GRAZE_SLOW = 0.25, DWELL_HOLD = 1.5, BLOCK_HOLD = 3.6, WRONG_HOLD = 2.0;
+const CH = 1.8, SC = 1.3, SLOW = 0.4, LAMP_SLOW = 0.5, GRAZE_SLOW = 0.25, DWELL_HOLD = 1.5, WRONG_HOLD = 2.0;
+// 음성 알림(시안 14 — 경고 · 차단도 같은 합성기로) — 효과음이 끝난 뒤 말하고, 말이 끝나면 다음 장면(시안 3 피드백 「음성 알림이 끝나면 다음 영상」)
+const WARN_VOICE = 0.45, BLOCK_VOICE = 0.55;                          // 경고음(0.4초) · 경보음(차단 뒤 0.63초) 뒤
+const WARN_HOLD = TTS_SEC.warn - ((7.6 - 7.13) / SLOW - WARN_VOICE) + 0.3;   // 경고 구간(0.4×)이 끝난 뒤 말이 남은 만큼 + 0.3초
+const BLOCK_HOLD = BLOCK_VOICE + TTS_SEC.block + 0.3;
 // 제목 카드 = 다음 장면 첫 화면을 멈추고 어둡게 한 위에(card · HUD 도 함께 흐리게) — 장 · 절 따로
 // tip = 검지 끝 빛 꼬리(02 판정 장면 — 실제 판정 기준 「검지 끝이 버튼 박스 안」 · 시안 8 「테크적이고 화려하게」 · 타워램프는 램프가 주인공이라 뺌)
 type Ch = NonNullable<Clip["chapter"]>;
 type Sc = NonNullable<Clip["section"]>;
 const chCard = (take: string, at: number, chapter: Ch, run?: string): Clip =>
-  ({take, run, file: "proxy.mp4", from: at, to: at, speed: 1, overlay: true, hold: CH, card: "chapter", chapter});
+  ({take, run, file: "proxy.mp4", from: at, to: at, speed: 1, overlay: true, hold: CH, card: "chapter", chapter, sfx: [[0, "sfx_whoosh", 0.5]]});
 const scCard = (take: string, at: number, section: Sc, run?: string): Clip =>
-  ({take, run, file: "proxy.mp4", from: at, to: at, speed: 1, overlay: true, hold: SC, card: "section", section});
+  ({take, run, file: "proxy.mp4", from: at, to: at, speed: 1, overlay: true, hold: SC, card: "section", section, sfx: [[0, "sfx_pop", 0.4]]});
 const hold = (take: string, at: number, sec: number, extra: Partial<Clip> = {}): Clip =>
   ({take, file: "proxy.mp4", from: at, to: at, speed: 1, overlay: true, hold: sec, ...extra});
 // 자막(시안 13 「기존 자막을 제거하고 장면에 맞는 자막」 · 문장 = korean-skills grammar-checker 검토) — 제목 카드와 겹치지 않게 그 장면에서 일어나는 일
@@ -135,6 +149,17 @@ const SUB = {
   rule: "판단은 코드가 하고, LLM은 그 결과를 말로 전합니다",
   next: "단계가 끝나면 다음에 누를 버튼을 안내합니다",
 };
+// 효과음(시안 14 「추천하는 효과음」 · tools/sfx.py 합성 — 파일은 모두 최고점 -1 dBFS · 크기는 여기 음량으로만) · TTS 는 음량 1
+//   [구간 안 화면 초, 이름, 음량] · 시각은 화면과 같은 상수 · 원본 사건 시각은 at(사건, 구간 시작, 배속)
+type Sfx = [number, string, number?][];
+const at = (src: number, from: number, speed: number) => (src - from) / speed;
+const SFX_BOOT: Sfx = [[0, "sfx_boot", 0.4], ...[0, 1, 2, 3].map((i): Sfx[number] => [ROW_AT + i * ROW_GAP + ROW_CHECK, "sfx_tick", 0.3]),
+  [BANNER_FROM, "sfx_ding", 0.3]];   // 가상 세계 → 점검 줄 「정상」 → 점검 완료
+const SFX_BUTTONS: Sfx = [[0.1, "sfx_scan", 0.18], ...BTN_ORDER.map((n): Sfx[number] => [-(btnIntroAge(n, CHECK_SEC) ?? 0), "sfx_blip", 0.35])];
+const SFX_FOUND: Sfx = [[0, "sfx_blip", 0.35]], SFX_CHECK: Sfx = [[0, "sfx_scan", 0.18]];   // 찾음 = 정지 첫 프레임(강조 연출과 같이)
+// 음성 질의 — 호출 띠링 · 「확인해 보겠습니다」 · 사실 카드 나타남(CARD_IN 0.6) · 말풍선에 들어감(CARD_LAND 3.7 — hud/VoiceBubbles) · 답(TTS)
+const sfxAsk = (wake: number, stt: number, key: "tool" | "step"): Sfx => [[wake, "sfx_chime", 0.5], [stt + ASK_ACK, "tts_ack"],
+  [stt + 0.6, "sfx_card", 0.3], [stt + 3.7, "sfx_pop", 0.3], [stt + ASK_PLAY, `tts_${key}`]];
 const C01 = {no: "01", title: "객체 탐지", desc: "카메라 한 대로 버튼 · 손 · 공구를 함께"};
 const C02 = {no: "02", title: "판정 기준", desc: "누르기 전에 경고하고, 누르면 막습니다"};
 const C03 = {no: "03", title: "음성 비서", desc: "「가디언」으로 부르고 말로 묻습니다"};
@@ -148,48 +173,52 @@ export const FEATURE: Clip[] = [
   // 인트로 — 안경 쓰기 → 테가 빠진 직후 가상 세계 펼침(시험 촬영에서는 한 장면으로 이어진다) → 비전 감시 시작 · 점검 완료 → 단계 목록 「작업 시작」
   {take: LOGO, file: "proxy.mp4", from: 0, to: 8, speed: 1, overlay: false, fadeOut: 0.5},    // 로고 인트로(뒤 2초 잘라 냄 · 사용자) → 검게 → 안경
   {take: G, file: "proxy.mp4", from: GLASSES_ON, to: GLASSES_OFF, speed: 1, overlay: false, fadeIn: 0.5, caption: SUB.glasses},   // 본 영상 = 검은 화면에서 나타남(사용자)
-  {take: T, file: "proxy.mp4", from: 0, to: BOOT_FROM, speed: BOOT_SPEED, overlay: true, boot: true, subs: [[WORLD_SEC, CHECK_SEC, SUB.boot]]},
+  {take: T, file: "proxy.mp4", from: 0, to: BOOT_FROM, speed: BOOT_SPEED, overlay: true, boot: true, subs: [[WORLD_SEC, CHECK_SEC, SUB.boot]], sfx: SFX_BOOT},
   // 01 객체 탐지
   chCard(T, BOOT_FROM, C01),
   scCard(T, BOOT_FROM, {no: "1", title: "버튼", desc: "콘솔 버튼 5개를 차례로 찾습니다"}),
-  hold(T, BOOT_FROM, SCAN_HOLD_SEC, {intro: "buttons", caption: SUB.buttons}),                       // 스캔 왕복 → 버튼 강조 B1 … EMO → 「감시 중」
+  hold(T, BOOT_FROM, SCAN_HOLD_SEC, {intro: "buttons", caption: SUB.buttons, sfx: SFX_BUTTONS}),                       // 스캔 왕복 → 버튼 강조 B1 … EMO → 「감시 중」
   {take: T, file: "proxy.mp4", from: BOOT_FROM, to: 4.0, speed: 1, overlay: true, caption: SUB.buttons},          // 「감시 중」으로 바뀐 것을 잠깐 보이고 손 절로
   scCard(T, HAND_AT, {no: "2", title: "손", desc: "손가락 끝까지 21점을 따라갑니다"}),
-  hold(T, HAND_AT, HAND_HOLD, {intro: "hand", caption: SUB.hand}),
+  hold(T, HAND_AT, HAND_HOLD, {intro: "hand", caption: SUB.hand, sfx: [[0.3, "sfx_scan", 0.18], [2.4, "sfx_blip", 0.35]]}),   // 스캔 · 「손 추적 시작」
   {take: T, file: "proxy.mp4", from: HAND_AT, to: 6.1, speed: 1, overlay: true, caption: SUB.hand},
   scCard(T, 19.3, {no: "3", title: "공구", desc: "필요한 공구를 쥐었는지 확인합니다"}),  // 19.3 = 1단계 완료 안내(~19.04)가 끝난 뒤
-  {take: T, file: "proxy.mp4", from: 19.3, to: 21.0, speed: 1, overlay: true, caption: SUB.reach},       // B2 누름 19.52 → 렌치 찾는 중
+  {take: T, file: "proxy.mp4", from: 19.3, to: 21.0, speed: 1, overlay: true, caption: SUB.reach, sfx: [[at(19.52, 19.3, 1), "sfx_tick", 0.4]]},   // B2 누름 19.52 → 렌치 찾는 중
   {take: T, file: "proxy.mp4", from: 21.0, to: TOOL_AT, speed: 2, overlay: true, badge: "2×", caption: SUB.reach}, // 공구함으로 손을 뻗는 동안 빨리
-  hold(T, TOOL_AT, TOOL_HOLD, {intro: "tool", caption: SUB.found}),
-  hold(T, OVERLAP_AT, OVERLAP_HOLD, {intro: "overlap", caption: SUB.overlap}),                         // 손 구역 · 공구 겹침 → 공구 확인 중
-  {take: T, file: "proxy.mp4", from: OVERLAP_AT, to: 28.4, speed: 1, overlay: true, caption: SUB.grasp},  // 확인 1·2 → 27.45 렌치 확인 완료
+  hold(T, TOOL_AT, TOOL_HOLD, {intro: "tool", caption: SUB.found, sfx: SFX_FOUND}),
+  hold(T, OVERLAP_AT, OVERLAP_HOLD, {intro: "overlap", caption: SUB.overlap, sfx: SFX_CHECK}),                         // 손 구역 · 공구 겹침 → 공구 확인 중
+  {take: T, file: "proxy.mp4", from: OVERLAP_AT, to: 28.4, speed: 1, overlay: true, caption: SUB.grasp, sfx: [[at(27.45, OVERLAP_AT, 1), "sfx_ding", 0.4]]},   // 확인 1·2 → 27.45 렌치 확인 완료
   // 01 공구 — 다른 공구(손이 공구함으로 가는 순간부터 · 정답 공구와 같은 연출 → 빨강 오답 · 대기 멈춤)
   {take: BP, run: "tool", file: "proxy.mp4", from: 37.9, to: 39.8, speed: 1, overlay: true, caption: SUB.other},
-  {...hold(BP, 39.8, WRONG_TOOL_HOLD, {intro: "tool", caption: SUB.other}), run: "tool"},
-  {...hold(BP, 39.85, OVERLAP_HOLD, {intro: "overlap", caption: SUB.other}), run: "tool"},
-  {take: BP, run: "tool", file: "proxy.mp4", from: 39.85, to: 40.36, speed: 0.5, overlay: true, badge: "0.5×", caption: SUB.wrong}, // 40.35 다른 공구
+  {...hold(BP, 39.8, WRONG_TOOL_HOLD, {intro: "tool", caption: SUB.other, sfx: SFX_FOUND}), run: "tool"},
+  {...hold(BP, 39.85, OVERLAP_HOLD, {intro: "overlap", caption: SUB.other, sfx: SFX_CHECK}), run: "tool"},
+  {take: BP, run: "tool", file: "proxy.mp4", from: 39.85, to: 40.36, speed: 0.5, overlay: true, badge: "0.5×", caption: SUB.wrong, sfx: [[at(40.35, 39.85, 0.5), "sfx_wrong", 0.4]]}, // 40.35 다른 공구
   {...hold(BP, 40.36, WRONG_HOLD, {caption: SUB.wrong}), run: "tool"},                                 // 다른 공구 경고 — 화면 정지 · 경고 연출은 이어 감 → 끝나면 다음 장면
   // 02 판정 기준 — 02-1 정답 버튼 입력은 시안 7 피드백으로 뺐다(T 35.8 → 38.3 · B3 누름 36.95)
   chCard(B34, 6.0, C02, "graze"),
   scCard(B34, 6.0, {no: "1", title: "스침", desc: "0.3초 안에 떠나면 경고하지 않습니다"}, "graze"),
-  {take: B34, run: "graze", file: "proxy.mp4", from: 6.0, to: 6.8, speed: GRAZE_SLOW, overlay: true, badge: "0.25×", tip: true, caption: SUB.graze},
+  {take: B34, run: "graze", file: "proxy.mp4", from: 6.0, to: 6.8, speed: GRAZE_SLOW, overlay: true, badge: "0.25×", tip: true, caption: SUB.graze, sfx: [[0.7, "sfx_tick", 0.3]]},   // 6.17 판정 구역에 들어감(화면 첫 프레임 = 0.7초)
   scCard(B34, 6.8, {no: "2", title: "경고", desc: "오답 버튼에 0.3초 이상 머물면"}, "warn"),
   {take: B34, run: "warn", file: "proxy.mp4", from: 6.8, to: 7.13, speed: SLOW, overlay: true, badge: "0.4×", tip: true, caption: SUB.warn},
-  {...hold(B34, 7.13, DWELL_HOLD, {intro: "dwell", tip: true, caption: SUB.warn}), run: "warn"},             // 손가락이 B3 에 닿은 순간 멈춤 · 0.3초 타이머
-  {take: B34, run: "warn", file: "proxy.mp4", from: 7.13, to: 7.6, speed: SLOW, overlay: true, badge: "0.4×", tip: true, caption: SUB.warn}, // 경고 → 손이 움직임
+  {...hold(B34, 7.13, DWELL_HOLD, {intro: "dwell", tip: true, caption: SUB.warn, sfx: [[0, "sfx_scan", 0.2]]}), run: "warn"},   // 손가락이 B3 에 닿은 순간 멈춤 · 0.3초 타이머가 차는 동안
+  {take: B34, run: "warn", file: "proxy.mp4", from: 7.13, to: 7.6, speed: SLOW, overlay: true, badge: "0.4×", tip: true, caption: SUB.warn,
+    sfx: [[at(7.135, 7.13, SLOW), "sfx_warn", 0.45], [WARN_VOICE, "tts_warn"]]},   // 경고 7.135 → 경고음 → 음성 알림 · 손이 움직임
+  {...hold(B34, 7.6, WARN_HOLD, {tip: true, caption: SUB.warn}), run: "warn"},     // 음성 알림이 끝날 때까지 정지(경고 연출은 이어 감)
   scCard(B34, 7.3, {no: "3", title: "차단", desc: "오답 버튼을 누르면 입력을 막습니다"}, "block"),
-  {take: B34, run: "block", file: "proxy.mp4", from: 7.3, to: 8.05, speed: SLOW, overlay: true, badge: "0.4×", tip: true, caption: SUB.block}, // B3 옆 → B2 상자 7.88 → 누름 8.0
-  {...hold(B34, 8.05, BLOCK_HOLD, {tip: true, caption: SUB.block}), run: "block"},                                // 차단 — 화면 멈춤 · 차단 그래픽 · 음성 알림 · 해제 버튼
+  {take: B34, run: "block", file: "proxy.mp4", from: 7.3, to: 8.05, speed: SLOW, overlay: true, badge: "0.4×", tip: true, caption: SUB.block, sfx: [[at(8.0, 7.3, SLOW), "sfx_alarm", 0.5]]},   // B3 옆 → B2 상자 7.88 → 누름 8.0
+  {...hold(B34, 8.05, BLOCK_HOLD, {tip: true, caption: SUB.block, sfx: [[0.12, "sfx_lock", 0.5], [BLOCK_VOICE, "tts_block"]]}), run: "block"},
+  // ↑ 차단 — 화면 멈춤 · 차단 그래픽 · 해제 버튼 · 자물쇠 찰칵 = 차단 뒤 0.24초(정지 구간 시작이 이미 차단 뒤 0.117초라 0.12) · 경보음 뒤 음성 알림 → 끝나면 다음
   scCard(BP, 70.0, {no: "4", title: "타워램프", desc: "경고와 차단을 램프로도 알립니다"}, "lamp"),
-  {take: BP, run: "lamp", file: "proxy.mp4", from: 70.0, to: 71.3, speed: LAMP_SLOW, overlay: true, badge: "0.5×", caption: SUB.lamp,
+  {take: BP, run: "lamp", file: "proxy.mp4", from: 70.0, to: 71.3, speed: LAMP_SLOW, overlay: true, badge: "0.5×", caption: SUB.lamp, sfx: [[0.96, "sfx_warn", 0.4]],   // 경고 70.47(화면 첫 프레임 = 0.96초 · 음성 알림은 구간이 짧아 뺌)
     callout: {label: "타워램프", lines: [{text: "경고 → 황색", color: "warn"}, {text: "차단 → 적색 + 부저", color: "danger"}], keys: LAMP}},
   // 03 음성 비서 — 원본 시간 순(공구 질문 = 2단계 → 단계 질문 = 3단계 · 단계 목록이 거꾸로 돌아가지 않게)
   //   시작 = 앞 누름 파동이 끝난 뒤(B2 20.52 · B3 37.95) · 영상 끝 = 3단계 완료 안내 뒤 2초 여유(시안 3 피드백)
   chCard(T, 20.6, C03, "voice"),
   scCard(T, 20.6, {no: "1", title: "공구 질문", desc: "이 단계에 필요한 공구를 묻기"}, "voice"),
-  {take: T, run: "voice", file: "proxy.mp4", from: 20.6, to: 30.2, speed: 1, overlay: true,   // 호출 0.1 · 질문 1.4 · 답 5.6(구간 초)
-    subs: [[0, 1.8, SUB.call], [1.8, 5.6, SUB.card], [5.6, 9.6, SUB.answer]]},
+  {take: T, run: "voice", file: "proxy.mp4", from: 20.6, to: 30.2, speed: 1, overlay: true,   // 호출 20.7 · 질문 22.0 · 답 26.0(구간 0.1 · 1.4 · 5.4초)
+    subs: [[0, 1.8, SUB.call], [1.8, 5.4, SUB.card], [5.4, 9.6, SUB.answer]], sfx: sfxAsk(at(20.7, 20.6, 1), at(22.0, 20.6, 1), "tool")},
   scCard(T, 38.0, {no: "2", title: "단계 질문", desc: "지금 무엇을 해야 하는지 묻기"}, "voice"),
   {take: T, run: "voice", file: "proxy.mp4", from: 38.0, to: 48.95, speed: 1, overlay: true,   // 3단계 완료 46.95 = 구간 8.95초
-    subs: [[0, 8.9, SUB.rule], [8.9, 10.95, SUB.next]]},
+    subs: [[0, 8.9, SUB.rule], [8.9, 10.95, SUB.next]],
+    sfx: [...sfxAsk(at(38.2, 38.0, 1), at(39.05, 38.0, 1), "step"), [at(46.95, 38.0, 1), "sfx_ding", 0.4]]},   // 호출 38.2 · 질문 39.05 · 3단계 완료 46.95
 ];

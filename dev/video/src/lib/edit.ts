@@ -8,10 +8,11 @@ export type Clip = {take: string; file: string; from: number; to: number; speed:
   caption?: string; badge?: string; boot?: boolean; hold?: number; intro?: "buttons" | "hand" | "tool" | "overlap" | "dwell" | "end";
   chapter?: {no: string; title: string; desc: string}; section?: {no: string; title: string; desc: string}; run?: string;
   callout?: CalloutDef; card?: "chapter" | "section"; tip?: boolean; fadeOut?: number; fadeIn?: number;
-  subs?: [number, number, string][]};
+  subs?: [number, number, string][]; sfx?: [number, string, number?][]};
 // card = 장 · 절 제목 카드(정지 구간 · 화면을 어둡게 하고 제목만) — 시안 2 피드백 「절 제목은 따로 독립 제목 카드로」
 // tip = 검지 끝 빛 꼬리(판정 장면 · 시안 8) · fadeOut · fadeIn = 끝 · 처음 몇 초 동안 검은 화면으로 사라짐 · 검은 화면에서 나타남(로고 인트로 → 안경 장면 · 시안 11 · 12)
 // subs = 구간 안 자막 [시작, 끝, 문장](구간 시작부터 화면 초) — 한 구간 안에서 문장이 바뀔 때 · 구간 전체 한 문장이면 caption
+// sfx = 구간 안 소리 [시작, 이름(public/audio/<이름>.wav), 음량?](구간 시작부터 화면 초 · 시안 14 효과음 · TTS)
 export type Placed = {clip: Clip; start: number; frames: number};
 
 export function place(clips: Clip[], fps: number): Placed[] {
@@ -58,4 +59,12 @@ export function captionTrack(ps: Placed[], fps: number): Cue[] {
     }
   }
   return out;
+}
+
+// 소리 트랙 — 구간마다 sfx 를 편집 전체 프레임으로 편다 · 구간 길이 밖의 소리는 버린다(편집이 바뀌어 구간이 짧아졌을 때)
+export type Sound = {frame: number; name: string; volume: number};
+export function sfxTrack(ps: Placed[], fps: number): Sound[] {
+  return ps.flatMap((p) => (p.clip.sfx ?? [])
+    .filter(([at]) => at >= 0 && Math.round(at * fps) < p.frames)
+    .map(([at, name, volume]) => ({frame: p.start + Math.round(at * fps), name, volume: volume ?? 1})));
 }

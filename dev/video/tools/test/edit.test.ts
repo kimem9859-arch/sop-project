@@ -1,6 +1,6 @@
 import {test} from "node:test";
 import assert from "node:assert/strict";
-import {bootTimes, captionTrack, place, srcSec, totalFrames, type Clip} from "../../src/lib/edit.ts";
+import {bootTimes, captionTrack, place, sfxTrack, srcSec, totalFrames, type Clip} from "../../src/lib/edit.ts";
 
 const c = (from: number, to: number, speed: number): Clip => ({take: "x", file: "original.mp4", from, to, speed, overlay: true});
 test("배속 구간의 길이 = 원본 길이 / 배속", () => {
@@ -42,4 +42,9 @@ test("자막 트랙 — 구간 자막(caption)은 구간 전체 · subs 는 구�
     {start: 105, end: 120, text: "다"},             // 구간 끝(120)에서 자름
     {start: 120, end: 150, text: "라"},
   ]);
+});
+test("소리 트랙 — 구간 안 화면 초 → 편집 전체 프레임 · 구간 길이를 넘는 소리는 버림 · 음량 기본 1", () => {
+  const k = (sfx?: [number, string, number?][]): Clip => ({take: "x", file: "f", from: 0, to: 1, speed: 1, overlay: true, sfx});
+  const ps = place([k([[0, "a"]]), k([[0.5, "b", 0.3], [1.0, "c"]])], 30);   // 0~30 · 30~60
+  assert.deepEqual(sfxTrack(ps, 30), [{frame: 0, name: "a", volume: 1}, {frame: 45, name: "b", volume: 0.3}]);
 });

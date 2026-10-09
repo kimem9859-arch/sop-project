@@ -1,7 +1,7 @@
-import {AbsoluteFill, Freeze, OffthreadVideo, Sequence, staticFile, useCurrentFrame, useVideoConfig, type CalculateMetadataFunction} from "remotion";
+import {AbsoluteFill, Freeze, Html5Audio, OffthreadVideo, Sequence, staticFile, useCurrentFrame, useVideoConfig, type CalculateMetadataFunction} from "remotion";
 import {BOOT_SEC, BTN_INTRO_SEC, BTN_ORDER, BTN_STEP, btnIntroAge} from "../lib/boot.ts";
 import {detAt, firstHandAt, fitRect, lastBox, tipTrail, type Box, type Dets} from "../lib/dets.ts";
-import {bootTimes, captionTrack, place, srcSec, totalFrames, type Clip, type Placed} from "../lib/edit.ts";
+import {bootTimes, captionTrack, place, sfxTrack, srcSec, totalFrames, type Clip, type Placed} from "../lib/edit.ts";
 import {burstAge, insetSpot, screenSince, shake} from "../lib/fx.ts";
 import {dwellAt} from "../lib/judge.ts";
 import {holeMask, holesFor} from "../lib/mask.ts";
@@ -12,7 +12,7 @@ import {Callout} from "../hud/Callout.tsx";
 import {Breadcrumb, ChapterTitle, SectionTitle} from "../hud/ChapterTitle.tsx";
 import {EndSummary} from "../hud/EndSummary.tsx";
 import {ChromaFilter, INSET, PixelBurst, ZoomInset} from "../hud/Fx.tsx";
-import {BTN, C, TOOL_KO} from "../hud/theme.ts";
+import {BTN} from "../hud/theme.ts";
 import {Hud} from "../hud/Hud.tsx";
 import {Caption} from "../hud/Overlays.tsx";
 import {SKELETON} from "../edits/skeleton.ts";
@@ -119,20 +119,20 @@ const ClipView: React.FC<{p: Placed; d: TakeData | undefined; boot0: {at: number
       {mask && vid({maskImage: `url("${mask}")`, WebkitMaskImage: `url("${mask}")`, maskSize: "100% 100%", WebkitMaskSize: "100% 100%"})}
     </>
   );
-  // ⑦ 탐지 확대 창(시안 10 「추천 외에 제안한 효과」) — 버튼 정지 = 강조 차례마다 그 버튼 하나씩 · 공구 정지 = 그 공구 · 다른 상자 · 단계 목록을 피한 자리
+  // ⑦ 탐지 확대 창(시안 10 「추천 외에 제안한 효과」) — 버튼 정지 = 강조 차례마다 그 버튼 하나씩 · 다른 상자 · 단계 목록을 피한 자리
+  //   공구 확대 창은 시안 14 에서 뺌(사용자 — 큰 공구는 일부만 보였다)
   let insets: React.ReactNode[] = [];
-  if (view && fit && holdT !== null && (c.intro === "buttons" || c.intro === "tool")) {
+  if (view && fit && holdT !== null && c.intro === "buttons") {
     const R = (b: Box) => ({x: fit.x + b[2] * fit.s, y: fit.y + b[3] * fit.s, w: (b[4] - b[2]) * fit.s, h: (b[5] - b[3]) * fit.s});
     const one = (b: Box, age: number, dur: number, col: string, name: string) => {
       const r = R(b), zoom = Math.min(3, Math.max(1.3, (INSET * 0.85) / Math.max(r.w, r.h)));
       const spot = insetSpot(r, INSET + 34, [PANEL, ...view!.btn.filter((x) => x !== b).map(R)], width, height, 60);   // +34 = 아래 이름표 · 60 = 강조 고리 밖
       return <ZoomInset key={name} video={vid({})} box={b} fit={fit} spot={spot} zoom={zoom} col={col} name={name} age={age} dur={dur} W={width} H={height} />;
     };
-    if (c.intro === "buttons") insets = BTN_ORDER.map((n, i) => {
+    insets = BTN_ORDER.map((n, i) => {
       const b = view!.btn.find((x) => x[0] === n), age = btnIntroAge(n, bootSec);
       return b && age !== null ? one(b, age, i < BTN_ORDER.length - 1 ? BTN_STEP : BTN_INTRO_SEC + 0.3, BTN[n], n) : null;
     });
-    else if (view.tool[0]) insets = [one(view.tool[0], holdT - 0.15, c.hold! - 0.15, C.current, TOOL_KO[view.tool[0][0]] ?? view.tool[0][0])];
   }
   const hit = impact !== null && impact >= 0 && impact < IMPACT ? 1 - impact / IMPACT : 0;
   const [sx, sy] = hit > 0 ? shake(impact!, 18, IMPACT) : [0, 0];
@@ -196,6 +196,10 @@ export const Cut: React.FC<CutProps> = ({edit, data}) => {
       </AbsoluteFill>
       {ba !== null && <PixelBurst age={ba} win={BURST} W={width} H={height} />}
       {cue && <Caption text={cue.text} opacity={Math.min(1, (f - cue.start) / 8, (cue.end - f) / 8)} />}
+      {/* 소리 — 효과음 · TTS(lib/edit sfxTrack · public/audio · 시안 14) */}
+      {sfxTrack(ps, fps).map((s, i) => (
+        <Sequence key={`sfx${i}`} from={s.frame} layout="none"><Html5Audio src={staticFile(`audio/${s.name}.wav`)} volume={s.volume} /></Sequence>
+      ))}
       <Chapters ps={ps} />
       {edit === "skeleton" && (
         <div style={{position: "absolute", left: 40, bottom: 20, color: "#fff", font: "600 20px Pretendard", background: "rgba(0,0,0,.6)", padding: "4px 10px", borderRadius: 6}}>

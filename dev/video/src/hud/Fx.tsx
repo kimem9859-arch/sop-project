@@ -46,7 +46,7 @@ export const PixelBurst: React.FC<{age: number; win: number; W: number; H: numbe
   );
 };
 
-// ⑦ 탐지 확대 창 — 강조되는 버튼 · 공구 옆에 그 자리를 zoom 배 키운 둥근 창 + 이름 · 신뢰도 + 잇는 선
+// ⑦ 탐지 확대 창 — 강조되는 버튼 옆에(공구 창은 시안 14 에서 뺌) 그 자리를 zoom 배 키운 둥근 창 + 이름 · 신뢰도 + 잇는 선
 //   video = 같은 촬영 화면을 전체 크기로 그리는 함수(Cut 의 vid · 정지 구간이면 Cut 이 Freeze 로 감싼다) · age = 창이 열린 뒤 초 · dur = 열려 있는 초
 export const INSET = 180;
 export const ZoomInset: React.FC<{video: React.ReactNode; box: Box; fit: Fit; spot: {x: number; y: number}; zoom: number; col: string;

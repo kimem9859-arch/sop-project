@@ -1,3 +1,4 @@
+import {ALERT_TEXT} from "../lib/alerts.ts";
 import {typed} from "../lib/fx.ts";
 import type {VoiceView} from "../lib/uiState.ts";
 import {IconMic, IconSpeaker} from "./icons.tsx";
@@ -7,17 +8,7 @@ import {C, FONT, easeOut} from "./theme.ts";
 // G3 「흐려서 잘 안 보여」 → 불투명 · 큰 글자 · 흐림 없음
 // 시안 1 피드백 「"가디언" 말풍선 → 듣는 중 → 확인해보겠습니다 → "LLM 생각 중..." → 답변」 · 「경고와 차단에는 음성알림 문구 말풍선을
 //   음성 알림 위에 … 주황, 빨강」 — 알림 문장 = Rpi5/Demo/voice_card.alert_texts() 그대로(2026-10-09 출력 사본)
-export const ALERT_TEXT: Record<string, string> = {
-  alert_emo: "비상정지 중이니 EMO를 복귀한 뒤 차단 해제를 누르세요.",
-  alert_block_B1: "차단 중이니 차단 해제를 누른 뒤 B1 버튼부터 다시 누르세요.",
-  alert_warn_B1: "순서가 다르니 손을 떼고 B1 버튼을 누르세요.",
-  alert_block_B2: "차단 중이니 차단 해제를 누른 뒤 B2 버튼부터 다시 누르세요.",
-  alert_warn_B2: "순서가 다르니 손을 떼고 B2 버튼을 누르세요.",
-  alert_block_B3: "차단 중이니 차단 해제를 누른 뒤 B3 버튼부터 다시 누르세요.",
-  alert_warn_B3: "순서가 다르니 손을 떼고 B3 버튼을 누르세요.",
-  alert_block_B4: "차단 중이니 차단 해제를 누른 뒤 B4 버튼부터 다시 누르세요.",
-  alert_warn_B4: "순서가 다르니 손을 떼고 B4 버튼을 누르세요.",
-};
+export {ALERT_TEXT};
 // 사실 카드가 「LLM 생각 중」 말풍선으로 날아드는 시각표(질문 뒤 초) — FactCard 와 같이 쓴다
 export const CARD_IN = 0.6, CARD_FLY = 3.0, CARD_LAND = 3.7; // 시안 4 「이전 효과로 롤백」 · 시안 6 「1분 30초 정도」 — 읽을 틈 2.4초
 export const THINK_ANCHOR = {right: 40, bottom: 160}; // 말풍선 묶음 자리(카드가 날아갈 곳)
