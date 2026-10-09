@@ -1,6 +1,6 @@
 import {test} from "node:test";
 import assert from "node:assert/strict";
-import {detAt, fitRect, HOLD_FRAMES, type Box, type Dets} from "../../src/lib/dets.ts";
+import {detAt, fitRect, HOLD_FRAMES, type Box, type Dets, lastBox, type DetRow} from "../../src/lib/dets.ts";
 
 const B = (n: string, x: number): Box => [n, 0.9, x, 10, x + 20, 30];
 const mk = (rows: Dets["rows"]): Dets => ({src: "t", fps: 30, w: 100, h: 50, rows});
@@ -40,4 +40,12 @@ test("firstHandAt — 그 시각 뒤로 손이 처음 보인 시각(첫 등장 �
   near(firstHandAt(mk(rows), 0)!, 10 / 30);
   near(firstHandAt(mk(rows), 25 / 30)!, 40 / 30);
   assert.equal(firstHandAt(mk(rows.map((r) => ({...r, hand: null}))), 0), null);
+});
+test("lastBox — 가려진 버튼은 직전에 보인 자리(backSec 안) · 앞은 보지 않는다", () => {
+  const row = (f: number, btn: Box[]): DetRow => ({f, btn, tool: [], hand: null});
+  const b3: Box = ["B3", 0.9, 10, 10, 20, 20];
+  const d: Dets = {src: "x", fps: 30, w: 100, h: 100, rows: [row(0, [b3]), row(1, [b3]), row(2, []), row(3, []), row(4, []), row(5, [["B3", 0.9, 50, 50, 60, 60]])]};
+  assert.deepEqual(lastBox(d, 4 / 30, "B3", 1), b3);
+  assert.equal(lastBox(d, 4 / 30, "B3", 0.05), null);
+  assert.equal(lastBox(d, 4 / 30, "B1", 1), null);
 });

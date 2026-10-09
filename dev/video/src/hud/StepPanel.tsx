@@ -1,3 +1,4 @@
+import {GlitchNoise, glitchStyle} from "./Glitch.tsx";
 import {IconCheck} from "./icons.tsx";
 import {BTN, C, GLASS, STEPS} from "./theme.ts";
 
@@ -7,11 +8,15 @@ const LABEL: Record<string, [string, string]> = {
 };
 
 // 왼쪽 위 — 상태 + 작업 순서(지금 시연 화면의 왼쪽 위 목록을 다듬음 · G3 「좀 더 키워도」)
-export const StepPanel: React.FC<{state: string; done: string[]; expected: string | null; alert: "warning" | "block" | null; opacity: number}> =
-  ({state, done, expected, alert, opacity}) => {
-    const [stText, stCol] = LABEL[state] ?? [state, C.text];
+// age = 처음 나타난 뒤 초 — 지지직 등장(10/9 초안 피드백 · 꺾쇠·파동은 넣지 않음) · null = 효과 없이
+export const StepPanel: React.FC<{state: string; done: string[]; expected: string | null; alert: "warning" | "block" | null; age: number | null}> =
+  ({state, done, expected, alert, age}) => {
+    // 네 단계를 다 마친 뒤의 IDLE = 「작업 완료」(「대기」로 보이면 끝난 줄 모른다 · 10/9 초안)
+    const [stText, stCol] = state === "IDLE" && done.length === STEPS.length ? ["작업 완료", C.done] : LABEL[state] ?? [state, C.text];
+    if (age !== null && age < 0) return null;
     return (
-      <div style={{...GLASS, position: "absolute", left: 40, top: 40, width: 440, padding: "22px 26px 18px", opacity}}>
+      <div style={{...GLASS, position: "absolute", left: 40, top: 40, width: 440, padding: "22px 26px 18px", ...glitchStyle(age, 3)}}>
+        <GlitchNoise age={age} seed={3} />
         <div style={{display: "flex", alignItems: "center", gap: 14, fontSize: 36, fontWeight: 800, color: stCol}}>
           <span style={{width: 16, height: 16, borderRadius: 8, background: stCol, boxShadow: `0 0 14px ${stCol}`}} />
           {stText}

@@ -1,14 +1,17 @@
 import type {Ev} from "./timeline.ts";
 
-export type SubView = {button: string; label: string; progress: number};
-export type ToolView = {phase: string; want: string; wrong: string | null};
+export type SubView = {button: string; label: string; progress: number; since: number; totalMs: number}; // since = 시작 기록 시각
+// since = 단계(찾는 중·확인 중·쥠·다른 공구)가 바뀐 기록 시각 · checks = 연속 확인 수(쥠 = confirm 3번)
+export type ToolView = {phase: string; want: string; wrong: string | null; since: number; checks: number};
 export type AlertView = {kind: "warning" | "block"; expected: string; button: string | null; since: number};
 export type VoiceView = {listening: boolean; question: string | null; answer: string | null; speaking: boolean; alert: string | null};
 export type PressView = {button: string; t: number; ok: boolean};
 export type UiState = {
   state: string; expected: string | null; done: string[]; sub: SubView | null; tool: ToolView | null;
   alert: AlertView | null; voice: VoiceView; lastPress: PressView | null;
+  lastDone: {button: string; order: number; t: number} | null; // 마지막으로 끝난 단계(완료 안내)
 };
+const CONFIRM_SCANS = 3; // 쥠 = 연속 확인 3번(Rpi5/Demo/tool_state.py confirm_scans)
 
 export const BUBBLE_HOLD_MS = 2500; // 답 재생이 끝난 뒤 말풍선을 이만큼 더 보인다
 const SUB_FALLBACK_MS = 10000;      // 끝 기록이 없을 때(판이 잘림) — recipe.json 의 sec
@@ -35,7 +38,7 @@ const pausedUntil = (paused: [number, number][], t: number) =>
 export function stateAt(evs: Ev[], runStart: number, t: number): UiState {
   const s: UiState = {
     state: "IDLE", expected: null, done: [], sub: null, tool: null, alert: null,
-    voice: {listening: false, question: null, answer: null, speaking: false, alert: null}, lastPress: null,
+    voice: {listening: false, question: null, answer: null, speaking: false, alert: null}, lastPress: null, lastDone: null,
   };
   let subStart: Ev | null = null;
   let answeredAt: number | null = null;
@@ -58,19 +61,23 @@ export function stateAt(evs: Ev[], runStart: number, t: number): UiState {
         break;
       case "step_done":
         s.done.push(d.button);
+        s.lastDone = {button: d.button, order: d.order, t: e.t};
         break;
       case "sub":
-        if (d.what === "start") { subStart = e; s.sub = {button: d.button, label: d.label ?? "", progress: 0}; s.tool = null; }
+        if (d.what === "start") { subStart = e; s.sub = {button: d.button, label: d.label ?? "", progress: 0, since: e.t, totalMs: 0}; s.tool = null; }
         else if (d.what === "finish" || d.what === "cancel") { subStart = null; s.sub = null; s.tool = null; }
         break;
       case "tool_scan": {
         const wrong = s.tool?.wrong ?? null;
         const keep = wrong !== null && d.phase === "search" && Array.isArray(d.seen) && d.seen.includes(wrong);
-        s.tool = {phase: d.phase, want: d.want, wrong: keep ? wrong : null};
+        const prev = s.tool;
+        const same = prev !== null && prev.phase === d.phase && (prev.wrong !== null) === keep;
+        const checks = d.phase === "grasped" ? CONFIRM_SCANS : d.phase === "checking" ? (same ? prev.checks + 1 : 1) : 0;
+        s.tool = {phase: d.phase, want: d.want, wrong: keep ? wrong : null, since: same ? prev.since : e.t, checks};
         break;
       }
       case "wrong_tool":
-        s.tool = {phase: s.tool?.phase ?? "search", want: d.want, wrong: d.got};
+        s.tool = {phase: s.tool?.phase ?? "search", want: d.want, wrong: d.got, since: e.t, checks: 0};
         break;
       case "release":
         s.alert = null;
@@ -106,6 +113,7 @@ export function stateAt(evs: Ev[], runStart: number, t: number): UiState {
     const total = stop - subStart.t - pausedUntil(paused, stop);
     const done = t - subStart.t - pausedUntil(paused, t);
     s.sub.progress = Math.min(1, Math.max(0, total > 0 ? done / total : 0));
+    s.sub.totalMs = total;
   }
   if (answeredAt !== null && !s.voice.speaking && lastPlayEnd > answeredAt && t - lastPlayEnd > BUBBLE_HOLD_MS) {
     s.voice.question = null;

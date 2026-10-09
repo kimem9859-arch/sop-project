@@ -13,8 +13,10 @@ export const INTRO_SEC = 1.3;  // 첫 등장 연출 길이 — 끝나면 꺾쇠�
 //   0~0.35 꺾쇠 안 지지직 잡음·줄무늬 · 0~0.5 꺾쇠가 손으로 좁혀 옴 「손 인식」 · 0.1~0.55 스캔 선이 손을 훑음
 //   0.45~1.1 손목부터 뼈대가 뻗고 관절 점이 튀어나옴 · 0.55~ 「● 손 추적 시작」 · 1.0~1.3 꺾쇠·표시가 사라짐
 // ring = 검지 끝(8) 고리 색(경고·차단 중엔 그 색)
-export const HandSkeleton: React.FC<{hand: Pt[] | null; fit: Fit; t: number; age: number | null; ring?: string}> =
-  ({hand, fit, t, age, ring = C.current}) => {
+// dim = 공구를 쥔 동안 — 뼈대를 옅게 · 검지 고리 숨김: 손 모델이 렌치 막대를 펴진 검지로 읽는다(10/9 초안 원본 프레임 대조 ·
+//   합성의 시간 밀림이 아니라 모델 판독) — 보이는 방식만 바꾸고 좌표는 그대로(설계 §5 「연출은 보여 주는 방식만」)
+export const HandSkeleton: React.FC<{hand: Pt[] | null; fit: Fit; t: number; age: number | null; ring?: string; dim?: boolean}> =
+  ({hand, fit, t, age, ring = C.current, dim = false}) => {
     if (!hand || age === null) return null;
     const P = hand.map(([x, y]) => [fit.x + x * fit.s, fit.y + y * fit.s]);
     const intro = age < INTRO_SEC;
@@ -36,7 +38,7 @@ export const HandSkeleton: React.FC<{hand: Pt[] | null; fit: Fit; t: number; age
     const scan = age > 0.1 && age < 0.6 ? by + easeOut((age - 0.1) / 0.45) * bh : null;
     const tracking = age >= 0.55;
     return (
-      <svg style={{position: "absolute", inset: 0, width: "100%", height: "100%", overflow: "visible"}}>
+      <svg style={{position: "absolute", inset: 0, width: "100%", height: "100%", overflow: "visible", opacity: dim ? 0.35 : 1}}>
         {intro && (
           <defs>
             <clipPath id="hand-box"><rect x={bx} y={by} width={bw} height={bh} rx={6} /></clipPath>
@@ -78,7 +80,7 @@ export const HandSkeleton: React.FC<{hand: Pt[] | null; fit: Fit; t: number; age
           <circle key={i} cx={x} cy={y} r={7 * (0.4 + 0.6 * pop(i)) + 3 * Math.max(0, 1 - pop(i)) * pop(i)}
             fill={HAND} stroke="#fff" strokeWidth={2} />
         ))}
-        {grow >= 6 && <circle cx={P[8][0]} cy={P[8][1]} r={18 + 4 * Math.sin(t * Math.PI * 3)} fill="none" stroke={ring} strokeWidth={5} />}
+        {grow >= 6 && !dim && <circle cx={P[8][0]} cy={P[8][1]} r={18 + 4 * Math.sin(t * Math.PI * 3)} fill="none" stroke={ring} strokeWidth={5} />}
       </svg>
     );
   };

@@ -1,3 +1,4 @@
+import {CHECK_SEC, SCAN_HOLD_SEC} from "../lib/boot.ts";
 import type {Clip} from "../lib/edit.ts";
 import type {StagedPress} from "../lib/staged.ts";
 
@@ -17,19 +18,26 @@ export const PRETEST_STAGED: Record<string, {start: number; presses: StagedPress
   ]},
 };
 
+// 10/9 초안 피드백 반영판 — 켜짐 = 점검 목록(영상 흐름) → 버튼 탐지(화면 정지·흐림) → 단계 목록 지지직
+// 손 탐지 = 손이 처음 보인 3.23초 + 2.5초 여유(「2초에서 3초 정도 여유」) = 5.73초에 화면 정지 · 연출 1.3초 + 0.3초
+// 배속 구간 경계 = 첫 대기 강조(2.2초)·단계 완료 안내(2.6초)가 보통 속도에서 다 보이게
+const HAND_AT = 5.73, HAND_HOLD = 1.6;
 export const PRETEST: Clip[] = [
   {take: G, file: "proxy.mp4", from: 27.6, to: 32.35, speed: 1, overlay: false},   // 오프닝 — 안경 테가 화면 가장자리를 감싸는 순간에서 본편으로
-  {take: T, file: "proxy.mp4", from: 0, to: 3.5, speed: 1, overlay: true, boot: true,
-    caption: "시험 전 초안 — 상태 표시는 영상을 보고 꾸민 연출입니다"},
-  {take: T, file: "proxy.mp4", from: 3.5, to: 7.6, speed: 1, overlay: true,
-    caption: "AI 가 버튼과 손을 알아보고 순서를 확인합니다"},                               // B1 6.44
-  {take: T, file: "proxy.mp4", from: 7.6, to: 17.4, speed: 4, overlay: true, badge: "×4"}, // B1 대기
-  {take: T, file: "proxy.mp4", from: 17.4, to: 21.4, speed: 1, overlay: true},            // B2 19.52
-  {take: T, file: "proxy.mp4", from: 21.4, to: 30.6, speed: 1, overlay: true,
-    caption: "필요한 공구를 쥐었는지도 확인합니다"},                                        // 렌치 24.6~29.5
-  {take: T, file: "proxy.mp4", from: 30.6, to: 35.6, speed: 4, overlay: true, badge: "×4"},
+  {take: T, file: "proxy.mp4", from: 0, to: CHECK_SEC, speed: 1, overlay: true, boot: true,
+    caption: "시험 전 초안 — 상태 표시는 영상을 보고 꾸민 연출입니다"},                   // 비전 감시 시작 · 점검 목록
+  {take: T, file: "proxy.mp4", from: CHECK_SEC, to: CHECK_SEC, speed: 1, overlay: true, hold: SCAN_HOLD_SEC, intro: "buttons"},
+  {take: T, file: "proxy.mp4", from: CHECK_SEC, to: HAND_AT, speed: 1, overlay: true},     // 단계 목록 지지직 · 손 보임(연출 전)
+  {take: T, file: "proxy.mp4", from: HAND_AT, to: HAND_AT, speed: 1, overlay: true, hold: HAND_HOLD, intro: "hand"},
+  {take: T, file: "proxy.mp4", from: HAND_AT, to: 8.8, speed: 1, overlay: true,
+    caption: "AI 가 버튼과 손을 알아보고 순서를 확인합니다"},                               // B1 6.44 · 첫 대기 강조
+  {take: T, file: "proxy.mp4", from: 8.8, to: 16.2, speed: 4, overlay: true, badge: "×4"}, // B1 대기
+  {take: T, file: "proxy.mp4", from: 16.2, to: 21.4, speed: 1, overlay: true},            // 1단계 완료 16.44 · B2 19.52
+  {take: T, file: "proxy.mp4", from: 21.4, to: 32.2, speed: 1, overlay: true,
+    caption: "필요한 공구를 쥐었는지도 확인합니다"},                                        // 렌치 24.6~29.5 · 2단계 완료 29.52
+  {take: T, file: "proxy.mp4", from: 32.2, to: 35.6, speed: 4, overlay: true, badge: "×4"},
   {take: T, file: "proxy.mp4", from: 35.6, to: 38.0, speed: 1, overlay: true},            // B3 36.95
-  {take: T, file: "proxy.mp4", from: 38.0, to: 49.4, speed: 4, overlay: true, badge: "×4"}, // B3 대기
-  {take: T, file: "proxy.mp4", from: 49.4, to: 54.0, speed: 1, overlay: true,
-    caption: "순서대로 마치면 작업이 끝납니다"},                                            // B4 50.98 → 완주
+  {take: T, file: "proxy.mp4", from: 38.0, to: 46.7, speed: 4, overlay: true, badge: "×4"}, // B3 대기
+  {take: T, file: "proxy.mp4", from: 46.7, to: 54.0, speed: 1, overlay: true,
+    caption: "순서대로 마치면 작업이 끝납니다"},                                            // 3단계 완료 46.95 · B4 50.98 → 모든 단계 완료
 ];

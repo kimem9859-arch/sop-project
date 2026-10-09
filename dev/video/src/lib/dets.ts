@@ -71,3 +71,14 @@ export function firstHandAt(d: Dets, fromSec: number): number | null {
   for (const r of d.rows) if (r.f >= f0 && r.hand) return r.f / d.fps;
   return null;
 }
+
+// sec 이전 backSec 안에서 name 버튼이 마지막으로 보인 박스 — 누르는 손가락이 버튼을 가려 검출이 끊길 때 누름 파동 자리
+// (10/9 초안 B3 누름 앞뒤 13프레임 끊김) · 앞(미래)은 보지 않는다 · 없으면 null
+export function lastBox(d: Dets, sec: number, name: string, backSec: number): Box | null {
+  const f = Math.floor(sec * d.fps + 1e-6);
+  for (let k = 0; k <= Math.round(backSec * d.fps); k++) {
+    const b = rowAt(d, f - k)?.btn.find((x) => x[0] === name);
+    if (b) return b;
+  }
+  return null;
+}

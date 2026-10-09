@@ -47,3 +47,7 @@ test("마지막 누름 = 완주 · 네 단계 완료", () => {
 test("사건은 시각 순서", () => {
   assert.ok(R.events.every((e, i) => i === 0 || R.events[i - 1].t <= e.t));
 });
+test("공구 확인은 1초마다 한 번씩 세고 세 번째가 쥠(실제 시스템 confirm 3번)", () => {
+  assert.deepEqual([at(24.7).tool?.checks, at(25.7).tool?.checks, at(26.7).tool?.checks], [1, 2, 3]);
+  assert.equal(at(26.7).tool?.phase, "grasped");
+});

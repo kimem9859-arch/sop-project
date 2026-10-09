@@ -39,9 +39,12 @@ export function stagedRun(start: number, presses: StagedPress[]): {runStart: num
     }
     if (p.tool) {
       const {want, seen, grasped} = p.tool;
-      const times = new Set<number>([seen, grasped]);
-      for (let s = p.t + 0.2; s < end; s += SCAN_EVERY) times.add(Math.round(s * 1000) / 1000);
-      for (const s of [...times].filter((x) => x < end)) {
+      // 찾는 중 = 누른 뒤부터 · 확인 중 = 처음 보인 때부터 1초마다 · 쥠 = grasped 부터(실제 시스템은 연속 확인 3번째에 쥠)
+      const times: number[] = [];
+      for (let s = p.t + 0.2; s < seen; s += SCAN_EVERY) times.push(s);
+      for (let s = seen; s < grasped - 1e-6; s += SCAN_EVERY) times.push(s);
+      for (let s = grasped; s < end; s += SCAN_EVERY) times.push(s);
+      for (const s of times) {
         const phase = s < seen ? "search" : s < grasped ? "checking" : "grasped";
         add(s, "tool_scan", {hand: true, seen: phase === "search" ? [] : [want], tool: phase === "grasped" ? want : null, phase, want});
       }

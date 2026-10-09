@@ -63,3 +63,21 @@ test("경고 — 머문 버튼(dwell_roi)과 기대 버튼", () => {
   const xs: Ev[] = [{t: 10, kind: "state", d: {old: "MONITOR", new: "WARNING", expected: "B3", dwell_roi: "B4"}, src: "main"}];
   assert.deepEqual(stateAt(xs, 0, 11).alert, {kind: "warning", expected: "B3", button: "B4", since: 10});
 });
+test("서브 — 시작 시각(since)과 전체 길이(totalMs) · 남은 초 계산용", () => {
+  const s = stateAt(evs, R1, 250014500).sub!;
+  near(s.since, 250014481.399);
+  near(s.totalMs, 250024659.497 - 250014481.399);
+});
+test("공구 — 단계가 바뀐 시각(since) · 연속 확인 수(checks)", () => {
+  const tl = evs.filter((e) => e.kind === "tool_scan" && e.t > R1 && e.t < R2);
+  const ck = tl.filter((e) => e.d.phase === "checking");
+  const gr = tl.find((e) => e.d.phase === "grasped")!;
+  assert.deepEqual([stateAt(evs, R1, ck[0].t).tool?.since, stateAt(evs, R1, ck[0].t).tool?.checks], [ck[0].t, 1]);
+  assert.deepEqual([stateAt(evs, R1, ck[1].t).tool?.since, stateAt(evs, R1, ck[1].t).tool?.checks], [ck[0].t, 2]);
+  assert.deepEqual([stateAt(evs, R1, gr.t).tool?.since, stateAt(evs, R1, gr.t).tool?.checks], [gr.t, 3]);
+});
+test("단계 완료 — 마지막으로 끝난 단계와 그 시각(lastDone)", () => {
+  const d = evs.find((e) => e.kind === "step_done" && e.t > R1)!;
+  assert.equal(stateAt(evs, R1, d.t - 1).lastDone, null);
+  assert.deepEqual(stateAt(evs, R1, d.t + 100).lastDone, {button: "B1", order: 1, t: d.t});
+});
