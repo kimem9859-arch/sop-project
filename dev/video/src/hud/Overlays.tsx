@@ -16,10 +16,10 @@ export const SpeedBadge: React.FC<{badge?: string}> = ({badge}) =>
       fontSize: 30, fontWeight: 800, fontVariantNumeric: "tabular-nums"}}>{badge}</div>
   ) : null;
 
-// 「합성」 상시 표기(설계 D21)
-export const SynthLabel: React.FC = () => (
+// 「합성」 상시 표기(설계 D21) · text = 실제 기록이 아닌 초안(연출 기록)일 때 바꿔 단다
+export const SynthLabel: React.FC<{text?: string}> = ({text = "합성 화면 · 실제 시스템 기록 기반"}) => (
   <div style={{position: "absolute", right: 30, bottom: 20, color: C.label, fontFamily: FONT, fontSize: 18, fontWeight: 500, opacity: 0.8,
     textShadow: "0 1px 4px rgba(0,0,0,0.9)"}}>
-    합성 화면 · 실제 시스템 기록 기반
+    {text}
   </div>
 );

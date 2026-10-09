@@ -15,8 +15,8 @@ import {VoiceBubbles} from "./VoiceBubbles.tsx";
 
 // t = 원본 영상 초(애니메이션 박자) · tMs = 기록 시각(누름·알림 경과) · boot = HUD 켜짐 0~1 · handAge = 손이 처음 나타난 뒤 초(handSince)
 export const Hud: React.FC<{ui: UiState; view: DetView; fit: Fit; t: number; tMs: number; boot: number; handAge: number | null;
-  W: number; H: number; caption?: string; captionOpacity?: number; badge?: string}> =
-  ({ui, view, fit, t, tMs, boot, handAge, W, H, caption, captionOpacity = 1, badge}) => {
+  W: number; H: number; caption?: string; captionOpacity?: number; badge?: string; synth?: string}> =
+  ({ui, view, fit, t, tMs, boot, handAge, W, H, caption, captionOpacity = 1, badge, synth}) => {
     const panels = Math.max(0, Math.min(1, (boot - 0.85) / 0.15));
     const press = ui.lastPress ? {button: ui.lastPress.button, age: (tMs - ui.lastPress.t) / 1000, ok: ui.lastPress.ok} : null;
     const alertAge = ui.alert ? (tMs - ui.alert.since) / 1000 : 0;
@@ -44,7 +44,7 @@ export const Hud: React.FC<{ui: UiState; view: DetView; fit: Fit; t: number; tMs
         <VoiceBubbles voice={ui.voice} t={t} />
         <SpeedBadge badge={badge} />
         <Caption text={caption} opacity={captionOpacity} />
-        <SynthLabel />
+        <SynthLabel text={synth} />
       </>
     );
   };

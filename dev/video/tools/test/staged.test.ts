@@ -1,0 +1,49 @@
+import {test} from "node:test";
+import assert from "node:assert/strict";
+import {stagedRun} from "../../src/lib/staged.ts";
+import {runs} from "../../src/lib/timeline.ts";
+import {stateAt} from "../../src/lib/uiState.ts";
+
+// 10/9 시험 전 영상(측정 기록 없음) — 화면을 보고 정한 누름 시각(초)
+const R = stagedRun(1, [
+  {button: "B1", t: 6.44, sub: {label: "플라즈마 클린 진행", sec: 10}},
+  {button: "B2", t: 19.52, sub: {label: "N2 퍼지", sec: 10}, tool: {want: "wrench", seen: 24.6, grasped: 26.6}},
+  {button: "B3", t: 36.95, sub: {label: "전극 온도 하강", sec: 10}},
+  {button: "B4", t: 50.98},
+]);
+const at = (sec: number) => stateAt(R.events, R.runStart, sec * 1000);
+
+test("판 시작 뒤 첫 차례는 B1 · 누르기 전엔 감시 중", () => {
+  assert.equal(R.runStart, 1000);
+  assert.equal(at(5).state, "MONITOR");
+  assert.equal(at(5).expected, "B1");
+});
+test("누른 직후 = 맞는 누름 · 대기 막대 시작", () => {
+  const s = at(6.5);
+  assert.deepEqual(s.lastPress, {button: "B1", t: 6440, ok: true});
+  assert.equal(s.sub?.label, "플라즈마 클린 진행");
+});
+test("대기 막대 = 정한 초만큼 차오른다", () => {
+  assert.ok(Math.abs(at(6.44 + 5).sub!.progress - 0.5) < 0.01);
+});
+test("대기가 끝나면 완료 목록에 들고 다음 차례로", () => {
+  const s = at(17);
+  assert.deepEqual(s.done, ["B1"]);
+  assert.equal(s.sub, null);
+  assert.equal(s.expected, "B2");
+});
+test("공구 — 찾는 중 → 확인 중 → 쥠", () => {
+  assert.equal(at(22).tool?.phase, "search");
+  assert.equal(at(25).tool?.phase, "checking");
+  assert.equal(at(27).tool?.phase, "grasped");
+  assert.equal(at(27).tool?.want, "wrench");
+});
+test("마지막 누름 = 완주 · 네 단계 완료", () => {
+  const s = at(52);
+  assert.deepEqual(s.done, ["B1", "B2", "B3", "B4"]);
+  assert.equal(s.state, "IDLE");
+  assert.deepEqual(runs(R.events), [{start: 1000, end: 50980, ok: true}]);
+});
+test("사건은 시각 순서", () => {
+  assert.ok(R.events.every((e, i) => i === 0 || R.events[i - 1].t <= e.t));
+});
