@@ -67,7 +67,9 @@
 │  ├─ poc/                Step1 PoC — MediaPipe 손 + 색 ROI + dwell (검증 완료)
 │  ├─ interlock/          트랙 A — 물리 인터락 (ref/ = ESP/Arduino 참고자산)
 │  ├─ fsm/                순서위반 상태머신 (정본 코드는 Rpi5/Demo/fsm.py)
-│  └─ ai_model/           트랙 B — YOLO 버튼 동적검출 (상태는 통합문서 §6.1)
+│  ├─ ai_model/           트랙 B — YOLO 버튼 동적검출 (상태는 통합문서 §6.1)
+│  └─ video/              🎬 시연 영상 합성 — Remotion(폰 영상 + 실제 기록 HUD) · 사용법 = dev/video/README.md
+│                         원본·사본·검출 = 데스크톱 ~/data/시연영상/ (git 밖 · public/footage 바로가기)
 ├─ captures/              🖼️ 손 검출 샘플 이미지 (테스트 입력용)
 ├─ media/                 🎬 overlay 영상 (정상·스침만 git 추적)
 │  └─ 발표차트/           📊 8월 발표용 차트 SVG·PNG (생성기 = Rpi5/백업/세기-20261009/slide_charts.py · 되돌려 쓴다)
