@@ -64,3 +64,18 @@ export function fitRect(w: number, h: number, W: number, H: number) {
   const s = Math.min(W / w, H / h);
   return {s, x: (W - w * s) / 2, y: (H - h * s) / 2};
 }
+
+// 손이 지금 보이면 「이번에 처음 나타난 뒤 지난 초」 — 등장 연출(조준 → 뼈대 뻗기)의 박자 · 안 보이면 null
+// HAND_GAP_FRAMES 이하로 잠깐 끊긴 것은 이어진 것으로 본다(검출이 한두 프레임 빠질 때마다 연출이 다시 시작되지 않게)
+export const HAND_GAP_FRAMES = 6;
+export function handSince(d: Dets, sec: number): number | null {
+  const f0 = Math.floor(sec * d.fps + 1e-6);
+  if (!heldHand(d, f0)) return null;
+  let first = f0;
+  let gap = 0;
+  for (let f = f0; f >= 0; f--) {
+    if (rowAt(d, f)?.hand) { first = f; gap = 0; }
+    else if (++gap > HAND_GAP_FRAMES) break;
+  }
+  return (f0 - first) / d.fps;
+}

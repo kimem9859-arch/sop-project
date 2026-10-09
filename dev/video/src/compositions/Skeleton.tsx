@@ -23,7 +23,7 @@ export const Skeleton: React.FC<SkeletonProps> = ({take, video, dets}) => {
       <OffthreadVideo src={staticFile(`footage/${take}/${video}`)} muted style={{width: "100%", height: "100%", objectFit: "contain"}} />
       <ButtonBoxes boxes={v.btn} fit={fit} t={sec} />
       <ButtonBoxes boxes={v.tool} fit={fit} t={sec} tool />
-      <HandSkeleton hand={v.hand} fit={fit} t={sec} />
+      <HandSkeleton hand={v.hand} fit={fit} t={sec} age={v.hand ? 10 : null} />{/* G1 확인용 — 등장 연출 없이 늘 다 보인다 */}
       <div style={{position: "absolute", left: 20, top: 16, color: "#fff", font: "24px monospace", textShadow: "0 0 4px #000"}}>
         {`${take} · ${sec.toFixed(2)}s · 버튼 ${v.btn.length} · 공구 ${v.tool.length} · 손 ${v.hand ? "O" : "-"}`}
       </div>
