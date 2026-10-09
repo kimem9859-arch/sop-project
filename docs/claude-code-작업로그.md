@@ -6,6 +6,14 @@
 
 ---
 
+## 2026-10-09 · 🖥️ 데스크톱 · session 4b9c48c6-a2db-4a84-8d11-8936d5b4c6f9 (✅ 시연영상 합성 작업 도구 — Remotion 공식 스킬 · impeccable 프로젝트 맥락 · 메모리)
+- ✅ Remotion 공식 Agent Skills 12개 — `dev/video/.agents/skills` + `.claude/skills` 바로가기 · 그 폴더 파일을 다룰 때 자동으로 잡힘(실제 확인) · **git 제외**(데스크톱 `.git/info/exclude` 가 `.agents/` 를 막아 바로가기만 올라가면 파이에서 끊김) → `skills-lock.json` 만 · 재설치 = `npx remotion skills add`
+- ✅ impeccable — `dev/video/PRODUCT.md`(init · 사용자 확인 1회) · hud 파일 편집마다 디자인 훅 점검 · 수동 detect 0건 · v4.5.1 업데이트 있음(안 함)
+- ✅ 메모리 `reference-desktop-quickshare-folder` — 폰 영상 원본 = `C:\퀵쉐어\`(사용자 폴더·Downloads 아님)
+- 🔎 공식 스킬 예시(글꼴 맨 위 await)가 Remotion 4.0.534 묶기 대상(chrome85)에서 실패 · 도구 입력의 유니코드 이스케이프가 실제 문자로 풀림(소스·커밋 메시지) — 넣을 땐 python 으로·grep -P 로 확인
+- 🔎 원격 조작 중 질문 도구가 한 번 거절됨(사용자가 /remote-control 전환) → 같은 질문 다시 · 원격일 때 정지 화면은 SendUserFile 로 보냄
+- 🔗 커밋: 없음(설정·스킬은 git 밖 · 기록 = 작업로그 커밋)
+
 ## 2026-10-07 · Rpi1 · session 634b5800-ccc4-4578-a521-4b2dcb692691 (⏩ 발표 작업 도구 — 디자인 플러그인 sop-project 로컬 · LibreOffice Impress · Pretendard)
 - ✅ 플러그인 `--scope local` 추가: frontend-design · frontend-slides · impeccable → ~/sop-project(`.claude/settings.local.json` · 10/7 02:29) · 되돌리기 = `claude plugin uninstall <이름> --scope local`
 - ✅ 파이 패키지: `libreoffice-impress-nogui` · `draw-nogui` 설치 + 함께 올라간 갱신 14건(10/7 11:14) — PowerPoint 없는 파이에서 PPTX 를 그려 대조
