@@ -7,9 +7,9 @@ import type {CalloutDef} from "./callout.ts";
 export type Clip = {take: string; file: string; from: number; to: number; speed: number; overlay: boolean;
   caption?: string; badge?: string; boot?: boolean; hold?: number; intro?: "buttons" | "hand" | "tool" | "overlap" | "dwell" | "end";
   chapter?: {no: string; title: string; desc: string}; section?: {no: string; title: string; desc: string}; run?: string;
-  callout?: CalloutDef; card?: "chapter" | "section"; tip?: boolean};
+  callout?: CalloutDef; card?: "chapter" | "section"; tip?: boolean; fadeOut?: number};
 // card = 장 · 절 제목 카드(정지 구간 · 화면을 어둡게 하고 제목만) — 시안 2 피드백 「절 제목은 따로 독립 제목 카드로」
-// tip = 검지 끝 빛 꼬리(판정 장면 · 시안 8)
+// tip = 검지 끝 빛 꼬리(판정 장면 · 시안 8) · fadeOut = 끝 몇 초 동안 검은 화면으로 사라짐(로고 인트로 → 안경 장면 · 시안 11)
 export type Placed = {clip: Clip; start: number; frames: number};
 
 export function place(clips: Clip[], fps: number): Placed[] {

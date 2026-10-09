@@ -2,7 +2,8 @@ import {CHECK_SEC, SCAN_HOLD_SEC} from "../lib/boot.ts";
 import type {Clip} from "../lib/edit.ts";
 import type {StagedEv, StagedPress} from "../lib/staged.ts";
 
-// 기능 소개 영상 시안 10(2026-10-10 · 시안 9 효과 검토 — 장 전환 약하게 · 화면 질감과 상시 테두리 뺌 · 사실 카드 빛줄기 + 암호 풀림 · 탐지 확대 창 더함)
+// 기능 소개 영상 시안 11(2026-10-10 · 사용자 「첨부 영상을 영상 맨 앞부분에 … 시간 상관 없이」 → 로고 인트로를 안경 장면 앞에 · 「뒷부분 2초만 잘라서」 = 0~8초 · 소리 그대로 · 끝 0.5초 검게)
+//   · 기능 소개 영상 시안 10(2026-10-10 · 시안 9 효과 검토 — 장 전환 약하게 · 화면 질감과 상시 테두리 뺌 · 사실 카드 빛줄기 + 암호 풀림 · 탐지 확대 창 더함)
 //   · 시안 9(시안 8 「테크적이고 화려하게」 → 추천 5개 — 장 전환 · 검지 끝 빛 꼬리 · 경고/차단 순간 · 듣는 중 파동)
 //   · 시안 8(시안 7 피드백 「정답 입력 절을 빼고 공구 질문 절을 넣어 1분 30초로」 — 03 = 공구 질문 → 단계 질문(원본 시간 순))
 //   · 시안 7(시안 6 피드백 「1분 30초 정도」 — 카드 · 정지 · 구간을 줄임) · 시안 4(시안 3 피드백 14건) — 시안 3 「천천히 · 독립 제목 카드」 · 시안 2 「장 · 절」 · 사용자 「발표 자료에 넣을 기능 소개 영상 1개」
@@ -13,6 +14,7 @@ import type {StagedEv, StagedPress} from "../lib/staged.ts";
 // ⚠️ 실제 시스템과 다른 연출(사용자 결정 대기 — 보고 참조): 다른 공구 앞의 「공구 확인 중」(실제는 검지 끝이 그 공구 박스에 든 첫 검사에 바로 경고)
 //   · 대기 시간은 멈추지 않는다 — 다른 공구 경고가 뜨면 화면을 멈추고 경고 연출만 이어 간 뒤 다음 장면(사용자 10/10)
 const G = "20261009_glasses", T = "20261009_pre", B34 = "20261008_phoneB_land34", BP = "20261008_phoneB";
+const LOGO = "intro_logo";   // 로고 인트로(사용자 제공 · 생성형 AI 영상 1280×720 24fps 10초 · 소리 있음)
 export const FEATURE_SYNTH = "시안 · 상태 · 경고 · 음성 표시는 영상을 보고 꾸민 연출(실제 기록 아님)";
 const V = "voice" as const;
 
@@ -119,6 +121,7 @@ const LAMP: [number, number, number, number, number][] = [
 
 export const FEATURE: Clip[] = [
   // 인트로 — 안경 쓰기 → 테가 빠진 직후 가상 세계 펼침(시험 촬영에서는 한 장면으로 이어진다) → 비전 감시 시작 · 점검 완료 → 단계 목록 「작업 시작」
+  {take: LOGO, file: "proxy.mp4", from: 0, to: 8, speed: 1, overlay: false, fadeOut: 0.5},    // 로고 인트로(뒤 2초 잘라 냄 · 사용자) → 검게 → 안경
   {take: G, file: "proxy.mp4", from: GLASSES_ON, to: GLASSES_OFF, speed: 1, overlay: false},
   {take: T, file: "proxy.mp4", from: 0, to: BOOT_FROM, speed: BOOT_SPEED, overlay: true, boot: true,
     caption: "시안 — 상태 · 경고 · 음성 표시는 영상을 보고 꾸민 연출입니다"},
