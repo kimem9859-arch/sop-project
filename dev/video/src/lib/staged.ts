@@ -8,15 +8,18 @@ export type StagedPress = {
   sub?: {label: string; sec: number};                     // 누른 뒤 대기(recipe 의 서브 단계)
   tool?: {want: string; seen: number; grasped: number};   // 대기 중 공구 — 처음 보인 시각 · 쥠 확인 시각(영상 초)
 };
+// 덧붙이는 사건(경고·차단·음성 등 — 시각은 영상 초) · src 없으면 main
+export type StagedEv = {t: number; kind: string; d: Ev["d"]; src?: Ev["src"]};
 const MONITOR_AFTER = 2;  // 차례가 바뀐 뒤 감시 중이 되기까지(초) — 견본 판 1 은 1.1~2.8초
 const CONFIRM_AFTER = 0.8; // 누른 뒤 공정 진행으로 넘어가기까지(초) — 견본 판 1 은 0.5~0.8초
 const SCAN_EVERY = 1;     // 공구 검사 간격(초) — 견본 판 1 의 tool_scan 간격
 
-export function stagedRun(start: number, presses: StagedPress[]): {runStart: number; runEnd: number; events: Ev[]} {
+// opt.first = 첫 차례(정답 누름 없이 경고·차단만 꾸밀 때) · opt.extra = 그대로 섞을 사건
+export function stagedRun(start: number, presses: StagedPress[], opt: {first?: string; extra?: StagedEv[]} = {}): {runStart: number; runEnd: number; events: Ev[]} {
   const ev: Ev[] = [];
-  const add = (sec: number, kind: string, d: Ev["d"] = {}) => ev.push({t: Math.round(sec * 1000), kind, d, src: "main"});
+  const add = (sec: number, kind: string, d: Ev["d"] = {}, src: Ev["src"] = "main") => ev.push({t: Math.round(sec * 1000), kind, d, src});
   const state = (sec: number, from: string, to: string, expected: string) => add(sec, "state", {old: from, new: to, expected});
-  const first = presses[0].button;
+  const first = opt.first ?? presses[0].button;
   add(start, "run_start");
   state(start, "IDLE", "READY", first);
   state(start, "READY", "PROCESS_RUN", first);
@@ -54,6 +57,7 @@ export function stagedRun(start: number, presses: StagedPress[]): {runStart: num
     add(end, "step_done", {order: i + 1, button: p.button});
     state(Math.min(end + MONITOR_AFTER, next.t - 0.3), "PROCESS_RUN", "MONITOR", next.button);
   });
+  for (const x of opt.extra ?? []) add(x.t, x.kind, x.d, x.src);
   ev.sort((a, b) => a.t - b.t); // 같은 시각은 넣은 순서 유지(안정 정렬)
   return {runStart: ev[0].t, runEnd: ev[ev.length - 1].t, events: ev};
 }

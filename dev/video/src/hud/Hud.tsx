@@ -1,11 +1,13 @@
 import type {Box, DetView} from "../lib/dets.ts";
 import {BOOT_SEC, BTN_INTRO_SEC, PANEL_FROM, scanPassBoot, scanY} from "../lib/boot.ts";
 import {covers} from "../lib/occlusion.ts";
+import type {Dwell} from "../lib/judge.ts";
 import type {UiState} from "../lib/uiState.ts";
 import {AlertCard} from "./AlertCard.tsx";
 import {ButtonBoxes} from "./ButtonBoxes.tsx";
 import {HandSkeleton} from "./HandSkeleton.tsx";
 import {HudBoot} from "./HudBoot.tsx";
+import {JudgeZone} from "./JudgeZone.tsx";
 import {Caption, SpeedBadge, SynthLabel} from "./Overlays.tsx";
 import {ProgressGauge} from "./ProgressGauge.tsx";
 import {DONE_SHOW, StepDone} from "./StepDone.tsx";
@@ -14,10 +16,10 @@ import {C, STEPS, type Fit} from "./theme.ts";
 import {ToolCard} from "./ToolCard.tsx";
 import {VoiceBubbles} from "./VoiceBubbles.tsx";
 
-// pressAt = 누른 버튼이 그 순간 가려졌을 때 직전 박스(lastBox) · t = 애니메이션 박자(초 · 편집 전체 시계 — 화면 정지 중에도 흐른다) · tMs = 기록 시각(누름·알림 경과) · boot = HUD 켜짐 0~1 · handAge = 손 탐지 연출 뒤 초
+// dwell = 판정 기준 장면의 머묾 타이머(lib/judge) · pressAt = 누른 버튼이 그 순간 가려졌을 때 직전 박스(lastBox) · t = 애니메이션 박자(초 · 편집 전체 시계 — 화면 정지 중에도 흐른다) · tMs = 기록 시각(누름·알림 경과) · boot = HUD 켜짐 0~1 · handAge = 손 탐지 연출 뒤 초
 export const Hud: React.FC<{ui: UiState; view: DetView; fit: Fit; t: number; tMs: number; boot: number; handAge: number | null;
-  W: number; H: number; caption?: string; captionOpacity?: number; badge?: string; synth?: string; pressAt?: Box | null}> =
-  ({ui, view, fit, t, tMs, boot, handAge, W, H, caption, captionOpacity = 1, badge, synth, pressAt = null}) => {
+  W: number; H: number; caption?: string; captionOpacity?: number; badge?: string; synth?: string; pressAt?: Box | null; dwell?: Dwell | null}> =
+  ({ui, view, fit, t, tMs, boot, handAge, W, H, caption, captionOpacity = 1, badge, synth, pressAt = null, dwell = null}) => {
     const panelAge = boot >= 1 ? null : (boot - PANEL_FROM) * BOOT_SEC; // 단계 목록이 나타난 뒤 초(지지직 등장)
     const panels = boot >= PANEL_FROM;
     const press = ui.lastPress ? {button: ui.lastPress.button, age: (tMs - ui.lastPress.t) / 1000, ok: ui.lastPress.ok} : null;
@@ -40,6 +42,10 @@ export const Hud: React.FC<{ui: UiState; view: DetView; fit: Fit; t: number; tMs
       <>
         <ButtonBoxes boxes={view.btn} fit={fit} t={t} next={ui.sub ? null : ui.expected} press={press}
           alert={ui.alert ? {button: ui.alert.button, kind: ui.alert.kind} : null} revealY={boot >= 1 ? Infinity : scanY(boot, H)} intro={intro} pressAt={pressAt} />
+        {dwell && (() => {
+          const b = view.btn.find((x) => x[0] === dwell.button);
+          return b ? <JudgeZone box={b} fit={fit} dwell={dwell} t={t} /> : null;
+        })()}
         {ui.sub && <ButtonBoxes boxes={view.tool} fit={fit} t={t} tool toolState={tool} />}
         <HandSkeleton hand={view.hand} fit={fit} t={t} age={handAge} ring={ring} dim={holding} />
         <HudBoot boot={boot} W={W} H={H} />

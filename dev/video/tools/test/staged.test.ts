@@ -51,3 +51,15 @@ test("공구 확인은 1초마다 한 번씩 세고 세 번째가 쥠(실제 시
   assert.deepEqual([at(24.7).tool?.checks, at(25.7).tool?.checks, at(26.7).tool?.checks], [1, 2, 3]);
   assert.equal(at(26.7).tool?.phase, "grasped");
 });
+test("정답 누름 없이도 판을 꾸민다(first) · 덧붙인 사건(extra)은 초 → ms 로 시각 순서에 섞인다", () => {
+  const W = stagedRun(3, [], {first: "B1", extra: [
+    {t: 7.43, kind: "state", d: {old: "MONITOR", new: "WARNING", expected: "B1", dwell_roi: "B3", dwell_start_ms: 7130}},
+    {t: 8.0, kind: "press", d: {button: "B2", source: "gpio", expected: "B1", state: "WARNING"}},
+    {t: 8.0, kind: "state", d: {old: "WARNING", new: "BLOCK", expected: "B1"}},
+  ]});
+  const s = (sec: number) => stateAt(W.events, W.runStart, sec * 1000);
+  assert.equal(s(6).expected, "B1");
+  assert.deepEqual([s(7.5).alert?.kind, s(7.5).alert?.button], ["warning", "B3"]);
+  assert.deepEqual([s(8.1).alert?.kind, s(8.1).alert?.button, s(8.1).lastPress?.ok], ["block", "B2", false]);
+  assert.ok(W.events.every((e, i) => i === 0 || W.events[i - 1].t <= e.t));
+});
