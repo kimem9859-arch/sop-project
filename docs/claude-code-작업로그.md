@@ -20,6 +20,13 @@
 - 🔎 원격 조작 중 질문 도구가 한 번 거절됨(사용자가 /remote-control 전환) → 같은 질문 다시 · 원격일 때 정지 화면은 SendUserFile 로 보냄
 - 🔗 커밋: 없음(설정·스킬은 git 밖 · 기록 = 작업로그 커밋)
 
+## 2026-10-08 · Rpi1 · session 85e2483c-2931-4f3b-b902-495397cdf8a5 (소급 — Claude Code 설정 항목 한국어 설명 · 사용자 설정 변경 · 커밋 0)
+- 보존본(발화·편집·커밋) 기반 소급 — 판단·결론은 추정
+- ✅ `/config` 항목과 지금 설정값을 한국어 목록으로 정리(사용자 「영어로 되어 있어서 확인이 힘들어」)
+- ✅ 사용자 설정 `~/.claude/settings.json` 편집(사용자 「바꿔줘」 · 메시지 시각 표시 등 추천값) — 지금 값 = `showMessageTimestamps` true · `preferredNotifChannel` terminal_bell · `inputNeededNotifEnabled` · `agentPushNotifEnabled` true(그 세션이 바꾼 항목은 보존본에 없어 추정)
+- ⏸ 남은 제안 — 세션 비추기(`autoUploadSessions`) 등은 사용자 결정 · 그 세션은 제안 뒤 끝남
+- 🔗 커밋: 없음(사용자 설정은 저장소 밖)
+
 ## 2026-10-07 · Rpi1 · session 634b5800-ccc4-4578-a521-4b2dcb692691 (⏩ 발표 작업 도구 — 디자인 플러그인 sop-project 로컬 · LibreOffice Impress · Pretendard)
 - ✅ 플러그인 `--scope local` 추가: frontend-design · frontend-slides · impeccable → ~/sop-project(`.claude/settings.local.json` · 10/7 02:29) · 되돌리기 = `claude plugin uninstall <이름> --scope local`
 - ✅ 파이 패키지: `libreoffice-impress-nogui` · `draw-nogui` 설치 + 함께 올라간 갱신 14건(10/7 11:14) — PowerPoint 없는 파이에서 PPTX 를 그려 대조
