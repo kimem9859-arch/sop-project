@@ -6,6 +6,12 @@
 
 ---
 
+## 2026-10-10 · 🖥️ 데스크톱 · session 4b9c48c6-a2db-4a84-8d11-8936d5b4c6f9 (✅ CLAUDE.md §1 — 사용자에게 보이는 글은 모두 한국어로)
+- ✅ CLAUDE.md §1 맨 앞에 규칙 — 최종 답뿐 아니라 작업 중 안내 · 표 · 제안 · 하위 에이전트 보고 전달 · Bash 도구 설명까지 한국어 · 코드 식별자 · 명령 · 고유명사만 원문 · 내보내기 전에 첫 문장 확인(사용자 「클로드.md에 한국어로 설명하라고 명시해줘」)
+- ✅ 같은 내용의 auto memory `feedback-korean-everywhere.md` 와 MEMORY.md 줄을 지움(규칙배치.md 「같은 규칙을 두 곳에 쓰지 않는다」 · 정본 = CLAUDE.md · git 이라 파이 쪽도 읽음)
+- 🔎 원인 — 영어 자료(하위 에이전트 보고 · 로그 · 웹 검색 결과)를 다룬 직후 영어로 새는 일이 한 세션에서 거듭 지적됨(「작업 중 영어를 계속 쓰는데」 · 「한글로 다시 알려줘」 등)
+- 🔗 커밋: 4e6e911
+
 ## 2026-10-09 · 🖥️ 데스크톱 · session 4b9c48c6-a2db-4a84-8d11-8936d5b4c6f9 (✅ 시연영상 합성 작업 도구 — Remotion 공식 스킬 · impeccable 프로젝트 맥락 · 메모리)
 - ✅ Remotion 공식 Agent Skills 12개 — `dev/video/.agents/skills` + `.claude/skills` 바로가기 · 그 폴더 파일을 다룰 때 자동으로 잡힘(실제 확인) · **git 제외**(데스크톱 `.git/info/exclude` 가 `.agents/` 를 막아 바로가기만 올라가면 파이에서 끊김) → `skills-lock.json` 만 · 재설치 = `npx remotion skills add`
 - ✅ impeccable — `dev/video/PRODUCT.md`(init · 사용자 확인 1회) · hud 파일 편집마다 디자인 훅 점검 · 수동 detect 0건 · v4.5.1 업데이트 있음(안 함)
