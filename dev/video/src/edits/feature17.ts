@@ -3,18 +3,20 @@ import type {Clip} from "../lib/edit.ts";
 import type {StagedEv, StagedPress} from "../lib/staged.ts";
 import type {ViewKey} from "../lib/view.ts";
 import {CARD_IN, CARD_LAND} from "../lib/uiState.ts";
-import {ASK_ACK, TTS_LINES} from "./feature.ts";
+import {ASK_ACK} from "./feature.ts";
 import {TTS_SEC} from "./ttsSec.ts";
 
 // 기능 소개 영상 시안 17(2026-10-11 · 사용자 「이전 시안대로 효과 · 그래픽 · 자막 · 효과음 … 타워램프는 제외 · 음성비서는 현재 영상으로」)
 //   · 시안 17 피드백 19건(같은 날) — 로고 5초 · 켜짐 한 장면 · 탐지 연출은 재생 중 · 공구 장면 시작 · 음성비서 정지/재생 · 단계 질문 = 버튼 입력 장면 등
+//   · 수정 17(10/13 · 사용자 「프로젝트-최종정리.md 내용을 확인하여 반영」) — 공구 질문 = 즉답(LLM 없이) · 경고 · 스침 자막 = 판정 기준 안 B · 서브작업 대기 = 레시피 10초
 //   촬영 = 10/11 폰(4K 60fps) — 안경 쓰기 ③(174802) · 행동 영상(174335 · 94.7초) · 안경 벗기(174621) · 검출 = 파이1(--pad34)
 //   장면 고르기 = 프레임 6,656장 판정(문 · 디스플레이 비침 = 뺌) + 소리의 딸깍(누름) · 검지 끝이 버튼 박스에 든 시각(검출)
 //   🔑 문 · 디스플레이 비침이 보이는 순간은 자르지 않고 확대해 화면 밖으로(VIEWS · 사용자 「공구를 가져올 때 끊기지 않게」)
 //   배경음악은 아직 없음(사용자 「후보 10곡 중 내가 골라 다운로드」)
 // 🔴 실제 기록이 없는 시안 — 상태 · 경고 · 음성 · 사실 카드 표시는 화면을 보고 꾸민 연출(lib/staged) · 박스 · 손 · 공구는 실제 검출
-// 오른쪽 아래 표기 — + 음성은 AI 합성(Supertonic 모델 라이선스 부속서 A (e) 「기계가 만든 것임을 밝힘」 · 제미나이 음성도 함께)
-export const FEATURE17_SYNTH = "시안 · 상태 · 경고 · 음성 표시는 영상을 보고 꾸민 연출(실제 기록 아님) · 음성은 AI 합성(TTS)";
+// 오른쪽 아래 표기 — 실제(검출) · 연출(상태 · 경고 · 음성 표시) 구분 + 목소리는 AI 합성(Supertonic 모델 라이선스 부속서 A (e)
+//   「기계가 만든 것임을 밝힘」 · 제미나이 음성도 함께) · 최종본(10/13 사용자 「현재 문구는 뭔 내용인지 잘 모르겠어」)에서 알아보기 쉽게 바꿈(뜻은 같음)
+export const FEATURE17_SYNTH = "버튼·손·공구 인식은 실제 결과 · 경고·음성 화면은 실제 동작을 바탕으로 꾸민 연출 · 목소리는 AI 합성";
 const LOGO = "intro_logo", G = "20261011_glasses3", M = "20261011_main", GO = "20261011_glassesoff";
 const V = "voice" as const;
 
@@ -47,64 +49,69 @@ const B2_AT = WR_AT - 0.25;               // 렌치 장면 시작에 「렌치 �
 // 드라이버 — 쥔 손이 공구함 밖 · 비침이 끝난 첫 프레임(#4921) → 다 들어와 멈춘 83.9 에 인식(시안 17 4차 「인식 시작이 너무 빨라 조금만 늦춰」 83.3 → 83.9)
 const DRV_FROM = 82.98, DRV_AT = 83.9, DRV_OVER = 84.4, DRV_WRONG = 85.9, DRV_TO = 86.6;   // 경고 뒤 0.7초(5차 1.35 → 0.7)
 const GRAZE_IN = 12.767, GRAZE_OUT = 12.833;   // 검지 끝이 B1 박스에(0.07초)
-const WARN_IN = 14.767;                        // 검지 끝이 B3 박스에(0.63초 · 딸깍 없음 = 누르지 않음)
-const BLOCK_PRESS = 20.94, BLOCK_IN = BLOCK_PRESS - 0.18;   // 딸깍(누름) 20.94 · 판정 구역은 누르기 0.18초 전부터 — 게이지가 차기 전에 눌러 차단(시안 17 2차 피드백)
+// 경고 · 차단 = 느린 손끝 경고(판정 기준 안 B · 수정 18 · 사용자 「버튼으로 빨리 가다가 멈추는 연출로 손 속도도 판정 기준」)
+//   B2 에서 B3 로 빠르게(600~670 사본 px/s) 와서 B3 상자 안에서 기준 아래로 느려진 순간 바로 경고 — 시각은 촬영 검출로 계산(lib/speed enterAt ·
+//   slowAt · 시험이 지킴) · 0.3초 체류 타이머는 이 장면에서 쓰지 않는다(이 손은 0.3초가 차기 전에 속도로 경고된다)
+const WARN_FROM = 14.3, WARN_IN = 14.767, WARN_SLOW = 14.867;   // 손이 B2 를 떠남 · B3 상자에 듦 · 느려짐(0.63초 머묾 · 딸깍 없음 = 누르지 않음)
+//   차단 = 경고 → 무시하고 누름 → 차단(수정 18 — 2차 피드백의 「게이지가 차기 전에 눌러 차단」을 바꿈 · 실제 FSM 「WARNING 에서 오답 누름 → BLOCK」)
+//   경고 음성은 넣지 않는다 — 경고 뒤 0.47초에 눌러, 음성 알림 지연(중앙 0.835초 · 최종 정리 9.1)보다 먼저 차단이 온다
+const BLOCK_FROM = 20.2, BLOCK_IN = 20.367, BLOCK_SLOW = 20.467, BLOCK_PRESS = 20.94;   // 다가옴 · B3 에 듦 · 느려짐(경고) · 딸깍(누름)
 // 누름 → 차단을 화면에서 나눠 보인다(시안 17 3차 피드백 「파동이 누름 효과인지 차단 효과인지 구분이 안 돼」) — 누른 순간 버튼 색 파동 · 누름 소리 →
-//   0.05초 뒤 프레임에서 멈추고(HUD 시계는 흐름) BLOCK_GAP 뒤 차단(빨강 번쩍 · 흔들림 · 자물쇠 · 경보) · 머묾 타이머는 누른 자리에서 멈춤(dwell_end_ms)
+//   0.05초 뒤 프레임에서 멈추고(HUD 시계는 흐름) BLOCK_GAP 뒤 차단(빨강 번쩍 · 흔들림 · 자물쇠 · 경보) · 경고 구역은 차단 순간 사라짐(lib/judge)
 const BLOCK_FRAME = BLOCK_PRESS + 0.05, BLOCK_GAP = 0.35, BLOCK_AT = BLOCK_FRAME + BLOCK_GAP;
 // 음성 질의 — 작업자 「가디언」(남성 TTS) → 호출 띠링 → 질문 → 받아쓰기 · 시각 = HUD 기록 시계
 //   말풍선 글자는 목소리와 함께 써진다(utter 사건 · 시안 17 3차 피드백 「남자 목소리와 UI가 맞지 않아」)
-//   답 = 사실 카드가 말풍선에 들어가(CARD_LAND 3.9 — 그때까지 「코드 판정 중」) 「LLM 생각 중」을 LLM_THINK 초 보인 뒤
+//   LLM 답 = 사실 카드가 말풍선에 들어가(CARD_LAND 3.9 — 그때까지 「코드 판정 중」) 「LLM 생각 중」을 LLM_THINK 초 보인 뒤
 //   (시안 17 4차 피드백 「사실 카드가 들어가면 LLM 생각 중 · 그 시간을 좀 두어 — 바로 답 말풍선이 나오지 않게」 · 3차 판은 0.3초)
-const LLM_THINK = 1.2;
-export const ANSWER = CARD_LAND + LLM_THINK, PLAY = ANSWER + 0.1;   // 질문 뒤 답 · 답 재생
-const say = (w: number, wake: number, ask: number, sec: number) => {
+//   즉답 = 상태 질문 7종은 LLM · 「확인해 보겠습니다」 · 사실 카드 없이 코드가 바로 답한다(수정 17 · 최종 정리 5.6 · Rpi5 bfba16f
+//   voice_card.quick_answer — 시연 런처 기본 켬) · QUICK_ANSWER = 받아쓰기 뒤 답(「코드 판정 중」이 잠깐 보임)
+const LLM_THINK = 1.2, QUICK_ANSWER = 1.1;   // 즉답 1.1 = 「코드 판정 중」 0.6초(0.8 은 9프레임 깜빡임 · 리뷰) · 실제 합성 · 재생 지연 0.5~1.5초 안
+export const ANSWER = CARD_LAND + LLM_THINK;   // 질문 뒤 LLM 답
+const say = (w: number, wake: number, ask: number, sec: number, after = ANSWER) => {
   const call = w + wake + 0.04, q = call + 0.35, stt = q + ask + 0.1;   // 「가디언」 시작 → 호출 · 질문 시작 → 받아쓰기
-  return {w, call, q, stt, ask, ack: stt + ASK_ACK, ans: stt + ANSWER, play: stt + PLAY, done: stt + PLAY + sec};   // done = 답 재생 끝
+  return {w, call, q, stt, ask, ack: stt + ASK_ACK, ans: stt + after, play: stt + after + 0.1, done: stt + after + 0.1 + sec};   // done = 답 재생 끝
 };
 type Say = ReturnType<typeof say>;
-// 03-1 공구 질문(둘째 렌치) — 「확인해 보겠습니다」에서 화면 정지(HUD 는 흐름) → 답을 다 들은 뒤 재생 → 렌치를 쥘 때까지
+// 03-1 공구 질문(둘째 렌치) = 즉답(「필요공구」) — 질문을 받아쓴 순간 화면 정지(HUD 는 흐름) → 답을 다 들은 뒤 재생 → 렌치를 쥘 때까지
 //   (시안 17 3차 피드백 「음성비서가 답하기도 전에 손이 공구로 향하고 있어 — 답을 받고 행동이 시작」 → 답 재생 끝 + 0.2초에 재생)
-//   패널이 가만히 있는 63.65초까지를 질문이 끝날 때까지로 살짝 늘림(0.88배 · HUD 는 제 속도)
+//   패널이 가만히 있는 63.65초까지를 질문이 끝날 때까지로 살짝 늘림(0.97배 · HUD 는 제 속도)
 //   답 뒤 재생은 손이 공구함에서 렌치를 잡는 순간(주먹이 공구함 안 · 65.05~)까지(5차 분량 줄이기 67.8 → 65.95 · 꺼내 드는 모습은 뺌)
-const V1_FROM = 61.05, V1_FREEZE = 63.65, V1_TO = 65.95, A1 = say(V1_FROM + 0.05, TTS_SEC.w_wake, TTS_SEC.w_tool, TTS_SEC.tool);
+//   2단계(N2 퍼지 10초) 시작 = 장면 1초 전 — 누름 파동(0.9초)이 장면 첫 화면에 남지 않고, 10초 대기가 장면 끝(HUD 약 69.8)까지 끝나지 않게
+const V1_FROM = 61.05, V1_FREEZE = 63.65, V1_TO = 65.95, V1_B2 = V1_FROM - 1.0;
+const A1 = say(V1_FROM + 0.05, TTS_SEC.w_wake, TTS_SEC.w_tool, TTS_SEC.tool_quick, QUICK_ANSWER);
 const V1_GO = A1.done + 0.2;
-// 03-2 단계 질문(B1 누름 장면) — B1 누름(딸깍 9.54) → 손을 떼며 호출 → 질문 → 손이 다시 들어오기(12.37) 전 12.3초에서 정지(HUD 는 흐름)
-//   1단계 서브작업이 끝나 2단계 안내 — 답이 그 전에 끝난다 · 🔴 서브작업 = 영상에서만 12초(실제 레시피 10초 — 시안 17 4차의 「LLM 생각 중」
-//   1.2초 · 느린 음성비서(빠르기 0.95)로 답이 1단계 완료보다 1.4초 늦게 끝나 늘림 · 사실 카드 「약 N초 뒤」도 이 값으로)
-const STEP1_SEC = 12;
+// 03-2 단계 질문(B1 누름 장면) = LLM — B1 누름(딸깍 9.54) → 손을 떼며 호출 → 질문 → 손이 다시 들어오기(12.37) 전 12.3초에서 정지(HUD 는 흐름)
+//   1단계 서브작업(레시피 10초)이 끝나 2단계 안내 — 답이 그 전에 끝난다(수정 17 — 영상에서만 12초였던 것을 레시피대로 · 답 문장을 줄여 맞춤)
+const STEP1_SEC = 10;
 //   시작 = B1 누르기 약 1초 전(5차 분량 줄이기 7.9 → 8.6) · 끝 「다음에 누를 버튼」 안내 1.6 → 1.2초
 const V2_FROM = 8.6, V2_FREEZE = 12.3, STEP1_DONE = 9.54 + STEP1_SEC, V2_END = STEP1_DONE + 1.2, A2 = say(9.65, TTS_SEC.w_wake, TTS_SEC.w_step, TTS_SEC.step1);
 
 const done1: StagedEv = {t: 0, kind: "step_done", d: {order: 1, button: "B1"}};
 const at0 = (t: number, e: StagedEv): StagedEv => ({...e, t});
 const search = (t: number): StagedEv => ({t, kind: "tool_scan", d: {hand: true, seen: [], tool: null, phase: "search", want: "wrench"}});
-// 음성 질의 — 시안 16 과 같은 흐름(호출 → 질문 · 사실 카드 → 「확인해 보겠습니다」 → 답) · 시각 = HUD 기록 시계
+// 음성 질의 — 호출 → 질문 → (LLM = 사실 카드 · 「확인해 보겠습니다」 →) 답 · 시각 = HUD 기록 시계
+//   card 가 없으면 즉답(LLM · 「확인해 보겠습니다」 없음 — voice_assistant 「LLM 도 「확인 중」도 없이 상태로 한 문장」)
 //   + 작업자 말(utter — 말풍선이 목소리와 함께 써짐 · 「가디언」 = 새 대화의 첫 말)
-const ask = (a: Say, q: string, card: string[], answer: string): StagedEv[] => [
+const ask = (a: Say, q: string, answer: string, card?: string[]): StagedEv[] => [
   {t: a.w, kind: "utter", d: {text: WORKER_LINES.w_wake, dur: TTS_SEC.w_wake, first: true}, src: V},
   {t: a.call, kind: "wake", d: {}, src: V},
   {t: a.q, kind: "utter", d: {text: q, dur: a.ask}, src: V},
   {t: a.stt, kind: "stt", d: {text: q}, src: V},
-  {t: a.stt + 0.05, kind: "card", d: {lines: card}, src: V},
-  {t: a.ack, kind: "play_start", d: {}, src: V},
-  {t: a.ack + TTS_SEC.ack, kind: "play_end", d: {what: "완료"}, src: V},
-  {t: a.ans, kind: "answer", d: {src: "llm", text: answer}, src: V},
+  ...(card ? [
+    {t: a.stt + 0.05, kind: "card", d: {lines: card}, src: V},
+    {t: a.ack, kind: "play_start", d: {}, src: V},
+    {t: a.ack + TTS_SEC.ack, kind: "play_end", d: {what: "완료"}, src: V},
+  ] satisfies StagedEv[] : []),
+  {t: a.ans, kind: "answer", d: {src: card ? "llm" : "quick", text: answer}, src: V},
   {t: a.play, kind: "play_start", d: {}, src: V},
   {t: a.done, kind: "play_end", d: {what: "완료"}, src: V},
 ];
-// 단계 질문 답(시안 17 — 1단계 대기 중) · 문장은 tools/tts_lines.ts 가 읽어 TTS 로(tts_step1.wav)
-export const TTS17_LINES = {step1: "지금은 플라즈마 클린 중이니 끝날 때까지 기다리세요."};   // 작업자 질문(TTS)이 들어가 1단계 완료 전에 끝나도록 줄임
-// 작업자 말(시안 17 피드백 「호출 음성과 질문을 남성 TTS 로」 — 촬영 때 녹음하지 않음) · tools/tts_supertonic.py 가 w_* 를 M1 로
+// 답 문장 · tools/tts_lines.ts 가 읽어 TTS 로(tts_<이름>.wav)
+//   step1 = 단계 질문 LLM 답(1단계 대기 중) — 1단계 완료(누름 + 10초) 전에 끝나도록 줄임(수정 17 · 3.9 → 2.0초)
+//   tool_quick = 공구 질문 즉답 — Rpi5 bfba16f voice_card.quick_answer 「필요공구」 문장 그대로({현재단계}단계에 필요한 공구는 {공구}입니다.)
+export const TTS17_LINES = {step1: "클린이 끝날 때까지 기다리세요.", tool_quick: "2단계에 필요한 공구는 렌치입니다."};
+// 작업자 말(시안 17 피드백 「호출 음성과 질문을 남성 TTS 로」 — 촬영 때 녹음하지 않음) · tools/tts_gemini.py(제미나이 남성)가 w_* 를 만든다
 export const WORKER_LINES = {w_wake: "가디언", w_tool: "지금 필요한 공구가 뭐야?", w_step: "다음 단계 뭐야?"};
-const CARD_TOOL = [
-  "지금 할 일: 렌치를 찾아 쥔다 — 쥐고 약 8초가 지나면 자동으로 3단계로 넘어간다",
-  "현재 진행 중인 단계: 2단계 「펌프/퍼지」 — 아직 끝나지 않음 · 이 단계의 버튼: B2",
-  "2단계의 서브작업: N2 퍼지 · 2단계에 필요한 공구 = 렌치",
-  "공구 상황: 렌치를 찾아야 한다",
-  "카메라에 지금 보이는 공구: 없음 (보고 있지만 아무 공구도 안 보인다)",
-  "이 시스템이 모르는 것: 가스·압력·온도 같은 장비 센서 값 · 다른 작업자",
-];
 const CARD_STEP1 = [
   `지금 할 일: 기다린다 — 약 ${Math.round(STEP1_DONE - A2.stt)}초 뒤 자동으로 2단계로 넘어간다`,
   "현재 진행 중인 단계: 1단계 「클린·가스차단」 — 아직 끝나지 않음 · 이 단계의 버튼: B1",
@@ -116,13 +123,17 @@ const CARD_STEP1 = [
 export const ASK = {A1, A2, V1_FROM, V1_FREEZE, V1_TO, V1_GO, V2_FROM, V2_FREEZE, STEP1_DONE, V2_END};
 
 // 연출 기록(run 마다) — 누름은 장면 밖(화면에 누름 파동이 안 보이게) · 1단계 완료 안내는 장면보다 충분히 앞
-const P1: StagedPress = {button: "B1", t: 9.54, sub: {label: "플라즈마 클린 진행", sec: STEP1_SEC}};   // 실제 누름(딸깍 9.54) · 서브작업은 영상에서만 12초(위)
+// 서브작업 대기 = 레시피 10초(수정 17 · 최종 정리 3.1) — 2단계 N2 퍼지는 장면이 끝날 때까지 대기가 끝나지 않는 자리에서 누른다
+//   (연출 기록은 공구를 쥐지 않아도 시간이 차면 단계를 끝낸다 — 실제 시스템은 렌치를 쥘 때까지 기다림)
+//   pB1 = 장면 앞(화면 밖)에서 1단계를 끝내 두는 준비 누름
+const P1: StagedPress = {button: "B1", t: 9.54, sub: {label: "플라즈마 클린 진행", sec: STEP1_SEC}};   // 실제 누름(딸깍 9.54)
 const pB1 = (t: number): StagedPress => ({button: "B1", t, sub: {label: "플라즈마 클린 진행", sec: 1}});
+const N2 = {label: "N2 퍼지", sec: 10};
 export const FEATURE17_STAGED = {
   [M]: {start: 0.3, presses: [P1, {button: "B2", t: 40}]},
-  [`${M}#tool`]: {start: 26, presses: [pB1(28), {button: "B2", t: B2_AT, sub: {label: "N2 퍼지", sec: 20}, tool: {want: "wrench", seen: OVER_AT, grasped: GRASP}},
+  [`${M}#tool`]: {start: 26, presses: [pB1(28), {button: "B2", t: B2_AT, sub: N2, tool: {want: "wrench", seen: OVER_AT, grasped: GRASP}},
     {button: "B3", t: 80}]},
-  [`${M}#other`]: {start: 60, presses: [pB1(62), {button: "B2", t: 70, sub: {label: "N2 퍼지", sec: 30}}, {button: "B3", t: 120}],
+  [`${M}#other`]: {start: 60, presses: [pB1(62), {button: "B2", t: 80, sub: N2}, {button: "B3", t: 120}],
     extra: [...[DRV_FROM + 0.05, DRV_FROM + 1.05].map(search),
       {t: DRV_OVER, kind: "tool_scan", d: {hand: true, seen: ["driver"], tool: null, phase: "checking", want: "wrench"}},
       {t: DRV_WRONG, kind: "wrong_tool", d: {want: "wrench", got: "driver"}}]},
@@ -131,28 +142,29 @@ export const FEATURE17_STAGED = {
     {t: GRAZE_OUT, kind: "state", d: {old: "MONITOR", new: "PROCESS_RUN", expected: "B2", dwell_roi: "B1", dwell_start_ms: GRAZE_IN * 1000}},
     {t: GRAZE_OUT + 0.36, kind: "state", d: {old: "PROCESS_RUN", new: "MONITOR", expected: "B2"}}]},
   [`${M}#warn`]: {start: 8, presses: [], first: "B2", extra: [at0(8, done1),
-    {t: WARN_IN + 0.005, kind: "state", d: {old: "MONITOR", new: "WARNING", expected: "B2", dwell_roi: "B3", dwell_start_ms: WARN_IN * 1000}},
-    {t: WARN_IN + 0.01, kind: "alert", d: {key: "alert_warn_B2", state: "WARNING"}, src: V},
-    {t: WARN_IN + 0.07, kind: "play_start", d: {}, src: V}]},
+    //   경고 = 느려진 장 바로 앞(정지 화면의 기록 시각에서 이미 경고) · reason "slow" = 느린 손끝(Rpi5 fsm last_warn_reason)
+    {t: WARN_SLOW - 0.001, kind: "state", d: {old: "MONITOR", new: "WARNING", expected: "B2", dwell_roi: "B3", dwell_start_ms: WARN_IN * 1000, reason: "slow"}},
+    {t: WARN_SLOW + 0.01, kind: "alert", d: {key: "alert_warn_B2", state: "WARNING"}, src: V},
+    {t: WARN_SLOW + 0.07, kind: "play_start", d: {}, src: V}]},
   [`${M}#block`]: {start: 13, presses: [], first: "B2", extra: [at0(13, done1),
+    {t: BLOCK_SLOW, kind: "state", d: {old: "MONITOR", new: "WARNING", expected: "B2", dwell_roi: "B3", dwell_start_ms: BLOCK_IN * 1000, reason: "slow"}},
     {t: BLOCK_PRESS, kind: "gpio_edge", d: {button: "B3", src: "edge"}},
-    {t: BLOCK_PRESS, kind: "press", d: {button: "B3", source: "gpio", expected: "B2", state: "MONITOR"}},
-    {t: BLOCK_AT, kind: "state", d: {old: "MONITOR", new: "BLOCK", expected: "B2", dwell_roi: "B3", dwell_start_ms: BLOCK_IN * 1000,
-      dwell_end_ms: BLOCK_PRESS * 1000}},
+    {t: BLOCK_PRESS, kind: "press", d: {button: "B3", source: "gpio", expected: "B2", state: "WARNING"}},
+    {t: BLOCK_AT, kind: "state", d: {old: "WARNING", new: "BLOCK", expected: "B2"}},
     {t: BLOCK_AT + 0.03, kind: "alert", d: {key: "alert_block_B2", state: "BLOCK"}, src: V},
     {t: BLOCK_AT + 0.1, kind: "play_start", d: {}, src: V}]},
-  // 03 — 공구 질문 = 2단계 렌치 찾는 중(오른쪽 위 카드만 · 공구 탐지 연출 없음) · 단계 질문 = B1 을 누른 뒤 1단계 대기
-  [`${M}#voice1`]: {start: 48, presses: [pB1(50), {button: "B2", t: 55, sub: {label: "N2 퍼지", sec: 25}}, {button: "B3", t: 100}],
-    extra: [...Array.from({length: 20}, (_, k) => search(55.2 + k)), ...ask(A1, WORKER_LINES.w_tool, CARD_TOOL, TTS_LINES.tool)]},
+  // 03 — 공구 질문 = 2단계 렌치 찾는 중(오른쪽 위 카드만 · 공구 탐지 연출 없음) · 즉답 / 단계 질문 = B1 을 누른 뒤 1단계 대기 · LLM
+  [`${M}#voice1`]: {start: 48, presses: [pB1(50), {button: "B2", t: V1_B2, sub: N2}, {button: "B3", t: 100}],
+    extra: [...Array.from({length: 20}, (_, k) => search(V1_B2 + 0.2 + k)), ...ask(A1, WORKER_LINES.w_tool, TTS17_LINES.tool_quick)]},
   [`${M}#voice2`]: {start: 5, presses: [P1, {button: "B2", t: 40}],
-    extra: ask(A2, WORKER_LINES.w_step, CARD_STEP1, TTS17_LINES.step1)},
+    extra: ask(A2, WORKER_LINES.w_step, TTS17_LINES.step1, CARD_STEP1)},
 };
 
 // 분량 줄이기(시안 17 5차 — 목표 1분 30초 ~ 1분 40초 · 사용자 「추천대로」) — 장 카드 1.8 → 1.5 · 절 카드 1.3 → 1.0 · 스침 0.25 → 0.3배
-const CH = 1.5, SC = 1.0, SLOW = 0.4, GRAZE_SLOW = 0.3, DWELL_HOLD = 1.5;
+const CH = 1.5, SC = 1.0, SLOW = 0.4, GRAZE_SLOW = 0.3, SLOW_HOLD = 1.2;   // SLOW_HOLD = 느려진 순간 정지(계기가 주황 · 경고가 뜸 · 수정 18)
 const WARN_VOICE = 0.45, BLOCK_VOICE = 0.55;
 const WARN_TO = 15.25;
-const WARN_HOLD = TTS_SEC.warn2 - ((WARN_TO - WARN_IN) / SLOW - WARN_VOICE) + 0.3;
+const WARN_HOLD = TTS_SEC.warn2 - ((WARN_TO - WARN_SLOW) / SLOW - WARN_VOICE) + 0.3;
 const BLOCK_HOLD = BLOCK_VOICE + TTS_SEC.block2 + 0.3;
 type Ch = NonNullable<Clip["chapter"]>;
 type Sc = NonNullable<Clip["section"]>;
@@ -176,13 +188,14 @@ const SUB = {
   grasp: "1초마다 살펴 세 번 연속 확인되면 쥔 것으로 판정합니다",
   other: "이번에는 렌치 대신 드라이버를 집어 봅니다",
   wrong: "필요하지 않은 공구를 쥐면 첫 확인에서 바로 경고합니다",
-  graze: "차례가 아닌 B1을 잠깐 스치기만 하면 경고하지 않습니다",
-  warn: "손끝이 B3에 0.3초 머물면 누르기 전에 경고합니다",
-  block: "차례가 아닌 B3를 누르면 입력을 막고 음성으로 알립니다",
+  //   스침 · 경고 = 판정 기준 안 B(수정 17 · 최종 정리 5.2) — 느린 손끝은 바로 경고 · 아니면 0.3초 체류 · 빠르게 0.3초 안에 빠지면 통과
+  graze: "차례가 아닌 B1을 빠르게 스치기만 하면 경고하지 않습니다",
+  warn: "빠르게 오다가 B3 위에서 느려지면 누르기 전에 바로 경고합니다",   // 수정 18 — 속도가 판정 기준임을 보인다(0.3초는 절 카드)
+  block: "경고를 무시하고 B3를 누르면 입력을 막고 음성으로 알립니다",
   press1: "B1을 누르면 1단계 서브작업이 시작됩니다",
   call: "「가디언」이라고 부른 뒤 말로 묻습니다",
-  card: "코드가 정한 지금 상황(사실 카드)을 LLM에 함께 보냅니다",
-  answer: "LLM은 사실 카드를 바탕으로 답합니다",
+  quick: "정해진 상태 질문은 LLM 없이 코드가 바로 답합니다",   // 공구 질문 = 즉답(수정 17)
+  card: "코드가 정한 지금 상황(사실 카드)을 LLM에 함께 보냅니다",   // card · rule = 단계 질문(LLM · 수정 17 에 공구 질문에서 옮김)
   rule: "판단은 코드가 하고, LLM은 그 결과를 말로 전합니다",
   next: "단계가 끝나면 다음에 누를 버튼을 안내합니다",
 };
@@ -198,9 +211,9 @@ const C03 = {no: "03", title: "음성 비서", desc: "「가디언」으로 부�
 const FADE = 0.45;   // 단계 질문 → 안경 벗기(종료) 사이 검게 사라졌다 나타나는 초
 const NO_EMO = ["EMO"];   // 공구함의 빨간 손잡이(플라이어)가 EMO 로 잡힘 — 공구 장면에서는 EMO 상자를 그리지 않는다(시안 17 피드백)
 const NO_BTN = BTN_ORDER;  // 손 · 공구 절은 버튼 상자를 모두 끔(시안 17 3차 피드백 「손 인식 손 추적 중 · 공구 탐지 중에는 버튼 추적을 꺼줘」)
-// 음성 질의 소리(HUD 기록 시계) — 작업자 「가디언」 · 호출 띠링 · 작업자 질문 · 「확인해 보겠습니다」 · 사실 카드 · 카드가 말풍선에 들어감
-const voiceSfx = (a: Say, w: string): [number, string, number?][] => [[a.w, "tts_w_wake"], [a.call, "sfx_chime", 0.5], [a.q, w],
-  [a.ack, "tts_ack"], [a.stt + CARD_IN, "sfx_card", 0.3], [a.stt + CARD_LAND, "sfx_pop", 0.3]];
+// 음성 질의 소리(HUD 기록 시계) — 작업자 「가디언」 · 호출 띠링 · 작업자 질문 · (LLM 만) 「확인해 보겠습니다」 · 사실 카드 · 카드가 말풍선에 들어감
+const voiceSfx = (a: Say, w: string, llm = true): [number, string, number?][] => [[a.w, "tts_w_wake"], [a.call, "sfx_chime", 0.5], [a.q, w],
+  ...(llm ? [[a.ack, "tts_ack"], [a.stt + CARD_IN, "sfx_card", 0.3], [a.stt + CARD_LAND, "sfx_pop", 0.3]] satisfies [number, string, number?][] : [])];
 // HUD 시각 소리를 두 구간(재생 → 정지)에 나눠 담는다 — 앞 구간의 HUD 시작 · 길이(화면 초)
 //   경계 = 앞 구간 끝 1프레임 전(구간 길이가 1/30초로 반올림돼 경계의 소리가 버려지지 않게)
 const split = (xs: [number, string, number?][], hud0: number, len: number, hud1: number) => {
@@ -208,7 +221,7 @@ const split = (xs: [number, string, number?][], hud0: number, len: number, hud1:
   return [xs.filter(([t]) => t < cut).map(([t, n, v]): [number, string, number?] => [t - hud0, n, v]),
     xs.filter(([t]) => t >= cut).map(([t, n, v]): [number, string, number?] => [Math.max(0, t - hud1), n, v])];
 };
-const V1_LEN = A1.ack - V1_FROM, V1_SFX = split(voiceSfx(A1, "tts_w_tool"), V1_FROM, V1_LEN, A1.ack);
+const V1_LEN = A1.stt - V1_FROM, V1_SFX = split(voiceSfx(A1, "tts_w_tool", false), V1_FROM, V1_LEN, A1.stt);
 const V2_LEN = V2_FREEZE - V2_FROM, V2_SFX = split([...voiceSfx(A2, "tts_w_step"), [STEP1_DONE, "sfx_ding", 0.4]], V2_FROM, V2_LEN, V2_FREEZE);
 
 export const FEATURE17: Clip[] = [
@@ -250,43 +263,46 @@ export const FEATURE17: Clip[] = [
   play(DRV_OVER, DRV_WRONG, {run: "other", intro: "overlap", quiet: true, caption: SUB.wrong, sfx: SFX_CHECK, hideBtn: NO_BTN}),
   {...hold(M, DRV_WRONG, WRONG_HOLD, {focus: "overlap", quiet: true, caption: SUB.wrong, sfx: [[0, "sfx_wrong", 0.4]], hideBtn: NO_BTN}), run: "other"},
   play(DRV_WRONG, DRV_TO, {run: "other", hud: DRV_WRONG + WRONG_HOLD, focus: "overlap", quiet: true, caption: SUB.wrong, hideBtn: NO_BTN}),
-  // 02 판정 기준 — 스침(B1 0.07초) · 경고(B3 0.63초 머묾 · 누르지 않음) · 차단(B3 머묾 → 경고 → 누름)
+  // 02 판정 기준 — 스침(B1 0.07초 · 빠름) · 경고(B3 로 빠르게 와서 느려짐 · 누르지 않음) · 차단(B3 느려짐 → 경고 → 누름)
+  //   스침 · 경고 = 손끝 확대 창 + 속도 계기(meter · 수정 18) — 스침은 「빠르게 지나감 → 경고 없음」 · 경고는 「빠름 → 느려짐 → 바로 경고」
   chCard(M, 12.55, C02, "graze"),
-  scCard(M, 12.55, {no: "1", title: "스침", desc: "0.3초 안에 떠나면 경고하지 않습니다"}, "graze"),
-  {take: M, run: "graze", file: "proxy.mp4", from: 12.55, to: 13.35, speed: GRAZE_SLOW, overlay: true, badge: "0.3×", tip: true, spot: "B1", caption: SUB.graze,
+  scCard(M, 12.55, {no: "1", title: "스침", desc: "빠르게 0.3초 안에 떠나면 경고하지 않습니다"}, "graze"),
+  {take: M, run: "graze", file: "proxy.mp4", from: 12.55, to: 13.35, speed: GRAZE_SLOW, overlay: true, badge: "0.3×", tip: true, spot: "B1", meter: true, caption: SUB.graze,
     sfx: [[at(GRAZE_IN, 12.55, GRAZE_SLOW), "sfx_tick", 0.3]]},
-  scCard(M, 14.45, {no: "2", title: "경고", desc: "오답 버튼에 0.3초 이상 머물면"}, "warn"),
-  {take: M, run: "warn", file: "proxy.mp4", from: 14.45, to: WARN_IN, speed: SLOW, overlay: true, badge: "0.4×", tip: true, spot: "B3", caption: SUB.warn},
-  {...hold(M, WARN_IN, DWELL_HOLD, {intro: "dwell", tip: true, spot: "B3", caption: SUB.warn, sfx: [[0, "sfx_scan", 0.2]]}), run: "warn"},
-  {take: M, run: "warn", file: "proxy.mp4", from: WARN_IN, to: WARN_TO, speed: SLOW, overlay: true, badge: "0.4×", tip: true, spot: "B3", caption: SUB.warn,
-    sfx: [[at(WARN_IN + 0.005, WARN_IN, SLOW), "sfx_warn", 0.45], [WARN_VOICE, "tts_warn2"]]},
-  {...hold(M, WARN_TO, WARN_HOLD, {tip: true, spot: "B3", caption: SUB.warn}), run: "warn"},
-  // 차단 — 판정 구역 게이지가 차기 전에(약 60%) 손끝으로 눌러 → 누른 순간 버튼 색 파동 · 누름 소리 → 멈춘 화면에서 BLOCK_GAP 뒤 차단 · 경보
-  scCard(M, 20.5, {no: "3", title: "차단", desc: "오답 버튼을 누르면 입력을 막습니다"}, "block"),
-  {take: M, run: "block", file: "proxy.mp4", from: 20.5, to: BLOCK_FRAME, speed: SLOW, overlay: true, badge: "0.4×", tip: true, spot: "B3", caption: SUB.block,
-    sfx: [[at(BLOCK_PRESS, 20.5, SLOW), "sfx_press", 0.7]]},
+  //   경고 — 손이 B2 를 떠나 빠르게(계기 파랑) → B3 상자 안에서 느려진 순간 정지(계기 주황 · 경고 · 경고음) → 재생 · 음성 알림 → 정지
+  scCard(M, WARN_FROM, {no: "2", title: "경고", desc: "오답 버튼에서 느려지거나 0.3초 이상 머물면"}, "warn"),
+  {take: M, run: "warn", file: "proxy.mp4", from: WARN_FROM, to: WARN_SLOW, speed: SLOW, overlay: true, badge: "0.4×", tip: true, spot: "B3", meter: true, caption: SUB.warn},
+  {...hold(M, WARN_SLOW, SLOW_HOLD, {tip: true, spot: "B3", meter: true, caption: SUB.warn, sfx: [[0, "sfx_warn", 0.45]]}), run: "warn"},
+  {take: M, run: "warn", file: "proxy.mp4", from: WARN_SLOW, to: WARN_TO, speed: SLOW, overlay: true, badge: "0.4×", tip: true, spot: "B3", meter: true, caption: SUB.warn,
+    sfx: [[WARN_VOICE, "tts_warn2"]]},
+  {...hold(M, WARN_TO, WARN_HOLD, {tip: true, spot: "B3", meter: true, caption: SUB.warn}), run: "warn"},
+  // 차단 — B3 로 와서 느려짐 → 경고(경고음) → 무시하고 눌러 → 누른 순간 버튼 색 파동 · 누름 소리 → 멈춘 화면에서 BLOCK_GAP 뒤 차단 · 경보(수정 18)
+  scCard(M, BLOCK_FROM, {no: "3", title: "차단", desc: "오답 버튼을 누르면 입력을 막습니다"}, "block"),
+  {take: M, run: "block", file: "proxy.mp4", from: BLOCK_FROM, to: BLOCK_FRAME, speed: SLOW, overlay: true, badge: "0.4×", tip: true, spot: "B3", caption: SUB.block,
+    sfx: [[at(BLOCK_SLOW, BLOCK_FROM, SLOW), "sfx_warn", 0.45], [at(BLOCK_PRESS, BLOCK_FROM, SLOW), "sfx_press", 0.7]]},
   // ↓ HUD 시계가 흐르는 정지(hud) — 차단 · 경보 · 자물쇠 찰칵(자물쇠가 닫히는 0.24초) · 음성 알림
   {...hold(M, BLOCK_FRAME, BLOCK_GAP + BLOCK_HOLD, {hud: BLOCK_FRAME, tip: true, spot: "B3", caption: SUB.block,
     sfx: [[BLOCK_GAP, "sfx_alarm", 0.5], [BLOCK_GAP + 0.24, "sfx_lock", 0.35], [BLOCK_GAP + BLOCK_VOICE, "tts_block2"]]}), run: "block"},
-  // 03-1 공구 질문 — 작업자 「가디언」 · 질문(남성 TTS) → 「확인해 보겠습니다」에서 정지(HUD 는 흐름) → 답이 오면 재생 → 렌치를 쥘 때까지
+  // 03-1 공구 질문(즉답) — 작업자 「가디언」 · 질문(남성 TTS) → 받아쓴 순간 정지(HUD 는 흐름) → 코드가 바로 답 → 답을 다 들은 뒤 재생 → 렌치를 쥘 때까지
   //   호출부터 답 직전까지 영상 전체를 흐리고 어둡게(dim · 음성 UI 는 위라 선명) · 공구 탐지 연출 없음 · 오른쪽 위 카드 유지
   chCard(M, V1_FROM, C03, "voice1"),
   scCard(M, V1_FROM, {no: "1", title: "공구 질문", desc: "이 단계에 필요한 공구를 묻기"}, "voice1"),
   {take: M, run: "voice1", file: "proxy.mp4", from: V1_FROM, to: V1_FREEZE, speed: (V1_FREEZE - V1_FROM) / V1_LEN, overlay: true, hud: V1_FROM, noTool: true,
     caption: SUB.call, dim: [A1.call - V1_FROM, V1_LEN], sfx: V1_SFX[0]},
-  //   정지 = 「확인해 보겠습니다」 → 사실 카드(「검출 결과」 빛줄기는 B4 에서 · 3차 B1 → 7차 B4 — 카드가 화면 가운데로 와 B1 을 덮음) → 답을 끝까지 들음 → 재생
-  {...hold(M, V1_FREEZE, V1_GO - A1.ack, {hud: A1.ack, noTool: true, factFrom: "B4",
-    subs: [[0, A1.ans - A1.ack, SUB.card], [A1.ans - A1.ack, V1_GO - A1.ack, SUB.answer]],
-    dim: [0, A1.ans - A1.ack], sfx: [...V1_SFX[1], [A1.play - A1.ack, "tts_tool"]]}), run: "voice1"},
-  play(V1_FREEZE, V1_TO, {run: "voice1", hud: V1_GO, noTool: true, hideBtn: NO_EMO, caption: SUB.answer}),
-  // 03-2 단계 질문 — B1 누름(1단계 시작) → 손을 떼며 「가디언」 → 질문 → 정지(HUD 는 흐름) · 답 · 1단계 완료 → 2단계 안내
+  //   정지 = 「코드 판정 중」(잠깐) → 답을 끝까지 들음 → 재생 · 사실 카드 · 「확인해 보겠습니다」 없음(즉답)
+  {...hold(M, V1_FREEZE, V1_GO - A1.stt, {hud: A1.stt, noTool: true, caption: SUB.quick,
+    dim: [0, A1.ans - A1.stt], sfx: [...V1_SFX[1], [A1.play - A1.stt, "tts_tool_quick"]]}), run: "voice1"},
+  play(V1_FREEZE, V1_TO, {run: "voice1", hud: V1_GO, noTool: true, hideBtn: NO_EMO, caption: SUB.quick}),
+  // 03-2 단계 질문(LLM) — B1 누름(1단계 시작) → 손을 떼며 「가디언」 → 질문 → 정지(HUD 는 흐름) · 사실 카드 · 답 · 1단계 완료 → 2단계 안내
   scCard(M, V2_FROM, {no: "2", title: "단계 질문", desc: "지금 무엇을 해야 하는지 묻기"}, "voice2"),
   //   자막 = 재생 내내 「B1을 누르면 …」(시작을 늦춰 호출 전까지 1초뿐이라 · 「가디언이라고 부른 뒤 …」는 공구 질문과 같은 문장이라 여기서는 뺌)
   play(V2_FROM, V2_FREEZE, {run: "voice2", caption: SUB.press1,
     dim: [A2.call - V2_FROM, V2_LEN], sfx: V2_SFX[0]}),
   {...hold(M, V2_FREEZE, V2_END - V2_FREEZE, {hud: V2_FREEZE, factGauge: true,
+    //   사실 카드가 말풍선에 들어갈 때까지 「코드가 정한 …」 → 답이 끝날 때까지 「판단은 코드가 …」(수정 17 — 공구 질문이 즉답이 되어 여기로)
     //   「단계가 끝나면 …」은 답이 끝날 때부터(5차 — 1단계 완료 뒤 1.2초로는 짧아 1.8초로)
-    subs: [[0, A2.done - V2_FREEZE, SUB.rule], [A2.done - V2_FREEZE, V2_END - V2_FREEZE, SUB.next]],
+    subs: [[0, A2.stt + CARD_LAND - V2_FREEZE, SUB.card], [A2.stt + CARD_LAND - V2_FREEZE, A2.done - V2_FREEZE, SUB.rule],
+      [A2.done - V2_FREEZE, V2_END - V2_FREEZE, SUB.next]],
     dim: [0, A2.ans - V2_FREEZE], sfx: [...V2_SFX[1], [A2.play - V2_FREEZE, "tts_step1"]], fadeOut: FADE}), run: "voice2"},
   // 끝 — 안경 벗기(연결 작업은 나중 · 사용자) · 검게 사라짐
   //   벗기 시작에 HUD 꺼짐(시안 17 4차 「시스템 종료 연출 · 분량은 길지 않게」 — 1.4초 · 벗는 영상 위에 겹침)

@@ -1,13 +1,17 @@
 import {test} from "node:test";
 import assert from "node:assert/strict";
 import {existsSync} from "node:fs";
-import {place, sfxTrack} from "../../src/lib/edit.ts";
+import {place, sfxTrack, srcSec} from "../../src/lib/edit.ts";
+import {meterSpan} from "../../src/lib/fx.ts";
+import {stableBox} from "../../src/lib/dets.ts";
 import {outOfFrame, viewAt} from "../../src/lib/view.ts";
 import {ASK, FEATURE17, FEATURE17_STAGED, FEATURE17_VIEWS} from "../../src/edits/feature17.ts";
 import {TTS_SEC} from "../../src/edits/ttsSec.ts";
 import {stagedRun} from "../../src/lib/staged.ts";
 import {stateAt} from "../../src/lib/uiState.ts";
 import {dwellAt} from "../../src/lib/judge.ts";
+import {enterAt, slowAt, speedRead} from "../../src/lib/speed.ts";
+import {readFileSync} from "node:fs";
 
 // 시안 17 — 새 촬영(10/11) 편집표의 소리 · 확대 · 음성비서 시각
 const file = (n: string) => new URL(`../../public/audio/${n}.wav`, import.meta.url);
@@ -59,7 +63,7 @@ test("음성비서 — 재생 → 정지 → 재생의 HUD 시계가 이어지�
   const [a, hold, after] = clips("voice1");
   assert.ok(Math.abs(a.hud! + (a.to - a.from) / a.speed - hold.hud!) < 1e-9, "재생 구간이 끝난 HUD = 정지 HUD 시작");
   assert.ok(Math.abs(hold.hud! + hold.hold! - after.hud!) < 1e-9, "정지가 끝난 HUD = 재생 구간 HUD 시작");
-  assert.ok(ASK.A1.done === ASK.A1.play + TTS_SEC.tool && ASK.A1.done < after.hud!, "공구 답 재생이 정지 안에서 끝나고 그 뒤 손이 움직인다(시안 17 3차)");
+  assert.ok(ASK.A1.done === ASK.A1.play + TTS_SEC.tool_quick && ASK.A1.done < after.hud!, "공구 답 재생이 정지 안에서 끝나고 그 뒤 손이 움직인다(시안 17 3차)");
   assert.ok(ASK.A2.done <= ASK.STEP1_DONE - 0.1, "단계 답이 1단계 완료 전에 끝남");
   const [b, hold2] = clips("voice2");
   assert.equal(hold2.hud, b.to, "B1 누름 장면 뒤 정지의 HUD = 재생이 끝난 원본 초");
@@ -111,15 +115,18 @@ test("공구 · 손 절 — 버튼 상자는 모두 끄고, 공구 인식부터 
   assert.equal(h[0].to, h[1].from);
 });
 
-test("차단 — 누름(버튼 색 파동 · 누름 소리)이 먼저, 멈춘 화면에서 0.35초 뒤 차단 · 경보 · 머묾 타이머는 누른 자리(60%)에서 멈춤", () => {
+test("차단 — 느려짐 → 경고 → 무시하고 누름(파동 · 누름 소리) → 멈춘 화면에서 0.35초 뒤 차단 · 경보 · 경고 구역은 차단 순간 사라짐(수정 18)", () => {
   const st = FEATURE17_STAGED["20261011_main#block"];
   const R = stagedRun(st.start, st.presses, {first: st.first, extra: st.extra});
+  const warn = R.events.find((e) => e.kind === "state" && e.d.new === "WARNING")!;
   const press = R.events.find((e) => e.kind === "press")!, block = R.events.find((e) => e.kind === "state" && e.d.new === "BLOCK")!;
-  assert.ok(block.t - press.t >= 350, "차단은 누름보다 늦게");
-  assert.equal(stateAt(R.events, R.runStart, press.t + 100).alert, null);
+  assert.equal(warn.d.reason, "slow");
+  assert.ok(warn.t < press.t && block.t - press.t >= 350, "경고 → 누름 → 차단");
+  assert.equal(stateAt(R.events, R.runStart, press.t - 10).alert?.kind, "warning");
   assert.equal(stateAt(R.events, R.runStart, block.t).alert?.kind, "block");
-  const d = dwellAt(R.events, R.runStart, block.t - 10)!;
-  assert.ok(d.progress > 0.5 && d.progress < 0.7, `누른 순간 타이머 ${d.progress}`);
+  assert.equal(dwellAt(R.events, R.runStart, press.t)?.slow, true, "누르기 전 = 느린 손끝 경고 구역");
+  assert.notEqual(dwellAt(R.events, R.runStart, block.t - 10), null, "차단 직전까지 경고 구역이 보인다(경고 뒤 1초 표시 창 안 — 차단이 그보다 먼저)");
+  assert.equal(dwellAt(R.events, R.runStart, block.t + 10), null, "차단 뒤에는 경고 구역이 사라진다");
   const ps = place(FEATURE17, 30), i = ps.findIndex((p) => p.clip.run === "block" && p.clip.hold !== undefined && !p.clip.card);
   const hold = ps[i].clip, alarm = hold.sfx!.find((x) => x[1] === "sfx_alarm")!;
   assert.ok(Math.abs(hold.hud! + alarm[0] - block.t / 1000) < 1e-9, "경보 = 차단 순간");
@@ -131,4 +138,101 @@ test("음성 질의 — 작업자 말풍선은 목소리와 함께(utter = 소�
     const u = st.extra!.filter((e) => e.kind === "utter");
     assert.deepEqual(u.map((e) => [e.t, e.d.dur]), [[a.w, TTS_SEC.w_wake], [a.q, q]], run);
   }
+});
+
+// 수정 17 — 프로젝트 최종 정리(sop-project docs/프로젝트-최종정리.md · 시연 Rpi5 bfba16f)와 맞춤
+test("공구 질문 = 상태 질문 즉답 — 사실 카드 · 「확인해 보겠습니다」 없이 코드가 바로 답하고, 단계 질문은 LLM(최종 정리 5.6)", () => {
+  const run = (k: string) => {
+    const st = FEATURE17_STAGED[`20261011_main#${k}`];
+    return stagedRun(st.start, st.presses, {first: st.first, extra: st.extra});
+  };
+  const q = run("voice1"), ans = q.events.find((e) => e.kind === "answer")!;
+  assert.equal(q.events.filter((e) => e.kind === "card").length, 0, "즉답은 LLM 에 카드를 보내지 않는다");
+  assert.equal(ans.d.src, "quick");
+  assert.equal(ans.d.text, "2단계에 필요한 공구는 렌치입니다.", "voice_card.quick_answer 「필요공구」 문장");
+  assert.ok(ASK.A1.ans - ASK.A1.stt <= 1.2, "받아쓰기 뒤 1.2초 안에 답");
+  const v = stateAt(q.events, q.runStart, Math.round(ASK.A1.play * 1000) + 50).voice;
+  assert.ok(v.speaking && !v.ack && v.card === null, "답만 말한다(「확인해 보겠습니다」 · 카드 없음)");
+  const l = run("voice2"), lans = l.events.find((e) => e.kind === "answer")!;
+  assert.equal(lans.d.src, "llm");
+  assert.equal(l.events.filter((e) => e.kind === "card").length, 1, "단계 질문은 사실 카드와 함께 LLM 으로");
+});
+
+test("화면에 보이는 서브작업 대기는 레시피대로 10초 — 1단계 플라즈마 클린 · 2단계 N2 퍼지(최종 정리 3.1)", () => {
+  const subs = Object.values(FEATURE17_STAGED).flatMap((st) => st.presses.filter((p) => p.sub && p.sub.sec > 1).map((p) => p.sub!));
+  assert.ok(subs.length >= 4);
+  for (const s of subs) assert.equal(s.sec, 10, s.label);
+  assert.equal(ASK.STEP1_DONE, 9.54 + 10, "단계 질문의 1단계 완료 = B1 누름 + 10초");
+});
+
+test("공구 질문 장면 — B2 누름 파동(0.9초)은 장면 앞에서 끝나고, 10초 대기는 장면이 끝날 때까지 끝나지 않는다", () => {
+  const b2 = FEATURE17_STAGED["20261011_main#voice1"].presses.find((p) => p.button === "B2")!;
+  const ps = place(FEATURE17, 30).filter((p) => p.clip.run === "voice1" && !p.clip.card).map((p) => p.clip);
+  const last = ps[ps.length - 1], end = last.hud! + (last.to - last.from) / last.speed;
+  const start = ps[0].hud ?? ps[0].from;
+  assert.ok(b2.t + 0.9 <= start, `누름 ${b2.t} · 장면 시작 HUD ${start}`);
+  assert.ok(b2.t + b2.sub!.sec >= end + 0.2, `대기 끝 ${b2.t + b2.sub!.sec} · 장면 끝 HUD ${end.toFixed(3)}`);
+});
+
+test("2단계 N2 퍼지(10초)는 어느 장면에서도 장면 HUD 가 끝나기 전에 끝나지 않는다 — 연출 기록은 렌치 없이도 시간이 차면 단계를 끝내므로", () => {
+  const ps = place(FEATURE17, 30).map((p) => p.clip).filter((c) => !c.card);
+  for (const run of ["tool", "other", "voice1"]) {
+    const cs = ps.filter((c) => c.run === run);
+    const end = Math.max(...cs.map((c) => (c.hud !== undefined ? c.hud + (c.hold ?? (c.to - c.from) / c.speed) : c.hold !== undefined ? c.from : c.to)));
+    const b2 = FEATURE17_STAGED[`20261011_main#${run}`].presses.find((p) => p.button === "B2")!;
+    assert.ok(b2.t + b2.sub!.sec >= end + 0.2, `${run}: 대기 끝 ${b2.t + b2.sub!.sec} · 장면 끝 HUD ${end.toFixed(3)}`);
+  }
+});
+
+test("즉답 장면에는 「확인해 보겠습니다」 · 사실 카드 소리가 없고, 단계 질문(LLM)에는 있다", () => {
+  const names = (run: string) => place(FEATURE17, 30).filter((p) => p.clip.run === run && !p.clip.card).flatMap((p) => (p.clip.sfx ?? []).map((x) => x[1]));
+  for (const n of ["tts_ack", "sfx_card", "sfx_pop"]) {
+    assert.ok(!names("voice1").includes(n), `voice1 ${n}`);
+    assert.ok(names("voice2").includes(n), `voice2 ${n}`);
+  }
+  assert.ok(names("voice1").includes("tts_tool_quick"));
+});
+
+// 촬영 검출(public/footage → ~/data/시연영상 · 저장소 밖)이 있을 때만 — 연출 기록의 경고 시각이 실제 손끝 속도와 맞는지
+const DETS = new URL("../../public/footage/20261011_main/dets.json", import.meta.url);
+test("경고 · 차단의 경고 시각 = 손끝이 B3 상자 안에서 느림 기준 아래로 떨어진 순간 · 머문 시작 = 상자에 든 순간(촬영 검출 · 수정 18)", {skip: !existsSync(DETS)}, () => {
+  const d = JSON.parse(readFileSync(DETS, "utf8"));
+  for (const [run, from, to] of [["warn", 14.3, 15.3], ["block", 20.0, 20.94]] as const) {
+    const st = FEATURE17_STAGED[`20261011_main#${run}`];
+    const w = st.extra!.find((e) => e.kind === "state" && e.d.new === "WARNING")!;
+    const slow = slowAt(d, from, to, "B3")!, enter = enterAt(d, from, to, "B3")!;
+    assert.ok(Math.abs(w.t - slow) <= 0.002, `${run}: 경고 ${w.t} · 느려짐 ${slow}`);
+    assert.ok(Math.abs(w.d.dwell_start_ms / 1000 - enter) <= 0.002, `${run}: 머문 시작 ${w.d.dwell_start_ms} · 상자에 듦 ${enter}`);
+  }
+  assert.equal(slowAt(d, 12.5, 13.4, "B1"), null, "스침은 B1 상자 안에서 느려지지 않는다(빠르게 지나감)");
+});
+
+test("계기 장면의 장식 시계는 구간 경계에서 이어진다 — 정지 → 재생에서 경고 카드 · 번쩍임이 다시 시작하지 않게(수정 18 리뷰)", () => {
+  const ps = place(FEATURE17, 30);
+  const idx = ps.map((_, i) => i).filter((i) => ps[i].clip.run === "warn" && ps[i].clip.meter);
+  const clock = (i: number, f: number) => srcSec(ps[i].clip, f, 30) + (ps[i].clip.hold !== undefined ? f / 30 : 0) + meterSpan(ps, i, f, 30).held;
+  assert.equal(idx.length, 4);
+  for (let k = 1; k < idx.length; k++) {
+    const a = idx[k - 1], b = idx[k], c = ps[a].clip;
+    const next = clock(a, ps[a].frames - 1) + (c.hold !== undefined ? 1 : c.speed) / 30;
+    assert.ok(Math.abs(clock(b, 0) - next) < 0.02, `${k}: ${next.toFixed(3)} → ${clock(b, 0).toFixed(3)}`);
+  }
+});
+
+test("계기 — 화면에 그리는 모든 장에서 경고는 느려진 뒤 늘 「느려짐」 · 스침은 「느려짐」이 없고 「지나감」 값이 한결같다(수정 18 리뷰)", {skip: !existsSync(DETS)}, () => {
+  const d = JSON.parse(readFileSync(DETS, "utf8"));
+  const ps = place(FEATURE17, 30);
+  const reads = (run: string) => ps.filter((p) => p.clip.run === run && p.clip.meter).flatMap((p) =>
+    Array.from({length: p.frames}, (_, f) => {
+      const sec = srcSec(p.clip, f, 30);
+      return {sec, r: speedRead(d, sec, stableBox(d, sec, p.clip.spot!)!)};
+    }));
+  const slowT = FEATURE17_STAGED["20261011_main#warn"].extra!.find((e) => e.kind === "state" && e.d.new === "WARNING")!.t + 0.001;
+  const warn = reads("warn");
+  for (const {sec, r} of warn) if (sec >= slowT - 1e-6) assert.equal(r?.kind, "slow", `warn ${sec.toFixed(3)}초 ${r?.kind}`);
+  assert.ok(warn.some(({sec, r}) => sec < slowT && r?.kind === "approach") && warn.some(({sec, r}) => sec < slowT && r?.kind === "fast"), "다가감 → 상자 안 빠름이 먼저");
+  const graze = reads("graze");
+  assert.ok(graze.every(({r}) => r?.kind !== "slow"));
+  const passed = new Set(graze.filter(({r}) => r?.kind === "passed").map(({r}) => Math.round(r!.v)));
+  assert.equal(passed.size, 1, `지나감 값 ${[...passed]}`);
 });

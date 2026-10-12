@@ -51,3 +51,13 @@ test("차단 — 누름보다 차단 표시가 늦게 오면(dwell_end_ms = 누�
   assert.ok(Math.abs(a.progress - 180 / 300) < 1e-9);   // 8.2초에도 누른 8.06초 자리(60%) — 가득 차 보이지 않게
   assert.deepEqual([dwellAt(K.events, K.runStart, 8350)?.done, dwellAt(K.events, K.runStart, 8350)?.progress], [true, 180 / 300]);
 });
+test("느린 손끝 경고(reason slow) — 표시에 slow · 뒤에 차단이 오면 차단 순간 사라짐(수정 18)", () => {
+  const S = stagedRun(3, [], {first: "B1", extra: [
+    {t: 7.2, kind: "state", d: {old: "MONITOR", new: "WARNING", expected: "B1", dwell_roi: "B3", dwell_start_ms: 7100, reason: "slow"}},
+    {t: 7.7, kind: "state", d: {old: "WARNING", new: "BLOCK", expected: "B1"}},
+  ]});
+  const a = dwellAt(S.events, S.runStart, 7500)!;
+  assert.deepEqual([a.kind, a.done, a.slow], ["warn", true, true]);
+  assert.equal(dwellAt(S.events, S.runStart, 7710), null);
+  assert.equal(dwellAt(R.events, R.runStart, 7280)!.slow, undefined, "체류 경고는 slow 없음");
+});

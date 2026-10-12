@@ -34,6 +34,16 @@ export function screenSince(ps: Placed[], i: number, f: number, fps: number, sin
   return at === null ? null : (ps[i].start + f - at) / fps;
 }
 
+// 손끝 속도 계기(meter · 수정 18) — 같은 촬영 갈래(take · run)의 계기 구간들을 한 장면으로
+//   held = 이 구간 앞 계기 정지 구간들의 화면 초 합 — 장식 시계(경고 카드 · 번쩍임)에 더해 정지 → 재생 경계에서 다시 시작하지 않게(리뷰)
+//   age = 첫 계기 구간 시작부터 · left = 마지막 계기 구간 끝까지(화면 초 · 나타남 · 사라짐 페이드)
+export function meterSpan(ps: Placed[], i: number, f: number, fps: number): {held: number; age: number; left: number} {
+  const c = ps[i].clip, js = ps.map((p, j) => j).filter((j) => ps[j].clip.meter && ps[j].clip.take === c.take && ps[j].clip.run === c.run);
+  const held = js.filter((j) => j < i && ps[j].clip.hold !== undefined).reduce((s, j) => s + ps[j].frames / fps, 0);
+  const a = ps[js[0]], z = ps[js[js.length - 1]], now = ps[i].start + f;
+  return {held, age: (now - a.start) / fps, left: (z.start + z.frames - now) / fps};
+}
+
 // 장 전환 — f 가 장 제목 카드의 첫 win 초 안이면 카드 시작 뒤 초 · 아니면 null
 export function burstAge(ps: Placed[], f: number, fps: number, win: number): number | null {
   const p = ps.find((x) => x.start <= f && f < x.start + x.frames);

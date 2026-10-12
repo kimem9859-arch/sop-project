@@ -1,9 +1,10 @@
 import {AbsoluteFill, Freeze, Html5Audio, OffthreadVideo, Sequence, staticFile, useCurrentFrame, useVideoConfig, type CalculateMetadataFunction} from "remotion";
 import {BOOT_SEC, BTN_INTRO_SEC, BTN_ORDER, BTN_STEP, btnIntroAge} from "../lib/boot.ts";
-import {detAt, firstHandAt, fitRect, lastBox, stableBox, tipTrail, type Box, type Dets} from "../lib/dets.ts";
+import {detAt, firstHandAt, fitRect, lastBox, stableBox, tipTrail, type Box, type Dets, type Pt} from "../lib/dets.ts";
 import {bootTimes, captionTrack, place, sfxTrack, srcSec, totalFrames, type Clip, type Placed} from "../lib/edit.ts";
-import {burstAge, crtOff, insetSpot, screenSince, shake} from "../lib/fx.ts";
+import {burstAge, crtOff, insetSpot, meterSpan, screenSince, shake} from "../lib/fx.ts";
 import {dwellAt} from "../lib/judge.ts";
+import {speedRead, type SpeedRead} from "../lib/speed.ts";
 import {holeMask, holesFor, spotHoles} from "../lib/mask.ts";
 import type {Ev} from "../lib/timeline.ts";
 import {stagedRun, type StagedEv, type StagedPress} from "../lib/staged.ts";
@@ -14,6 +15,7 @@ import {EndSummary} from "../hud/EndSummary.tsx";
 import {ChromaFilter, INSET, PixelBurst, ZoomInset} from "../hud/Fx.tsx";
 import {BTN} from "../hud/theme.ts";
 import {Hud} from "../hud/Hud.tsx";
+import {SpeedMeter} from "../hud/SpeedMeter.tsx";
 import {HudShutdown} from "../hud/HudShutdown.tsx";
 import {Caption} from "../hud/Overlays.tsx";
 import {SKELETON} from "../edits/skeleton.ts";
@@ -35,7 +37,10 @@ const STAGED: Record<string, Record<string, Staged>> = {pretest: PRETEST_STAGED,
 const SYNTH: Record<string, string> = {pretest: PRETEST_SYNTH, feature: FEATURE_SYNTH, feature17: FEATURE17_SYNTH};
 // 화면 보기(확대) — 편집마다 촬영별 기준점(lib/view · 시안 17 = 안경 끝 맞춤 · 비침 · 문 구간 확대)
 const VIEWS: Record<string, Record<string, ViewKey[]>> = {feature17: FEATURE17_VIEWS};
-export type CutProps = {edit: string; data: Record<string, TakeData> | null};
+// hq = 렌더 때 검출용 사본(proxy.mp4 · 긴 변 1280) 대신 고화질 사본(hq.mp4 · 긴 변 1920)으로 — 최종 영상 화질(10/13 사용자 「고해상도로 렌더링」)
+//   hq.mp4 = tools/proxy.sh <원본> hq.mp4 1920 16(사본과 같은 과정 → 프레임 시각이 같아 검출 표시가 맞는다 · 원본을 그대로 쓰면 0.05초 어긋남)
+//   로고(intro_logo)는 원본이 1280 이라 원본을 그대로 hq.mp4 로 둔다 · 화면 맞춤(fit)은 검출 기준(사본 크기) 그대로
+export type CutProps = {edit: string; data: Record<string, TakeData> | null; hq?: boolean};
 // 편집마다 한 번 — 목소리를 따라 움직이는 물결의 세기 · 흐름(lib/voiceLevel · 프레임마다 다시 계산하지 않게)
 const VOICE: Record<string, VoiceTrack> = {};
 const keyOf = (c: Clip) => (c.run ? `${c.take}#${c.run}` : c.take);
@@ -76,7 +81,7 @@ const PANEL = {x: 40, y: 40, w: 440, h: 360};   // 왼쪽 위 단계 목록(확�
 // ps · i = 편집 전체와 이 구간 순번(차단 순간의 화면 시계) · trailFrom = 검지 끝 자취를 이 원본 초부터만(절 카드 바로 뒤 — 안 보인 자취를 그리지 않게)
 // views = 이 편집의 촬영별 화면 보기 기준점(없으면 원래 화면) — 영상 · 검출 좌표(fit)를 같이 확대한다
 const ClipView: React.FC<{p: Placed; d: TakeData | undefined; boot0: {at: number; runs: boolean} | null; synth?: string;
-  ps: Placed[]; i: number; trailFrom: number | null; views?: Record<string, ViewKey[]>; voice?: VoiceTrack}> = ({p, d, boot0, synth, ps, i, trailFrom, views, voice}) => {
+  ps: Placed[]; i: number; trailFrom: number | null; views?: Record<string, ViewKey[]>; voice?: VoiceTrack; hq?: boolean}> = ({p, d, boot0, synth, ps, i, trailFrom, views, voice, hq = false}) => {
   const f = useCurrentFrame();
   const {fps, width, height} = useVideoConfig();
   const c = p.clip;
@@ -94,6 +99,8 @@ const ClipView: React.FC<{p: Placed; d: TakeData | undefined; boot0: {at: number
   let impact: number | null = null;   // 차단이 화면에 처음 나온 뒤 화면 초(lib/fx screenSince)
   let zone: Box | null = null;        // 판정 구역 버튼 박스 — 손이 가려도 크기 유지(시안 17 2차 피드백)
   let view = d ? detAt(d.dets, sec) : null;
+  let meter: {center: Pt; trail: Pt[]; read: SpeedRead | null; age: number; left: number} | null = null;   // 손끝 확대 창 · 속도 계기(meter · 수정 18)
+  const ms = c.meter ? meterSpan(ps, i, f, fps) : null;
   if (c.overlay && d && view && fit && c.intro !== "end") {
     // 공구는 공구 탐지 연출 전에는 숨긴다(손과 같게 · 시안 1 피드백 「바로 공구가 나타나면 실행하지 말고 약간의 지연」)
     if (d.toolIntro !== null && d.toolIntro >= 0 && c.intro !== "tool" && sec < d.toolIntro) view = {...view, tool: []};
@@ -115,10 +122,12 @@ const ClipView: React.FC<{p: Placed; d: TakeData | undefined; boot0: {at: number
     const lp = ui.lastPress && tMs - ui.lastPress.t < 1000 ? ui.lastPress.button : null;
     const pressAt = lp && !c.hideBtn?.includes(lp) && !view.btn.some((b) => b[0] === lp) ? lastBox(d.dets, sec, lp, 1) : null;
     // 경고 절 — 오답 버튼에 손가락이 닿은 순간 화면을 멈추고 그동안 0.3초 타이머를 채운다(시안 3 피드백 · 기록의 머문 시작과 같은 자리)
-    const uiMs = tMs + (c.hud !== undefined ? 0 : (holdT ?? 0) * 1000);   // 정지 중에도 흐르는 장식 시계(hud 구간은 이미 흐름)
+    //   계기 장면은 앞 계기 정지 구간만큼 더 — 정지 → 재생 경계에서 경고 카드 · 번쩍임이 다시 시작하지 않게(수정 18 리뷰)
+    const uiMs = tMs + (c.hud !== undefined ? 0 : ((holdT ?? 0) + (ms?.held ?? 0)) * 1000);   // 정지 중에도 흐르는 장식 시계(hud 구간은 이미 흐름)
     // 판정 구역을 찾는 시각 — 그냥 멈춘 구간(차단 정지)만 장식 시계로 · 제목 카드 · 탐지 정지는 기록 시각 그대로
     //   (제목 카드 동안 장식 시계가 앞서 가 다음 장면의 경고 · 스침 구역이 미리 비치던 것 — 시안 4 피드백 「판정 영역 그래픽이 잠깐 나오는데」)
-    const plainHold = c.hold !== undefined && !c.card && !c.intro;
+    //   계기 정지(meter · 수정 18)도 기록 시각 그대로 — 느려진 순간 정지 중 판정 구역이 사라졌다 다시 나오지 않게
+    const plainHold = c.hold !== undefined && !c.card && !c.intro && !c.meter;
     const dw0 = dwellAt(d.tl.events, d.tl.runStart, plainHold ? uiMs : tMs);
     const dw = c.intro === "dwell" && dw0 && holdT !== null ? {...dw0, progress: Math.min(1, holdT / DWELL_FILL), done: false} : dw0;
     const zoneName = dw?.button ?? c.spot;
@@ -126,6 +135,15 @@ const ClipView: React.FC<{p: Placed; d: TakeData | undefined; boot0: {at: number
     // 차단이 화면에 나온 뒤 화면 초 — HUD 시계 구간(hud)은 그 시계가 화면 초와 같이 흐른다(시안 17 3차 — 누름 뒤 정지 화면에서 차단)
     if (ui.alert?.kind === "block") impact = c.hud !== undefined ? (tMs - ui.alert.since) / 1000 : screenSince(ps, i, f, fps, (ui.alert.since - d.offsetMs) / 1000);
     const back = trailFrom === null ? TRAIL_SEC : Math.min(TRAIL_SEC, Math.max(0, sec - trailFrom));
+    if (ms && zone) {
+      // 창 가운데 = 검지 끝 · 손이 없으면 판정 구역 가운데 → 손이 나타나면 원본 0.2초에 걸쳐 손끝으로 옮겨 감(튀지 않게 · 리뷰)
+      const sc = (q: Pt): Pt => [fit.x + q[0] * fit.s, fit.y + q[1] * fit.s];
+      const mid = sc([(zone[2] + zone[4]) / 2, (zone[3] + zone[5]) / 2]), tip = view.hand?.[8];
+      const h0 = firstHandAt(d.dets, Math.max(0, sec - 1)), u = tip && h0 !== null ? Math.min(1, Math.max(0, (sec - h0) / 0.2)) : 0;
+      const tc = tip ? sc(tip) : mid, e = 1 - (1 - u) ** 3;
+      meter = {center: [mid[0] + (tc[0] - mid[0]) * e, mid[1] + (tc[1] - mid[1]) * e], trail: tipTrail(d.dets, sec, back).map(sc),
+        read: speedRead(d.dets, sec, zone), age: ms.age, left: ms.left};
+    }
     hud = <Hud ui={ui} pressAt={pressAt} dwell={dw} uiMs={uiMs} view={view} fit={fit} impact={impact}
       trail={c.tip ? tipTrail(d.dets, sec, back) : null}
       t={(p.start + f) / fps} tMs={tMs} boot={boot} handAge={handAge} W={width} H={height} badge={c.badge} synth={synth}
@@ -152,7 +170,7 @@ const ClipView: React.FC<{p: Placed; d: TakeData | undefined; boot0: {at: number
     k = tt < a || tt > b ? 0 : Math.max(0, Math.min(1, kin, kout));
   }
   const dim = c.card ? 0.62 : 0.5;  // 제목 카드는 더 어둡게(글이 주인공)
-  const src = staticFile(`footage/${c.take}/${c.file}`);
+  const src = staticFile(`footage/${c.take}/${hq && c.file === "proxy.mp4" ? "hq.mp4" : c.file}`);
   const fadeV = Math.max(0, Math.min(c.fadeOut ? Math.min(1, (p.frames - f) / (c.fadeOut * fps)) : 1, c.fadeIn ? Math.min(1, f / (c.fadeIn * fps)) : 1));
   // 소리 크기 = 화면 페이드와 같이(검게 사라질 때 소리도 · 시안 17 14차 로고 5초 — 소리가 들리는 중에 잘림) · 공식 문서 권장대로 숫자로 계산
   const vid = (style: React.CSSProperties) => (
@@ -204,6 +222,7 @@ const ClipView: React.FC<{p: Placed; d: TakeData | undefined; boot0: {at: number
         {/* 제목 카드 중에도 HUD 를 그리고 배경과 함께 흐리게 · 어둡게(시안 3 피드백 「작업 단계 UI도 같이 배경과 흐려짐」·「제목이 나올 때부터 있는 게」) */}
         {c.card ? <div style={{position: "absolute", inset: 0, filter: `blur(${(7 * k).toFixed(2)}px) brightness(${(1 - dim * k).toFixed(3)})`}}>{hud}</div> : hud}
         {insets.length > 0 && <Freeze frame={0}>{insets}</Freeze>}   {/* 확대 창은 정지 구간에만 */}
+        {meter && <SpeedMeter video={c.hold !== undefined ? <Freeze frame={0}>{vid({})}</Freeze> : vid({})} {...meter} t={(p.start + f) / fps} W={width} H={height} />}
         {c.callout && fit && <Callout def={c.callout} sec={sec} age={f / fps} fit={fit} />}
         {c.intro === "end" && <EndSummary age={holdT ?? 0} W={width} H={height} />}
         {c.shutdown !== undefined && <HudShutdown age={f / fps - c.shutdown} W={width} H={height} />}   {/* 안경 벗기 — HUD 꺼짐(시안 17 4차) */}
@@ -238,7 +257,7 @@ const Chapters: React.FC<{ps: Placed[]}> = ({ps}) => {
   );
 };
 
-export const Cut: React.FC<CutProps> = ({edit, data}) => {
+export const Cut: React.FC<CutProps> = ({edit, data, hq}) => {
   const f = useCurrentFrame();
   const {fps, width, height} = useVideoConfig();
   if (!data) return null;
@@ -256,7 +275,7 @@ export const Cut: React.FC<CutProps> = ({edit, data}) => {
       <AbsoluteFill style={ba !== null ? {filter: "url(#ca-burst)"} : undefined}>
         {ps.map((p, i) => (
           <Sequence key={i} from={p.start} durationInFrames={p.frames}>
-            <ClipView p={p} d={data[keyOf(p.clip)]} boot0={bt[i]} synth={SYNTH[edit]} ps={ps} i={i} views={VIEWS[edit]} voice={voice}
+            <ClipView p={p} d={data[keyOf(p.clip)]} boot0={bt[i]} synth={SYNTH[edit]} ps={ps} i={i} views={VIEWS[edit]} voice={voice} hq={hq}
             trailFrom={ps[i - 1]?.clip.tip && keyOf(ps[i - 1].clip) === keyOf(p.clip) ? null : p.clip.from} />
           </Sequence>
         ))}
