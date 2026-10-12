@@ -67,3 +67,13 @@ export function insetSpot(box: Rect, S: number, avoid: Rect[], W: number, H: num
   const ok = cand.filter(inside), pool = ok.length ? ok : cand.map(clamp);   // 화면 안 자리가 없으면 자리마다 화면 안으로 당김
   return pool.find((p) => cover(p) === 0) ?? pool.reduce((m, p) => (cover(p) < cover(m) ? p : m));
 }
+
+// 화면 꺼짐(옛 브라운관) — 안경 벗기 종료 연출(시안 17 12차 피드백 「종료할 때 검정 화면으로」) · age = 종료 연출 시작 뒤 초
+//   ~0.75 그대로(「비전 감시 종료」 띠를 읽는 틈) → 0.75~1.0 화면 전체가 위아래로 눌려 밝은 한 줄(sy · glow) → 1.0~1.25 줄이 가운데 점으로(sx)
+//   → 1.25~1.4 점이 사라짐(op) → 그 뒤 검정
+export function crtOff(age: number): {sx: number; sy: number; glow: number; op: number} {
+  const k = (a: number, b: number) => Math.max(0, Math.min(1, (age - a) / (b - a)));
+  const easeIn = (u: number) => u * u;
+  const fold = k(0.75, 1.0), shrink = k(1.0, 1.25);
+  return {sy: 1 - 0.994 * easeIn(fold), sx: 1 - 0.99 * easeIn(shrink), glow: fold, op: 1 - k(1.25, 1.4)};
+}

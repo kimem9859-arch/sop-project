@@ -14,7 +14,8 @@ const mix = (a: string, b: string, u: number) => {
 };
 const timerCol = (p: number) => (p < 0.5 ? mix(C.done, C.current, p / 0.5) : mix(C.current, C.warn, (p - 0.5) / 0.5));
 
-export const JudgeZone: React.FC<{box: Box; fit: Fit; dwell: Dwell; t: number}> = ({box, fit, dwell, t}) => {
+// left = 타이머 글(「0.07초 → 경고 없음」 등)을 판정 구역 왼쪽 바깥에(시안 17 3차 피드백 — 스침 장면에서 손에 가려짐 · 손은 오른쪽 아래에서 온다)
+export const JudgeZone: React.FC<{box: Box; fit: Fit; dwell: Dwell; t: number; left?: boolean}> = ({box, fit, dwell, t, left = false}) => {
   const [, , x1, y1, x2, y2] = box;
   const X1 = fit.x + x1 * fit.s, Y1 = fit.y + y1 * fit.s, X2 = fit.x + x2 * fit.s, Y2 = fit.y + y2 * fit.s;
   const cx = (X1 + X2) / 2, cy = (Y1 + Y2) / 2, size = Math.max(X2 - X1, Y2 - Y1);
@@ -40,7 +41,7 @@ export const JudgeZone: React.FC<{box: Box; fit: Fit; dwell: Dwell; t: number}> 
       <circle cx={cx} cy={cy} r={r} fill="none" stroke={tc} strokeWidth={7} strokeLinecap="round"
         strokeDasharray={`${circ * progress} ${circ}`} transform={`rotate(-90 ${cx} ${cy})`} />
       {(result || !done) && (
-        <text x={cx + r + 16} y={cy + 12} fill={done ? zone : tc} fontFamily={FONT} fontSize={34} fontWeight={800}
+        <text x={left ? X1 - ring - 18 : cx + r + 16} y={cy + 12} textAnchor={left ? "end" : "start"} fill={done ? zone : tc} fontFamily={FONT} fontSize={34} fontWeight={800}
           stroke="rgba(0,0,0,0.85)" strokeWidth={6} paintOrder="stroke" style={{fontVariantNumeric: "tabular-nums"}}>
           {done ? result : `${elapsed.toFixed(2)}초`}
         </text>

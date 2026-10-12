@@ -1,9 +1,7 @@
 import type {Pt} from "../lib/dets.ts";
+import {HAND_EDGES as EDGES} from "../lib/geom.ts";
 import {C, FONT, easeOut, type Fit} from "./theme.ts";
 
-// MediaPipe 손 21점 연결
-const EDGES = [[0, 1], [1, 2], [2, 3], [3, 4], [0, 5], [5, 6], [6, 7], [7, 8], [5, 9], [9, 10], [10, 11], [11, 12],
-  [9, 13], [13, 14], [14, 15], [15, 16], [13, 17], [17, 18], [18, 19], [19, 20], [0, 17]];
 const DEPTH = [0, 1, 2, 3, 4, 1, 2, 3, 4, 2, 3, 4, 5, 3, 4, 5, 6, 3, 4, 5, 6]; // 손목에서 마디 수(뻗기 연출)
 export const HAND = "#2bea74"; // 선명한 초록 — G3 「흰색이라 잘 보이지 않아」 → 「파랑 버튼 색과 비슷해서 초록색으로」
 export const INTRO_SEC = 3.0;  // 첫 등장 연출 길이 — 끝나면 꺾쇠·표시도 없어지고 뼈대만(G3 「연출이 끝나면 조준 꺾쇠도 없어지는 것으로」)
@@ -19,12 +17,15 @@ export const INTRO_SEC = 3.0;  // 첫 등장 연출 길이 — 끝나면 꺾쇠�
 // ring = 검지 끝(8) 고리 색(경고·차단 중엔 그 색)
 // dim = 공구를 쥔 동안 — 뼈대를 옅게 · 검지 고리 숨김: 손 모델이 렌치 막대를 펴진 검지로 읽는다(10/9 초안 원본 프레임 대조 ·
 //   합성의 시간 밀림이 아니라 모델 판독) — 보이는 방식만 바꾸고 좌표는 그대로(설계 §5 「연출은 보여 주는 방식만」)
-export const HandSkeleton: React.FC<{hand: Pt[] | null; fit: Fit; t: number; age: number | null; ring?: string; dim?: boolean; pulse?: boolean}> =
-  ({hand, fit, t, age, ring = C.current, dim = false, pulse = false}) => {
+// recog = 「손 인식」(꺾쇠 · 스캔) 길이 — 그 뒤 뼈대가 뻗고 「손 추적 시작」 · 기본 1.7(시안 3~16)
+//   시안 17 3차 피드백 「손바닥이 보인 다음 손등이 보일 때까지 손 인식 · 정지한 다음 손 추적 시작과 21점」 → 재생 중 인식(recog = 손이 뒤집혀
+//   손등이 다 보일 때까지) · 그 프레임에서 멈춘 동안 뼈대 · 추적 시작(Cut 이 손 정지 구간까지의 초를 준다)
+export const HandSkeleton: React.FC<{hand: Pt[] | null; fit: Fit; t: number; age: number | null; ring?: string; dim?: boolean; pulse?: boolean; recog?: number}> =
+  ({hand, fit, t, age, ring = C.current, dim = false, pulse = false, recog = 1.7}) => {
     if (!hand || age === null) return null;
     const P = hand.map(([x, y]) => [fit.x + x * fit.s, fit.y + y * fit.s]);
-    const intro = age < INTRO_SEC;
-    const gu = Math.max(0, Math.min(1, (age - 1.7) / 0.8));
+    const intro = age < recog + INTRO_SEC - 1.7;
+    const gu = Math.max(0, Math.min(1, (age - recog) / 0.8));
     const grow = intro ? gu * gu * (3 - 2 * gu) * 6.01 : 6.01;   // 부드럽게 시작해 부드럽게 끝(0.8초)
     const shown = (i: number) => DEPTH[i] <= grow;
     const pop = (i: number) => Math.min(1, Math.max(0, (grow - DEPTH[i]) / 0.8));
@@ -34,13 +35,13 @@ export const HandSkeleton: React.FC<{hand: Pt[] | null; fit: Fit; t: number; age
     const k = 1.75 - 0.6 * easeOut(age / 0.5);
     const hw = ((Math.max(...xs) - Math.min(...xs)) / 2 + 24) * k, hh = ((Math.max(...ys) - Math.min(...ys)) / 2 + 24) * k;
     const bx = cx - hw, by = cy - hh, bw = hw * 2, bh = hh * 2;
-    const lockOp = age < 2.6 ? Math.min(1, age / 0.15) : Math.max(0, 1 - (age - 2.6) / 0.4);
+    const lockOp = age < recog + 0.9 ? Math.min(1, age / 0.15) : Math.max(0, 1 - (age - recog - 0.9) / 0.4);
     const L = Math.min(hw, hh) * 0.35;
     const corners = [[bx, by, 1, 1], [bx + bw, by, -1, 1], [bx, by + bh, 1, -1], [bx + bw, by + bh, -1, -1]];
-    const u = (age - 0.3) / 1.4;   // 스캔 왕복 0~1
+    const u = (age - 0.3) / (recog - 0.3);   // 스캔 왕복 0~1(인식 동안 한 번)
     const io = (x: number) => (x < 0.5 ? 2 * x * x : 1 - Math.pow(-2 * x + 2, 2) / 2);
     const scan = u > 0 && u < 1 ? by + (u < 0.5 ? io(u * 2) : 1 - io((u - 0.5) * 2)) * bh : null;
-    const tracking = age >= 2.4;
+    const tracking = age >= recog + 0.7;
     const pz = pulse ? 1 + 0.045 * Math.sin(t * Math.PI * 3) : 1;
     return (
       <svg style={{position: "absolute", inset: 0, width: "100%", height: "100%", overflow: "visible", opacity: dim ? 0.35 : 1}}>

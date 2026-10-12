@@ -5,7 +5,8 @@ import {BTN, C, FONT, TOOL_KO, easeOut, type Fit} from "./theme.ts";
 // alert = 경고·차단 중 그 버튼 — 🔑 첫 시선은 손과 버튼(PRODUCT 원칙 2): 경고색·굵게·맥박 · revealY = 스캔 선 아래는 숨김
 // intro = 켜짐 스캔 선이 지나간 버튼 → 지난 초(0~BTN_INTRO_SEC) — 탐지 연출(10/9 초안 피드백 「파동이 희미 … 더 선명하게 · 지지직 효과 추가」):
 //   0~0.4 큰 꺾쇠가 버튼으로 좁혀 듦 · 0~0.45 잡음·번쩍·색 어긋남(지지직) · 0~1.0 굵은 파동 두 겹(빛 번짐) · 0~0.6 「B1 인식」 → 그 뒤 점수
-// 누름 파동 = 그 버튼 색(「초록색인데 버튼 오버레이 색과 동일한 색으로」) · 틀린 누름만 빨강
+// 누름 파동 = 그 버튼 색(「초록색인데 버튼 오버레이 색과 동일한 색으로」) — 틀린 누름도 버튼 색(시안 17 3차 피드백 「파동이 누름 효과인지
+//   차단 효과인지 구분이 안 돼 … 버튼 누름 효과로 · 누를 때」 — 빨강은 차단 표시에만) · 판정 구역이 상자를 덮어 숨겨도 파동은 누른 순간부터 그린다
 // toolIntro = 공구 탐지 연출(버튼과 같은 결 · 공구가 보이고 조금 뒤 화면 정지 구간)
 // frozenAge = 화면 정지 구간 안 경과 초 — 훑는 선이 위 → 아래 → 위 한 번만(SCAN_TRIP 초 · 시안 2 피드백 「왕복 1회만 … 지금보단 느리지만 빠르게」)
 // 확인 중으로 바뀌어도 박스 크기는 그대로(시안 2 피드백 「갑자기 커지는데 … 기존 크기를 유지」)
@@ -51,7 +52,14 @@ export const ButtonBoxes: React.FC<{
   <svg style={{position: "absolute", inset: 0, width: "100%", height: "100%", overflow: "visible"}}>
     {boxes.map(([name, score, x1, y1, x2, y2]) => {
       const X1 = fit.x + x1 * fit.s, Y1 = fit.y + y1 * fit.s, X2 = fit.x + x2 * fit.s, Y2 = fit.y + y2 * fit.s;
-      if (Y1 > revealY || name === hide) return null;   // hide = 판정 구역이 덮는 버튼(시안 3 피드백 「판정 구역 그래픽이 실행 되면 … 잠시 꺼줘」)
+      if (Y1 > revealY) return null;
+      const ripple = press && press.button === name && press.age < 1.0 && !tool ? (
+        <>
+          {press.age < 0.3 && <circle cx={(X1 + X2) / 2} cy={(Y1 + Y2) / 2} r={Math.max(X2 - X1, Y2 - Y1) * 0.75} fill={BTN[name] ?? C.text} opacity={0.5 * (1 - press.age / 0.3)} />}
+          <Rings cx={(X1 + X2) / 2} cy={(Y1 + Y2) / 2} r0={26} age={press.age} col={BTN[name] ?? C.text} delays={[0, 0.15, 0.3]} dur={0.6} reach={140} w={10} />
+        </>
+      ) : null;
+      if (name === hide) return <g key={name}>{ripple}</g>;   // hide = 판정 구역이 덮는 버튼(시안 3 피드백 「판정 구역 그래픽이 실행 되면 … 잠시 꺼줘」)
       const ts = tool ? toolState : null;
       const hit = !tool && alert?.button === name;
       const alertCol = alert?.kind === "block" ? C.danger : C.warn;
@@ -96,17 +104,12 @@ export const ButtonBoxes: React.FC<{
           {grasped && ta !== undefined && ta < 0.35 && <rect x={bx1} y={by1} width={bx2 - bx1} height={by2 - by1} rx={8} fill={col} opacity={0.55 * (1 - ta / 0.35)} />}
           {grasped && ta !== undefined && <Rings cx={cx} cy={cy} r0={Math.max(bw, bh) * 0.55} age={ta} col={col} delays={[0, 0.2]} dur={0.8} reach={140} w={9} />}
           {wrong && ta !== undefined && (
-            // 오답 공구 — 빨간 번쩍 · 파동 · ✕(시안 3 피드백 「오답 공구 쥠 판정 시 오답 효과」)
+            // 오답 공구 — 빨간 번쩍 · 파동(시안 3 피드백 「오답 공구 쥠 판정 시 오답 효과」 · ✕ 는 시안 17 에서 뺌)
             <>
               {ta < 0.4 && <rect x={bx1} y={by1} width={bx2 - bx1} height={by2 - by1} rx={8} fill={col} opacity={0.5 * (1 - ta / 0.4)} />}
               <Rings cx={cx + shake} cy={cy} r0={Math.max(bw, bh) * 0.55} age={ta} col={col} delays={[0, 0.2]} dur={0.8} reach={140} w={9} />
               <rect x={bx1} y={by1} width={bx2 - bx1} height={by2 - by1} rx={8} fill={col} opacity={0.12 + 0.08 * Math.sin(t * Math.PI * 4)} />
-              {(() => {
-                const k = Math.min(1, ta / 0.25), r = Math.min(bw, bh) * 0.32 * k;
-                return <g stroke={col} strokeWidth={9} strokeLinecap="round" opacity={0.95}>
-                  <line x1={cx + shake - r} y1={cy - r} x2={cx + shake + r} y2={cy + r} /><line x1={cx + shake + r} y1={cy - r} x2={cx + shake - r} y2={cy + r} />
-                </g>;
-              })()}
+              {/* ✕ 표시는 뺌 — 시안 17 피드백 (번쩍 · 파동 · 흔들림은 유지) */}
             </>
           )}
           {corners.map(([x, y, sx, sy], i) => (
@@ -135,12 +138,7 @@ export const ButtonBoxes: React.FC<{
               </>
             );
           })()}
-          {press && press.button === name && press.age < 1.0 && (
-            <>
-              {press.age < 0.3 && <circle cx={cx} cy={cy} r={Math.max(bw, bh) * 0.75} fill={press.ok ? col : C.danger} opacity={0.5 * (1 - press.age / 0.3)} />}
-              <Rings cx={cx} cy={cy} r0={26} age={press.age} col={press.ok ? col : C.danger} delays={[0, 0.15, 0.3]} dur={0.6} reach={140} w={10} />
-            </>
-          )}
+          {ripple}
         </g>
       );
     })}
@@ -148,7 +146,7 @@ export const ButtonBoxes: React.FC<{
       // 누르는 손가락이 버튼을 가려 그 순간 박스가 없을 때 — 직전에 보인 자리에 파동만(박스는 그리지 않는다)
       const [, , x1, y1, x2, y2] = pressAt;
       const cx = fit.x + ((x1 + x2) / 2) * fit.s, cy = fit.y + ((y1 + y2) / 2) * fit.s, r = Math.max(x2 - x1, y2 - y1) * fit.s;
-      const col = press.ok ? BTN[press.button] ?? C.text : C.danger;
+      const col = BTN[press.button] ?? C.text;
       return (
         <>
           {press.age < 0.3 && <circle cx={cx} cy={cy} r={r * 0.75} fill={col} opacity={0.5 * (1 - press.age / 0.3)} />}

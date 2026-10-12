@@ -1,5 +1,6 @@
 import type {Box, Pt} from "../lib/dets.ts";
 import {C, FONT, easeOut, rnd, type Fit} from "./theme.ts";
+import {CARD_IN, STREAM_AT, STREAM_RUN} from "../lib/uiState.ts";
 
 // 테크 효과 묶음 — 시안 8 피드백 「연출 · 효과 … 영상 분위기는 테크적이고 화려하게」 → 추천 5개(사용자 「추천만 넣어줘봐」)
 //   ① 장 전환(색 번짐 + 픽셀 조각) ③ 검지 끝 빛 꼬리 ④ 차단 순간(자물쇠 「찰칵」 — 흔들림 · 번쩍임은 Cut) ⑤ 「가디언」 듣는 중 음성 파동
@@ -76,8 +77,7 @@ export const ZoomInset: React.FC<{video: React.ReactNode; box: Box; fit: Fit; sp
           <line x1={S / 2} y1={S / 2 + 12} x2={S / 2} y2={S / 2 + 26} stroke={col} strokeWidth={2} />
           <line x1={S / 2 - 26} y1={S / 2} x2={S / 2 - 12} y2={S / 2} stroke={col} strokeWidth={2} />
           <line x1={S / 2 + 12} y1={S / 2} x2={S / 2 + 26} y2={S / 2} stroke={col} strokeWidth={2} />
-          <rect x={8} y={8} width={58} height={24} rx={6} fill="rgba(0,0,0,0.7)" />
-          <text x={37} y={26} textAnchor="middle" fill={col} fontFamily={FONT} fontSize={17} fontWeight={800}>{`×${zoom.toFixed(1)}`}</text>
+          {/* 배율 글자(×1.9 등)는 뺌 — 시안 17 피드백 */}
         </svg>
       </div>
       <div style={{position: "absolute", left: spot.x, top: spot.y + S + 8, width: S, textAlign: "center", opacity: a, fontFamily: FONT,
@@ -90,40 +90,77 @@ export const ZoomInset: React.FC<{video: React.ReactNode; box: Box; fit: Fit; sp
 
 // ⑥ 사실 카드로 모이는 빛줄기 — 코드가 가진 사실(단계 상태 · 공구 상태 · 검출 결과)이 카드로 모인다(발표 「판단은 코드, 말은 LLM」)
 //   q = 질문 뒤 초 · 빛 머리가 0.15 → 0.6초(카드가 뜨는 때)에 출발점 → 카드 안쪽으로 · 이름표는 출발점에(줄을 다 그린 뒤)
-export type Stream = {x: number; y: number; label: string; col: string};
+// side = 이름표 자리 — right = 출발점 오른쪽(위 가운데 대기 시간 UI 처럼 아래가 사실 카드라 자리가 없을 때) · left = 왼쪽(카드 오른쪽의 버튼 —
+//   아래는 작업자 말풍선에 가림 · 시안 17 7차) · 없으면 출발점 아래
+export type Stream = {x: number; y: number; label: string; col: string; side?: "right" | "left"};
 const bez = (p0: number[], p1: number[], p2: number[], u: number) =>
   [0, 1].map((k) => (1 - u) * (1 - u) * p0[k] + 2 * (1 - u) * u * p1[k] + u * u * p2[k]);
 export const FactStreams: React.FC<{q: number; from: Stream[]; card: {x: number; y: number; w: number; h: number}}> = ({q, from, card}) => {
-  if (q < 0.05 || q > 1.1) return null;
-  const run = Math.max(0, Math.min(1, (q - 0.15) / 0.45));
-  const head = run < 0.5 ? 2 * run * run : 1 - Math.pow(-2 * run + 2, 2) / 2;
-  const fade = q < 0.15 ? (q - 0.05) / 0.1 : q > 0.75 ? Math.max(0, 1 - (q - 0.75) / 0.35) : 1;
+  // 시안 17 피드백 「상태 모음 효과를 좀 더 강조」 — 굵은 빛 + 번짐 · 빛 알갱이 셋 · 출발점 맥박 · 도착 섬광 · 큰 이름표
+  // 시안 17 3차 피드백 「사실 카드가 나오고 내용이 써지기 전부터」 — 출발점은 카드와 함께(CARD_IN) 나타나 맥박 → STREAM_AT 에 출발 →
+  //   STREAM_RUN 초 뒤 카드에 닿음(그때부터 카드 내용이 써진다 · lib/uiState 시각표)
+  const end = STREAM_AT + STREAM_RUN;
+  if (q < CARD_IN || q > end + 0.75) return null;
+  const run = Math.max(0, Math.min(1, (q - STREAM_AT) / STREAM_RUN));
+  const ease = (u: number) => (u < 0.5 ? 2 * u * u : 1 - Math.pow(-2 * u + 2, 2) / 2);
+  const head = ease(run);
+  const fade = q < CARD_IN + 0.1 ? (q - CARD_IN) / 0.1 : q > end + 0.3 ? Math.max(0, 1 - (q - end - 0.3) / 0.45) : 1;
   // 도착점 = 카드 안쪽(위 60~190 px) — 카드 높이(줄 수)가 달라도 빛줄기가 카드 밑으로 들어간다(리뷰 — 단계 질문에서 카드 아래 빈 곳에 멈춤)
   // 휨 = 두 방향 중 아래로 휘는 쪽(리뷰 — 오른쪽에서 오는 줄이 위로 휘어 공구 카드 글자 · 다른 이름표를 지남)
+  const N = 40;
   const paths = from.map((s) => {
     const tx = Math.min(Math.max(s.x, card.x + 60), card.x + card.w - 60), ty = Math.min(Math.max(s.y, card.y + 60), card.y + 190);
     const mx = (s.x + tx) / 2, my = (s.y + ty) / 2, dx = tx - s.x, dy = ty - s.y;
     const c1 = [mx - dy * 0.3, my + dx * 0.3], c2 = [mx + dy * 0.3, my - dx * 0.3];
-    return Array.from({length: 25}, (_, k) => bez([s.x, s.y], c1[1] >= c2[1] ? c1 : c2, [tx, ty], k / 24));
+    return Array.from({length: N + 1}, (_, k) => bez([s.x, s.y], c1[1] >= c2[1] ? c1 : c2, [tx, ty], k / N));
   });
-  const n = Math.round(head * 24);
+  const at = (u: number) => Math.max(0, Math.min(N, Math.round(u * N)));
+  const n = at(head);
+  const arrive = run >= 1 ? q - end : -1;   // 도착 뒤 초
   return (
     <svg style={{position: "absolute", inset: 0, width: "100%", height: "100%", overflow: "visible", pointerEvents: "none", opacity: fade}}>
+      <defs>
+        <filter id="fs-glow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="9" /></filter>
+      </defs>
+      {from.map((s, i) => {
+        const pts = paths[i], seg = pts.slice(Math.max(0, n - 14), n + 1);
+        const pulse = (q * 2.2 + i * 0.3) % 1;
+        return (
+          <g key={i}>
+            {/* 길 — 흐르는 점선 */}
+            <polyline points={pts.map((p) => p.join(",")).join(" ")} fill="none" stroke={s.col} strokeWidth={3} opacity={0.55}
+              strokeDasharray="8 10" strokeDashoffset={-q * 140} />
+            {/* 빛 꼬리 — 번짐 + 굵은 선 */}
+            {seg.length > 1 && <polyline points={seg.map((p) => p.join(",")).join(" ")} fill="none" stroke={s.col} strokeWidth={22}
+              strokeLinecap="round" opacity={0.55} filter="url(#fs-glow)" />}
+            {seg.map((p, k, arr) => k === 0 ? null : (
+              <line key={k} x1={arr[k - 1][0]} y1={arr[k - 1][1]} x2={p[0]} y2={p[1]} stroke={s.col} strokeLinecap="round"
+                strokeWidth={4 + 9 * (k / arr.length)} opacity={0.35 + 0.65 * (k / arr.length)} />
+            ))}
+            {/* 빛 알갱이 셋(머리 · 뒤따르는 둘) */}
+            {head < 1 && [0, 0.1, 0.2].map((lag, j) => {
+              const p = pts[at(ease(Math.max(0, run - lag)))];
+              return <g key={j}>
+                <circle cx={p[0]} cy={p[1]} r={(16 - 5 * j)} fill={s.col} opacity={0.95 - 0.25 * j} style={{filter: `drop-shadow(0 0 18px ${s.col})`}} />
+                {j === 0 && <circle cx={p[0]} cy={p[1]} r={6} fill="#ffffff" />}
+              </g>;
+            })}
+            {/* 출발점 맥박 */}
+            <circle cx={s.x} cy={s.y} r={9} fill={s.col} style={{filter: `drop-shadow(0 0 10px ${s.col})`}} />
+            {q < end + 0.3 && <circle cx={s.x} cy={s.y} r={12 + 38 * pulse} fill="none" stroke={s.col} strokeWidth={4 * (1 - pulse) + 1} opacity={1 - pulse} />}
+            {/* 도착 섬광 */}
+            {arrive >= 0 && arrive < 0.4 && (() => {
+              const e = pts[N], u = arrive / 0.4;
+              return <circle cx={e[0]} cy={e[1]} r={14 + 70 * u} fill="none" stroke={s.col} strokeWidth={7 * (1 - u) + 1} opacity={1 - u} />;
+            })()}
+          </g>
+        );
+      })}
       {from.map((s, i) => (
-        <g key={i}>
-          <polyline points={paths[i].map((p) => p.join(",")).join(" ")} fill="none" stroke={s.col} strokeWidth={2} opacity={0.25} strokeDasharray="4 6" />
-          {paths[i].slice(Math.max(0, n - 8), n + 1).map((p, k, arr) => k === 0 ? null : (
-            <line key={k} x1={arr[k - 1][0]} y1={arr[k - 1][1]} x2={p[0]} y2={p[1]} stroke={s.col} strokeLinecap="round"
-              strokeWidth={2 + 5 * (k / arr.length)} opacity={0.25 + 0.75 * (k / arr.length)} />
-          ))}
-          {head < 1 && <circle cx={paths[i][n][0]} cy={paths[i][n][1]} r={9} fill={s.col} opacity={0.9} style={{filter: `drop-shadow(0 0 10px ${s.col})`}} />}
-          <circle cx={s.x} cy={s.y} r={6} fill={s.col} />
-        </g>
-      ))}
-      {from.map((s, i) => (
-        <g key={`t${i}`} transform={`translate(${s.x} ${s.y + 14})`}>
-          <rect x={-58} y={0} width={116} height={30} rx={15} fill="rgba(10,12,14,0.88)" stroke={s.col} strokeWidth={1.5} />
-          <text x={0} y={21} textAnchor="middle" fill={s.col} fontFamily={FONT} fontSize={18} fontWeight={800}>{s.label}</text>
+        <g key={`t${i}`} transform={s.side === "right" ? `translate(${s.x + 100} ${s.y - 20})` : s.side === "left" ? `translate(${s.x - 100} ${s.y - 20})` : `translate(${s.x} ${s.y + 18})`}>
+          <rect x={-82} y={0} width={164} height={40} rx={20} fill="rgba(10,12,14,0.92)" stroke={s.col} strokeWidth={2.5}
+            style={{filter: `drop-shadow(0 0 10px ${s.col})`}} />
+          <text x={0} y={28} textAnchor="middle" fill={s.col} fontFamily={FONT} fontSize={24} fontWeight={800}>{s.label}</text>
         </g>
       ))}
     </svg>
@@ -156,7 +193,8 @@ export const TipTrail: React.FC<{pts: Pt[]; fit: Fit; label: boolean}> = ({pts, 
   );
 };
 
-// ④ 차단 순간 — 막힌 버튼 옆에 자물쇠가 크게 떨어지며(0.15초) 고리가 「찰칵」 닫히고(0.24초) 고리 파동 · age = 차단 뒤 화면 초
+// ④ 차단 순간 — 막힌 버튼 옆에 자물쇠가 크게 떨어지며(0.15초) 고리가 「찰칵」 닫힘(0.24초) · age = 차단 뒤 화면 초
+//   고리 파동은 뺌(시안 17 3차 피드백 — 버튼 주변 파동은 누름 효과로만)
 export const LockBadge: React.FC<{box: Box; fit: Fit; age: number; t: number}> = ({box, fit, age, t}) => {
   if (age < 0) return null;
   const [, , x1, y1, x2, y2] = box;
@@ -165,11 +203,9 @@ export const LockBadge: React.FC<{box: Box; fit: Fit; age: number; t: number}> =
   const cx = X1 - 70 > 40 ? X1 - 70 : X2 + 70;
   const sc = age < 0.15 ? 1.9 - 0.9 * easeOut(age / 0.15) : 1;
   const lift = age < 0.15 ? 14 : age < 0.24 ? 14 * (1 - (age - 0.15) / 0.09) : 0;
-  const snap = age >= 0.24 && age < 0.74 ? (age - 0.24) / 0.5 : null;
   const glow = 10 + 8 * Math.sin(t * Math.PI * 3);
   return (
     <svg style={{position: "absolute", inset: 0, width: "100%", height: "100%", overflow: "visible", pointerEvents: "none"}}>
-      {snap !== null && <circle cx={cx} cy={cy} r={34 + 70 * easeOut(snap)} fill="none" stroke={C.danger} strokeWidth={6 * (1 - snap) + 1} opacity={1 - snap} />}
       <g transform={`translate(${cx} ${cy}) scale(${sc})`} opacity={Math.min(1, age / 0.08)}
         style={{filter: `drop-shadow(0 0 ${glow.toFixed(1)}px ${C.danger})`}}>
         <circle r={40} fill="rgba(20,6,6,0.88)" stroke={C.danger} strokeWidth={3} />
@@ -184,14 +220,22 @@ export const LockBadge: React.FC<{box: Box; fit: Fit; age: number; t: number}> =
 // ⑤ 「가디언」 듣는 중 — 화면 아래 가장자리에 음성 파동 빛(AI 비서가 듣고 있다는 신호) · level 0~1
 const WAVES = [{col: "#5aa8ff", f: 1.6, sp: 2.2, a: 1}, {col: "#b06bff", f: 2.3, sp: -1.7, a: 0.8},
   {col: "#ff5cc8", f: 3.1, sp: 2.9, a: 0.6}, {col: "#62e6ff", f: 1.1, sp: -3.3, a: 0.75}];
-export const VoiceWave: React.FC<{level: number; t: number; W: number; H: number}> = ({level, t, W, H}) => {
+// voice = 목소리를 따라 — amp 세기 배율 · phase 흐른 거리(lib/voiceLevel · 시안 17 8차) · 없으면 일정한 박자(t)
+// 시안 17 9차 피드백 「자막에 가려 잘 안 보임 — 밝기 · 투명도를 낮추고 물결 높이를 더 크게 위아래로」
+//   중심 아래 70 → 100 · 높이 46 → 105(목소리가 클 때 약 ±135 px — 자막 위로 넘나듦) · 양옆도 크게(가운데 자막 뒤만 크던 것)
+//   선 0.95 → 0.55 · 번짐 0.7 → 0.35 · 아래 보라 배경 0.42 → 0.22
+//   11차 「밝기 · 불투명도도 이전과 지금의 중간」 → 선 0.75 · 번짐 0.52 · 아래 보라 배경 0.32
+//   10차 「너무 크게 출렁 — 이전과 지금의 중간으로」 → 중심 85 · 높이 75(크게 말할 때 약 ±100 px) · 양옆 퍼짐도 중간(지수 1.5 · 0.7 → 1.1)
+const WAVE_BASE = 85, WAVE_AMP = 75, WAVE_SPREAD = 1.1;
+export const VoiceWave: React.FC<{level: number; t: number; W: number; H: number; voice?: {amp: number; phase: number}}> = ({level, t, W, H, voice}) => {
   if (level <= 0) return null;
-  const base = H - 70, amp = 46 * level * (0.65 + 0.35 * Math.abs(Math.sin(t * 6.3)));
+  const base = H - WAVE_BASE, amp = WAVE_AMP * level * (voice ? voice.amp : 0.65 + 0.35 * Math.abs(Math.sin(t * 6.3)));
+  const tt = voice ? voice.phase : t;
   const path = (w: (typeof WAVES)[number]) => {
     let d = "";
     for (let x = 0; x <= W; x += 16) {
-      const u = x / W, env = Math.pow(Math.sin(Math.PI * u), 1.5);
-      const y = base - amp * w.a * env * Math.sin(u * Math.PI * 2 * w.f + t * w.sp);
+      const u = x / W, env = Math.pow(Math.sin(Math.PI * u), WAVE_SPREAD);
+      const y = base - amp * w.a * env * Math.sin(u * Math.PI * 2 * w.f + tt * w.sp);
       d += `${x ? "L" : "M"} ${x} ${y.toFixed(1)} `;
     }
     return d;
@@ -201,13 +245,13 @@ export const VoiceWave: React.FC<{level: number; t: number; W: number; H: number
       <defs>
         <linearGradient id="vw-glow" x1="0" y1="0" x2="0" y2="1">
           <stop offset="0" stopColor="#5aa8ff" stopOpacity="0" />
-          <stop offset="1" stopColor="#7a6bff" stopOpacity={0.42 * level} />
+          <stop offset="1" stopColor="#7a6bff" stopOpacity={0.32 * level * (voice ? Math.min(1.2, 0.5 + 0.6 * voice.amp) : 1)} />
         </linearGradient>
         <filter id="vw-blur" x="-10%" y="-50%" width="120%" height="200%"><feGaussianBlur stdDeviation="7" /></filter>
       </defs>
-      <rect x={0} y={H - 200} width={W} height={200} fill="url(#vw-glow)" />
-      {WAVES.map((w, i) => <path key={`g${i}`} d={path(w)} stroke={w.col} strokeWidth={10} fill="none" opacity={0.7 * level} filter="url(#vw-blur)" />)}
-      {WAVES.map((w, i) => <path key={i} d={path(w)} stroke={w.col} strokeWidth={3} fill="none" opacity={0.95 * level} />)}
+      <rect x={0} y={H - 260} width={W} height={260} fill="url(#vw-glow)" />
+      {WAVES.map((w, i) => <path key={`g${i}`} d={path(w)} stroke={w.col} strokeWidth={10} fill="none" opacity={0.52 * level} filter="url(#vw-blur)" />)}
+      {WAVES.map((w, i) => <path key={i} d={path(w)} stroke={w.col} strokeWidth={3} fill="none" opacity={0.75 * level} />)}
     </svg>
   );
 };

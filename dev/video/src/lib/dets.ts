@@ -83,6 +83,21 @@ export function lastBox(d: Dets, sec: number, name: string, backSec: number): Bo
   return null;
 }
 
+// 버튼이 온전히 보였던 박스 — sec 부터 back 초 전까지 그 버튼 박스 중 가장 큰 넓이의 85% 이상인 것 가운데 가장 최근
+// 손이 버튼을 가리면 검출 박스가 작아지거나 흔들린다 → 판정 구역 크기를 그대로 두려고(시안 17 피드백 「판정 구역 크기는 유지」)
+export function stableBox(d: Dets, sec: number, name: string, back = 1.5): Box | null {
+  const f = Math.floor(sec * d.fps + 1e-6), n = Math.round(back * d.fps);
+  const area = (b: Box) => (b[4] - b[2]) * (b[5] - b[3]);
+  const found: Box[] = [];
+  for (let k = 0; k <= n; k++) {
+    const b = rowAt(d, f - k)?.btn.find((x) => x[0] === name);
+    if (b) found.push(b);   // 최근 → 오래된 순
+  }
+  if (!found.length) return null;
+  const big = Math.max(...found.map(area));
+  return found.find((b) => area(b) >= 0.85 * big) ?? found[0];
+}
+
 // 검지 끝(손 21점의 8번) 자취 — sec 부터 back 초 전까지 프레임마다(오래된 것 → 지금) · 손이 없는 순간은 건너뜀
 // 판정 장면에서 「무엇을 보고 판정하나」(검지 끝이 버튼 박스 안)를 빛 꼬리로 보인다(시안 8 피드백 「테크적이고 화려하게」)
 export function tipTrail(d: Dets, sec: number, back: number): Pt[] {
