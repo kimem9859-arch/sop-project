@@ -8,6 +8,7 @@ import {TTS_SEC} from "./ttsSec.ts";
 
 // 기능 소개 영상 시안 17(2026-10-11 · 사용자 「이전 시안대로 효과 · 그래픽 · 자막 · 효과음 … 타워램프는 제외 · 음성비서는 현재 영상으로」)
 //   · 시안 17 피드백 19건(같은 날) — 로고 5초 · 켜짐 한 장면 · 탐지 연출은 재생 중 · 공구 장면 시작 · 음성비서 정지/재생 · 단계 질문 = 버튼 입력 장면 등
+//   · 수정 19(10/13 · 사용자 「단계 명칭으로 영상을 수정」) — 단계 = 공정 정지 · 냉각 · 가스 퍼지 · 챔버 벤트(hud/theme STEPS) · 서브 작업 = 플라즈마 정지 · 전극 온도 하강 · N2 퍼지
 //   · 수정 17(10/13 · 사용자 「프로젝트-최종정리.md 내용을 확인하여 반영」) — 공구 질문 = 즉답(LLM 없이) · 경고 · 스침 자막 = 판정 기준 안 B · 서브작업 대기 = 레시피 10초
 //   촬영 = 10/11 폰(4K 60fps) — 안경 쓰기 ③(174802) · 행동 영상(174335 · 94.7초) · 안경 벗기(174621) · 검출 = 파이1(--pad34)
 //   장면 고르기 = 프레임 6,656장 판정(문 · 디스플레이 비침 = 뺌) + 소리의 딸깍(누름) · 검지 끝이 버튼 박스에 든 시각(검출)
@@ -76,7 +77,7 @@ type Say = ReturnType<typeof say>;
 //   (시안 17 3차 피드백 「음성비서가 답하기도 전에 손이 공구로 향하고 있어 — 답을 받고 행동이 시작」 → 답 재생 끝 + 0.2초에 재생)
 //   패널이 가만히 있는 63.65초까지를 질문이 끝날 때까지로 살짝 늘림(0.97배 · HUD 는 제 속도)
 //   답 뒤 재생은 손이 공구함에서 렌치를 잡는 순간(주먹이 공구함 안 · 65.05~)까지(5차 분량 줄이기 67.8 → 65.95 · 꺼내 드는 모습은 뺌)
-//   2단계(N2 퍼지 10초) 시작 = 장면 1초 전 — 누름 파동(0.9초)이 장면 첫 화면에 남지 않고, 10초 대기가 장면 끝(HUD 약 69.8)까지 끝나지 않게
+//   2단계(전극 온도 하강 10초) 시작 = 장면 1초 전 — 누름 파동(0.9초)이 장면 첫 화면에 남지 않고, 10초 대기가 장면 끝(HUD 약 69.8)까지 끝나지 않게
 const V1_FROM = 61.05, V1_FREEZE = 63.65, V1_TO = 65.95, V1_B2 = V1_FROM - 1.0;
 const A1 = say(V1_FROM + 0.05, TTS_SEC.w_wake, TTS_SEC.w_tool, TTS_SEC.tool_quick, QUICK_ANSWER);
 const V1_GO = A1.done + 0.2;
@@ -109,31 +110,31 @@ const ask = (a: Say, q: string, answer: string, card?: string[]): StagedEv[] => 
 // 답 문장 · tools/tts_lines.ts 가 읽어 TTS 로(tts_<이름>.wav)
 //   step1 = 단계 질문 LLM 답(1단계 대기 중) — 1단계 완료(누름 + 10초) 전에 끝나도록 줄임(수정 17 · 3.9 → 2.0초)
 //   tool_quick = 공구 질문 즉답 — Rpi5 bfba16f voice_card.quick_answer 「필요공구」 문장 그대로({현재단계}단계에 필요한 공구는 {공구}입니다.)
-export const TTS17_LINES = {step1: "클린이 끝날 때까지 기다리세요.", tool_quick: "2단계에 필요한 공구는 렌치입니다."};
+export const TTS17_LINES = {step1: "플라즈마 정지 중이니 기다리세요.", tool_quick: "2단계에 필요한 공구는 렌치입니다."};   // step1 = 수정 19(「플라즈마 정지가 끝날 때까지 …」는 2.8초로 1단계 안에 못 끝남)
 // 작업자 말(시안 17 피드백 「호출 음성과 질문을 남성 TTS 로」 — 촬영 때 녹음하지 않음) · tools/tts_gemini.py(제미나이 남성)가 w_* 를 만든다
 export const WORKER_LINES = {w_wake: "가디언", w_tool: "지금 필요한 공구가 뭐야?", w_step: "다음 단계 뭐야?"};
 const CARD_STEP1 = [
   `지금 할 일: 기다린다 — 약 ${Math.round(STEP1_DONE - A2.stt)}초 뒤 자동으로 2단계로 넘어간다`,
-  "현재 진행 중인 단계: 1단계 「클린·가스차단」 — 아직 끝나지 않음 · 이 단계의 버튼: B1",
-  "1단계의 서브작업: 플라즈마 클린 진행",
+  "현재 진행 중인 단계: 1단계 「공정 정지」 — 아직 끝나지 않음 · 이 단계의 버튼: B1",
+  "1단계의 서브작업: 플라즈마 정지",
   "순서 판정: 정상 (경고·차단 없음)",
-  "그 다음에 올 단계: 2단계 「펌프/퍼지」 · 버튼 B2 (현재 단계가 끝난 뒤에만 누른다)",
+  "그 다음에 올 단계: 2단계 「냉각」 · 버튼 B2 (현재 단계가 끝난 뒤에만 누른다)",
   "이 시스템이 모르는 것: 가스·압력·온도 같은 장비 센서 값 · 다른 작업자",
 ];
 export const ASK = {A1, A2, V1_FROM, V1_FREEZE, V1_TO, V1_GO, V2_FROM, V2_FREEZE, STEP1_DONE, V2_END};
 
 // 연출 기록(run 마다) — 누름은 장면 밖(화면에 누름 파동이 안 보이게) · 1단계 완료 안내는 장면보다 충분히 앞
-// 서브작업 대기 = 레시피 10초(수정 17 · 최종 정리 3.1) — 2단계 N2 퍼지는 장면이 끝날 때까지 대기가 끝나지 않는 자리에서 누른다
+// 서브작업 대기 = 레시피 10초(수정 17 · 최종 정리 3.1) — 2단계 전극 온도 하강은 장면이 끝날 때까지 대기가 끝나지 않는 자리에서 누른다
 //   (연출 기록은 공구를 쥐지 않아도 시간이 차면 단계를 끝낸다 — 실제 시스템은 렌치를 쥘 때까지 기다림)
 //   pB1 = 장면 앞(화면 밖)에서 1단계를 끝내 두는 준비 누름
-const P1: StagedPress = {button: "B1", t: 9.54, sub: {label: "플라즈마 클린 진행", sec: STEP1_SEC}};   // 실제 누름(딸깍 9.54)
-const pB1 = (t: number): StagedPress => ({button: "B1", t, sub: {label: "플라즈마 클린 진행", sec: 1}});
-const N2 = {label: "N2 퍼지", sec: 10};
+const P1: StagedPress = {button: "B1", t: 9.54, sub: {label: "플라즈마 정지", sec: STEP1_SEC}};   // 실제 누름(딸깍 9.54)
+const pB1 = (t: number): StagedPress => ({button: "B1", t, sub: {label: "플라즈마 정지", sec: 1}});
+export const SUB2 = {label: "전극 온도 하강", sec: 10};   // 2단계(냉각) 서브 작업 — 렌치 필요
 export const FEATURE17_STAGED = {
   [M]: {start: 0.3, presses: [P1, {button: "B2", t: 40}]},
-  [`${M}#tool`]: {start: 26, presses: [pB1(28), {button: "B2", t: B2_AT, sub: N2, tool: {want: "wrench", seen: OVER_AT, grasped: GRASP}},
+  [`${M}#tool`]: {start: 26, presses: [pB1(28), {button: "B2", t: B2_AT, sub: SUB2, tool: {want: "wrench", seen: OVER_AT, grasped: GRASP}},
     {button: "B3", t: 80}]},
-  [`${M}#other`]: {start: 60, presses: [pB1(62), {button: "B2", t: 80, sub: N2}, {button: "B3", t: 120}],
+  [`${M}#other`]: {start: 60, presses: [pB1(62), {button: "B2", t: 80, sub: SUB2}, {button: "B3", t: 120}],
     extra: [...[DRV_FROM + 0.05, DRV_FROM + 1.05].map(search),
       {t: DRV_OVER, kind: "tool_scan", d: {hand: true, seen: ["driver"], tool: null, phase: "checking", want: "wrench"}},
       {t: DRV_WRONG, kind: "wrong_tool", d: {want: "wrench", got: "driver"}}]},
@@ -154,7 +155,7 @@ export const FEATURE17_STAGED = {
     {t: BLOCK_AT + 0.03, kind: "alert", d: {key: "alert_block_B2", state: "BLOCK"}, src: V},
     {t: BLOCK_AT + 0.1, kind: "play_start", d: {}, src: V}]},
   // 03 — 공구 질문 = 2단계 렌치 찾는 중(오른쪽 위 카드만 · 공구 탐지 연출 없음) · 즉답 / 단계 질문 = B1 을 누른 뒤 1단계 대기 · LLM
-  [`${M}#voice1`]: {start: 48, presses: [pB1(50), {button: "B2", t: V1_B2, sub: N2}, {button: "B3", t: 100}],
+  [`${M}#voice1`]: {start: 48, presses: [pB1(50), {button: "B2", t: V1_B2, sub: SUB2}, {button: "B3", t: 100}],
     extra: [...Array.from({length: 20}, (_, k) => search(V1_B2 + 0.2 + k)), ...ask(A1, WORKER_LINES.w_tool, TTS17_LINES.tool_quick)]},
   [`${M}#voice2`]: {start: 5, presses: [P1, {button: "B2", t: 40}],
     extra: ask(A2, WORKER_LINES.w_step, TTS17_LINES.step1, CARD_STEP1)},

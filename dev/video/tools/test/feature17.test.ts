@@ -5,7 +5,8 @@ import {place, sfxTrack, srcSec} from "../../src/lib/edit.ts";
 import {meterSpan} from "../../src/lib/fx.ts";
 import {stableBox} from "../../src/lib/dets.ts";
 import {outOfFrame, viewAt} from "../../src/lib/view.ts";
-import {ASK, FEATURE17, FEATURE17_STAGED, FEATURE17_VIEWS} from "../../src/edits/feature17.ts";
+import {ASK, FEATURE17, FEATURE17_STAGED, FEATURE17_VIEWS, SUB2, TTS17_LINES} from "../../src/edits/feature17.ts";
+import {STEPS} from "../../src/hud/theme.ts";
 import {TTS_SEC} from "../../src/edits/ttsSec.ts";
 import {stagedRun} from "../../src/lib/staged.ts";
 import {stateAt} from "../../src/lib/uiState.ts";
@@ -158,7 +159,7 @@ test("공구 질문 = 상태 질문 즉답 — 사실 카드 · 「확인해 보
   assert.equal(l.events.filter((e) => e.kind === "card").length, 1, "단계 질문은 사실 카드와 함께 LLM 으로");
 });
 
-test("화면에 보이는 서브작업 대기는 레시피대로 10초 — 1단계 플라즈마 클린 · 2단계 N2 퍼지(최종 정리 3.1)", () => {
+test("화면에 보이는 서브작업 대기는 레시피대로 10초 — 1단계 플라즈마 정지 · 2단계 전극 온도 하강(최종 정리 3.1)", () => {
   const subs = Object.values(FEATURE17_STAGED).flatMap((st) => st.presses.filter((p) => p.sub && p.sub.sec > 1).map((p) => p.sub!));
   assert.ok(subs.length >= 4);
   for (const s of subs) assert.equal(s.sec, 10, s.label);
@@ -174,7 +175,7 @@ test("공구 질문 장면 — B2 누름 파동(0.9초)은 장면 앞에서 끝�
   assert.ok(b2.t + b2.sub!.sec >= end + 0.2, `대기 끝 ${b2.t + b2.sub!.sec} · 장면 끝 HUD ${end.toFixed(3)}`);
 });
 
-test("2단계 N2 퍼지(10초)는 어느 장면에서도 장면 HUD 가 끝나기 전에 끝나지 않는다 — 연출 기록은 렌치 없이도 시간이 차면 단계를 끝내므로", () => {
+test("2단계 서브 작업(10초)은 어느 장면에서도 장면 HUD 가 끝나기 전에 끝나지 않는다 — 연출 기록은 렌치 없이도 시간이 차면 단계를 끝내므로", () => {
   const ps = place(FEATURE17, 30).map((p) => p.clip).filter((c) => !c.card);
   for (const run of ["tool", "other", "voice1"]) {
     const cs = ps.filter((c) => c.run === run);
@@ -235,4 +236,15 @@ test("계기 — 화면에 그리는 모든 장에서 경고는 느려진 뒤 �
   assert.ok(graze.every(({r}) => r?.kind !== "slow"));
   const passed = new Set(graze.filter(({r}) => r?.kind === "passed").map(({r}) => Math.round(r!.v)));
   assert.equal(passed.size, 1, `지나감 값 ${[...passed]}`);
+});
+
+test("단계 · 서브 작업 이름 = 10/13 바꾼 이름(수정 19 · 버튼 순서 그대로 · 파이 recipe 와 같아야 한다)", () => {
+  assert.deepEqual(STEPS.map((s) => [s.button, s.name]), [["B1", "공정 정지"], ["B2", "냉각"], ["B3", "가스 퍼지"], ["B4", "챔버 벤트"]]);
+  const subs = new Set(Object.values(FEATURE17_STAGED).flatMap((st) => st.presses.filter((p) => p.sub).map((p) => `${p.button} ${p.sub!.label}`)));
+  assert.deepEqual([...subs].sort(), ["B1 플라즈마 정지", "B2 전극 온도 하강"]);
+  assert.equal(SUB2.label, "전극 온도 하강");
+  assert.ok(TTS17_LINES.step1.includes("플라즈마 정지"), "단계 질문 답 = 1단계 서브 작업 이름");
+  const card = FEATURE17_STAGED["20261011_main#voice2"].extra!.find((e) => e.kind === "card")!.d.lines as string[];
+  assert.ok(card.some((l) => l.includes("「공정 정지」")) && card.some((l) => l.includes("「냉각」")) && card.some((l) => l.includes("플라즈마 정지")));
+  assert.ok(!card.join(" ").match(/클린|펌프|전극 냉각/), "옛 이름이 남지 않음");
 });

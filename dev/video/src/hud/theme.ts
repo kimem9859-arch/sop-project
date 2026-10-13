@@ -13,8 +13,8 @@ export const GLASS: React.CSSProperties = {
 };
 // 정본 = Rpi5/Demo/recipe.json(2026-10-09 사본) — 단계 이름이 바뀌면 여기도
 export const STEPS = [
-  {button: "B1", name: "클린·가스차단"}, {button: "B2", name: "펌프/퍼지"},
-  {button: "B3", name: "전극 냉각"}, {button: "B4", name: "챔버 벤트"},
+  {button: "B1", name: "공정 정지"}, {button: "B2", name: "냉각"},
+  {button: "B3", name: "가스 퍼지"}, {button: "B4", name: "챔버 벤트"},   // 10/13 단계 이름 변경(사용자 · 버튼 순서 그대로 · 파이 recipe 도 같은 이름으로)
 ];
 export const TOOL_KO: Record<string, string> = {driver: "드라이버", wrench: "렌치", pliers: "플라이어"};
 export type Fit = {s: number; x: number; y: number};
