@@ -7,7 +7,7 @@
 
 | 무엇 | 어디 |
 | --- | --- |
-| 촬영 원본·사본·검출·기록 | 데스크톱 `~/data/시연영상/<촬영 id>/` — `original.mp4` · `proxy.mp4` · `dets.json` · `measure/` · `timeline.json` · `sync.json` (git 밖) |
+| 촬영 원본·사본·검출·기록 | 데스크톱 `~/data/시연영상/<촬영 id>/` — `original.mp4` · `proxy.mp4` · `hq.mp4`(최종 렌더용 고화질 사본) · `dets.json` · `measure/` · `timeline.json` · `sync.json` (git 밖) |
 | Remotion 에서 여는 길 | `public/footage` → `~/data/시연영상` 바로가기(렌더 때 복사되지 않고 그대로 넘어간다) |
 | 렌더 결과 | `out/` (git 밖) |
 | 폰 원본 받는 곳 | Windows `C:\퀵쉐어\`(Quick Share) 또는 USB 로 옮긴 폴더 → `~/data/시연영상/<id>/original.mp4` 로 **복사** |
@@ -21,12 +21,14 @@ export NVM_DIR="$HOME/.nvm"; . "$NVM_DIR/nvm.sh"          # Node 24 (nvm)
 cd ~/projects/dev/video
 T=~/data/시연영상/<id>
 tools/proxy.sh $T/original.mp4 $T/proxy.mp4                # 검출용 사본(긴 변 1280 · 30fps · 회전 반영)
+tools/proxy.sh $T/original.mp4 $T/hq.mp4 1920 16          # 최종 렌더용 고화질 사본(같은 과정 → 프레임 시각이 사본과 같음 · 원본 그대로 쓰면 0.05초 어긋남)
 tools/pi_extract.sh $T [--pad34]                           # 파이1 임시 폴더에서 검출 → dets.json (NPU 사용 중이면 종료 2 · 공간 부족 종료 3)
 node tools/build_timeline.ts $T/measure <판> $T/timeline.json
 node tools/sync.ts $T/original.mp4 $T/timeline.json $T/sync.json   # 누름 소리 ↔ GPIO 누름 기록 → 영상 0초의 기록 시각
 node tools/cuts.ts $T/timeline.json $T/sync.json           # 편집표를 쓰기 위한 사건 시각표(영상 초)
 npm run dev                                                # Studio — 노트북 원격이면 http://100.107.89.123:3000
 npm test                                                   # 계산 함수 시험(node:test)
+npx remotion render src/index.ts Cut out/<이름>.mp4 --props='{"edit":"feature17","data":null,"hq":true}'   # 최종 렌더(hq = 고화질 사본 · 빼면 검출용 사본)
 ```
 
 - 🔴 **파이 코드(`Rpi5/`)는 고치지 않는다** — 검출 스크립트는 `tools/pi/extract_phone.py` 를 파이1 `~/lab/video-extract/<id>/` 로 복사해 돈다.

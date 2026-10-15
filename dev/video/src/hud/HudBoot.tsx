@@ -3,9 +3,10 @@ import {IconCheck} from "./icons.tsx";
 import {C, FONT, easeOut, rnd} from "./theme.ts";
 
 // HUD 켜짐(boot 0~1 · BOOT_SEC 초) — 시간표 = lib/boot
-//   0~WORLD_SEC 가상 세계가 펼쳐짐(시안 3 피드백 「안경 프레임이 화면에서 사라진 직후 가상 세계가 펼쳐지는 연출 … 여기까지 인트로」) — 아래 World
-//   HEAD_AT~ 가운데 띠: 「비전 감시 시작」 → 점검 4줄(확인 중 → 정상) — 글자는 차분하게(시안 1 피드백 「지지직 … 과해」)
-//   LIST_END~ 띠가 내려가며 사라짐 → BANNER 「점검 완료 · 버튼 탐지를 시작합니다」 → (단계 목록은 Hud) → 정지 구간 스캔 선(위 → 아래 → 위 한 번)
+//   0~WORLD_SEC 가상 세계(시안 3 피드백 「안경 프레임이 화면에서 사라진 직후 가상 세계가 펼쳐지는 연출」) — 아래 World
+//   HEAD_AT~ 가상 세계가 배경으로 이어지는 위에 가운데 띠: 「비전 감시 시작」 → 점검 4줄(확인 중 → 정상) — 글자는 차분하게(시안 1 피드백)
+//   BANNER_FROM~ 같은 띠 안에 「점검 완료 · 버튼 탐지를 시작합니다」 → LIST_END~ 띠와 가상 세계가 함께 걷힘
+//   (시안 17 피드백 「가상 환경 · 상태 점검 · 점검 완료 장면을 합쳤으면」 — 따로 뜨던 점검 완료 배너를 띠 안으로) → 정지 구간 스캔 선
 const CHECKS = ["카메라 센서 상태", "비전 감지 모델 실행", "인터락 연결 점검", "작업 레시피 불러오기"];
 const k01 = (x: number) => Math.max(0, Math.min(1, x));
 
@@ -16,10 +17,10 @@ const Spinner: React.FC<{s: number}> = ({s}) => (
   </svg>
 );
 
-// 가상 세계 펼침 — s = 0~WORLD_SEC(2.6초) · 시안 6 피드백 「좀 더 화려하게 … 현실세계가 아닌 게임과 같은 가상세계」
+// 가상 세계 펼침 — s = 0~WORLD_SEC · 시안 6 피드백 「좀 더 화려하게 … 현실세계가 아닌 게임과 같은 가상세계」
 //   0~0.3 번쩍 · 수평선이 시안/자홍으로 갈라짐 → 0.1~0.6 눈꺼풀이 열리며 짙은 파랑 가상 공간(현실은 어둡게 덮임)
 //   0.25~1.9 다가오는 네온 격자(바닥 · 천장) · 0.35~1.3 워프 빛줄기 · 0.3~1.2 충격파 고리 · 0.5~1.8 육각 타일 물결 · 0.45~2.0 회전하는 HUD 고리
-//   1.5~2.4 가상 공간이 걷히며 반짝이가 떠오름 → (모서리 테두리는 HudBoot 가 2.0~ 그린다)
+//   그 뒤 점검 목록 뒤에서 계속 흐르다가 LIST_END~ 점검 띠와 함께 걷히며 반짝이가 떠오름(시안 17) → (모서리 테두리는 HudBoot 가 2.0~ 그린다)
 const MAG = "#ff4fd8";
 const HEX_R = 46;
 const HEXES = (() => {
@@ -39,8 +40,8 @@ const World: React.FC<{s: number; W: number; H: number}> = ({s, W, H}) => {
   const line = easeOut(k01(s / 0.2));
   const open = easeOut(k01((s - 0.1) / 0.5));
   const top = y0 - open * (y0 + 20), bot = y0 + open * (H - y0 + 20);
-  const space = k01((s - 0.1) / 0.35) * (1 - k01((s - 1.5) / 0.8));      // 가상 공간의 짙기
-  const grid = k01((s - 0.25) / 0.25) * (1 - k01((s - 1.4) / 0.5));
+  const space = k01((s - 0.1) / 0.35) * (1 - k01((s - LIST_END) / (WORLD_SEC - LIST_END)));      // 가상 공간의 짙기
+  const grid = k01((s - 0.25) / 0.25) * (1 - k01((s - LIST_END) / 0.45));
   const flash = s < 0.3 ? 0.85 * (1 - s / 0.3) : 0;
   const scroll = (s * 1.4) % 1;                                            // 격자가 다가옴
   const vx = Array.from({length: 25}, (_, i) => i - 12);
@@ -48,7 +49,7 @@ const World: React.FC<{s: number; W: number; H: number}> = ({s, W, H}) => {
   const warp = k01((s - 0.35) / 0.95);
   const shock = k01((s - 0.3) / 0.9);
   const wave = (s - 0.5) * 1500, wave2 = (s - 0.85) * 1500;               // 육각 물결 앞머리(중심에서 거리)
-  const ringsOp = k01((s - 0.45) / 0.3) * (1 - k01((s - 1.6) / 0.4));
+  const ringsOp = k01((s - 0.45) / 0.3) * (1 - k01((s - LIST_END) / 0.4));
   return (
     <svg style={{position: "absolute", inset: 0, width: "100%", height: "100%"}}>
       <defs>
@@ -114,7 +115,7 @@ const World: React.FC<{s: number; W: number; H: number}> = ({s, W, H}) => {
         {shock > 0 && shock < 1 && <circle cx={cx} cy={y0} r={40 + shock * W * 0.75} fill="none" stroke="#dff3ff" strokeWidth={6 * (1 - shock) + 1} opacity={0.9 * (1 - shock)} />}
         {/* 걷힐 때 떠오르는 반짝이 */}
         {Array.from({length: 70}, (_, i) => {
-          const t0 = 1.2 + rnd(i * 5) * 0.6, u = k01((s - t0) / 0.9);
+          const t0 = LIST_END - 0.3 + rnd(i * 5) * 0.6, u = k01((s - t0) / 0.9);
           if (u <= 0 || u >= 1) return null;
           return <circle key={i} cx={rnd(i * 3 + 1) * W} cy={rnd(i * 7 + 2) * H - u * 160} r={1.5 + rnd(i * 9) * 3}
             fill={i % 4 ? "#cfe9ff" : MAG} opacity={(1 - u) * 0.95} />;
@@ -144,9 +145,9 @@ export const HudBoot: React.FC<{boot: number; W: number; H: number}> = ({boot, W
     <path d={`M ${x} ${yy + sy * L} L ${x} ${yy} L ${x + sx * L} ${yy}`} stroke={C.info} strokeWidth={4} fill="none" strokeLinecap="round" />
   );
   const listIn = easeOut(k01((s - HEAD_AT) / 0.35));
-  const listOut = k01((s - LIST_END) / (BANNER_FROM - LIST_END));  // 내려가며 사라짐
+  const listOut = k01((s - LIST_END) / (BANNER_TO - LIST_END));  // 가상 세계와 함께 내려가며 사라짐
   const listOp = listIn * (1 - listOut);
-  const banner = s >= BANNER_FROM && s < BANNER_TO ? Math.min(easeOut(k01((s - BANNER_FROM) / 0.2)), k01((BANNER_TO - s) / 0.25)) : 0;
+  const doneIn = easeOut(k01((s - BANNER_FROM) / 0.25));       // 띠 안 「점검 완료」 줄
   return (
     <>
       <World s={s} W={W} H={H} />
@@ -163,7 +164,7 @@ export const HudBoot: React.FC<{boot: number; W: number; H: number}> = ({boot, W
       </svg>
       {listOp > 0 && s < CHECK_SEC && (
         // 카드가 아니라 화면을 가로지르는 띠 — 어두운 반투명(뒤 영상이 비친다)
-        <div style={{position: "absolute", left: 0, right: 0, top: H / 2 - 230, height: 400, fontFamily: FONT, color: C.text, opacity: listOp,
+        <div style={{position: "absolute", left: 0, right: 0, top: H / 2 - 262, height: 480, fontFamily: FONT, color: C.text, opacity: listOp,
           transform: `translateY(${(1 - listIn) * 14 + listOut * 60}px)`,
           background: "linear-gradient(90deg, rgba(6,8,10,0) 0%, rgba(6,8,10,0.72) 22%, rgba(6,8,10,0.72) 78%, rgba(6,8,10,0) 100%)"}}>
           <div style={{width: 760, margin: "0 auto", paddingTop: 34}}>
@@ -190,18 +191,15 @@ export const HudBoot: React.FC<{boot: number; W: number; H: number}> = ({boot, W
                 </div>
               );
             })}
-          </div>
-        </div>
-      )}
-      {banner > 0 && (
-        <div style={{position: "absolute", left: 0, right: 0, top: H / 2 - 50, textAlign: "center", fontFamily: FONT, opacity: banner,
-          transform: `scale(${0.94 + 0.06 * banner})`}}>
-          <div style={{display: "inline-flex", alignItems: "center", gap: 16, padding: "18px 36px", borderRadius: 18,
-            background: "rgba(6,8,10,0.8)", border: `1px solid ${C.info}`, boxShadow: "0 10px 28px rgba(0,0,0,0.5)"}}>
-            <IconCheck size={38} color={C.done} />
-            <span style={{fontSize: 40, fontWeight: 800, color: C.text}}>점검 완료</span>
-            <span style={{width: 2, height: 34, background: C.edge}} />
-            <span style={{fontSize: 34, fontWeight: 700, color: C.info}}>버튼 탐지를 시작합니다</span>
+            {doneIn > 0 && (
+              <div style={{display: "flex", alignItems: "center", gap: 16, marginTop: 14, paddingTop: 14, borderTop: `2px solid ${C.edge}`,
+                fontSize: 32, fontWeight: 800, opacity: doneIn, transform: `scale(${0.96 + 0.04 * doneIn})`, transformOrigin: "left center"}}>
+                <IconCheck size={34} color={C.done} />
+                <span style={{color: C.text}}>점검 완료</span>
+                <span style={{width: 2, height: 30, background: C.edge}} />
+                <span style={{color: C.info, fontWeight: 700}}>버튼 탐지를 시작합니다</span>
+              </div>
+            )}
           </div>
         </div>
       )}

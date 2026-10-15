@@ -34,6 +34,16 @@ export function screenSince(ps: Placed[], i: number, f: number, fps: number, sin
   return at === null ? null : (ps[i].start + f - at) / fps;
 }
 
+// 손끝 속도 계기(meter · 수정 18) — 같은 촬영 갈래(take · run)의 계기 구간들을 한 장면으로
+//   held = 이 구간 앞 계기 정지 구간들의 화면 초 합 — 장식 시계(경고 카드 · 번쩍임)에 더해 정지 → 재생 경계에서 다시 시작하지 않게(리뷰)
+//   age = 첫 계기 구간 시작부터 · left = 마지막 계기 구간 끝까지(화면 초 · 나타남 · 사라짐 페이드)
+export function meterSpan(ps: Placed[], i: number, f: number, fps: number): {held: number; age: number; left: number} {
+  const c = ps[i].clip, js = ps.map((p, j) => j).filter((j) => ps[j].clip.meter && ps[j].clip.take === c.take && ps[j].clip.run === c.run);
+  const held = js.filter((j) => j < i && ps[j].clip.hold !== undefined).reduce((s, j) => s + ps[j].frames / fps, 0);
+  const a = ps[js[0]], z = ps[js[js.length - 1]], now = ps[i].start + f;
+  return {held, age: (now - a.start) / fps, left: (z.start + z.frames - now) / fps};
+}
+
 // 장 전환 — f 가 장 제목 카드의 첫 win 초 안이면 카드 시작 뒤 초 · 아니면 null
 export function burstAge(ps: Placed[], f: number, fps: number, win: number): number | null {
   const p = ps.find((x) => x.start <= f && f < x.start + x.frames);
@@ -66,4 +76,14 @@ export function insetSpot(box: Rect, S: number, avoid: Rect[], W: number, H: num
   const clamp = (p: {x: number; y: number}) => ({x: Math.min(Math.max(20, p.x), W - 20 - S), y: Math.min(Math.max(20, p.y), H - 20 - S)});
   const ok = cand.filter(inside), pool = ok.length ? ok : cand.map(clamp);   // 화면 안 자리가 없으면 자리마다 화면 안으로 당김
   return pool.find((p) => cover(p) === 0) ?? pool.reduce((m, p) => (cover(p) < cover(m) ? p : m));
+}
+
+// 화면 꺼짐(옛 브라운관) — 안경 벗기 종료 연출(시안 17 12차 피드백 「종료할 때 검정 화면으로」) · age = 종료 연출 시작 뒤 초
+//   ~0.75 그대로(「비전 감시 종료」 띠를 읽는 틈) → 0.75~1.0 화면 전체가 위아래로 눌려 밝은 한 줄(sy · glow) → 1.0~1.25 줄이 가운데 점으로(sx)
+//   → 1.25~1.4 점이 사라짐(op) → 그 뒤 검정
+export function crtOff(age: number): {sx: number; sy: number; glow: number; op: number} {
+  const k = (a: number, b: number) => Math.max(0, Math.min(1, (age - a) / (b - a)));
+  const easeIn = (u: number) => u * u;
+  const fold = k(0.75, 1.0), shrink = k(1.0, 1.25);
+  return {sy: 1 - 0.994 * easeIn(fold), sx: 1 - 0.99 * easeIn(shrink), glow: fold, op: 1 - k(1.25, 1.4)};
 }

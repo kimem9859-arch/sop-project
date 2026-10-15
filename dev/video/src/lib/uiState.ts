@@ -9,7 +9,12 @@ export type AlertView = {kind: "warning" | "block"; expected: string; button: st
 // calledSince · answerSince = 호출 · 답 기록 시각(듣는 중 파동 · 답 글자가 써지는 연출의 시계 · 시안 8 피드백 「테크적이고 화려하게」)
 export type VoiceView = {listening: boolean; question: string | null; answer: string | null; speaking: boolean; alert: string | null;
   called: boolean; ack: boolean; thinking: boolean; thinkingSince: number | null; card: string[] | null;
-  calledSince: number | null; answerSince: number | null};
+  calledSince: number | null; answerSince: number | null; endedAt: number | null;   // endedAt = 답 재생이 끝난 기록 시각(음성 파동이 그때까지 · 시안 17)
+  said: Said[]};
+// said = 작업자가 말한 것(utter 사건 — 말을 시작한 기록 시각 · 말한 길이 ms) — 말하는 동안 말풍선 글자가 써진다
+//   시안 17 3차 피드백 「음성비서의 남자 목소리와 UI가 맞지 않아」 — 「가디언」 · 질문 말풍선이 목소리가 끝난 뒤에야 나오던 것을 목소리와 함께
+//   (연출 기록에만 있다 — 실제 기록은 호출 · 받아쓰기 결과만 남는다)
+export type Said = {text: string; since: number; dur: number};
 export type PressView = {button: string; t: number; ok: boolean};
 export type UiState = {
   state: string; expected: string | null; done: string[]; sub: SubView | null; tool: ToolView | null;
@@ -19,6 +24,12 @@ export type UiState = {
 const CONFIRM_SCANS = 3; // 쥠 = 연속 확인 3번(Rpi5/Demo/tool_state.py confirm_scans)
 
 export const BUBBLE_HOLD_MS = 2500; // 답 재생이 끝난 뒤 말풍선을 이만큼 더 보인다
+// 사실 카드 시각표(질문 뒤 초 · hud FactCard · VoiceBubbles · Fx FactStreams · 편집표 소리가 같이 쓴다)
+//   CARD_IN 카드가 크게 나타남(내용은 비어 있음) → STREAM_AT 상태 모음 빛줄기 출발 → CARD_FILL 카드에 닿으면 내용이 써짐
+//   → CARD_FLY 「LLM 생각 중」 말풍선으로 날아감 → CARD_LAND 들어감
+//   시안 17 3차 피드백 「사실 카드가 나오고 내용이 써지기 전부터 상태 모음 효과」 — 빛줄기가 카드보다 먼저 나가던 것을 카드 → 빛줄기 → 내용 순으로
+//   (카드 · 빛줄기 0.6초 · 다 써진 뒤 읽을 틈 약 1.1초 — 날아감 3.0 → 3.2)
+export const CARD_IN = 0.6, STREAM_AT = CARD_IN + 0.15, STREAM_RUN = 0.6, CARD_FILL = STREAM_AT + STREAM_RUN, CARD_FLY = 3.2, CARD_LAND = 3.9;
 const SUB_FALLBACK_MS = 10000;      // 끝 기록이 없을 때(판이 잘림) — recipe.json 의 sec
 
 function subWindow(evs: Ev[], start: Ev): {end: number | null; paused: [number, number][]} {
@@ -44,7 +55,8 @@ export function stateAt(evs: Ev[], runStart: number, t: number): UiState {
   const s: UiState = {
     state: "IDLE", expected: null, done: [], sub: null, tool: null, alert: null,
     voice: {listening: false, question: null, answer: null, speaking: false, alert: null,
-      called: false, ack: false, thinking: false, thinkingSince: null, card: null, calledSince: null, answerSince: null}, lastPress: null, lastDone: null,
+      called: false, ack: false, thinking: false, thinkingSince: null, card: null, calledSince: null, answerSince: null, endedAt: null, said: []},
+    lastPress: null, lastDone: null,
   };
   let subStart: Ev | null = null;
   let answeredAt: number | null = null;
@@ -90,8 +102,12 @@ export function stateAt(evs: Ev[], runStart: number, t: number): UiState {
         break;
       case "wake":
         s.voice = {...s.voice, listening: true, called: true, question: null, answer: null, ack: false, thinking: false, thinkingSince: null, card: null,
-          calledSince: e.t, answerSince: null};
+          calledSince: e.t, answerSince: null, endedAt: null};
         answeredAt = null;
+        break;
+      case "utter":   // 작업자 말 시작 — first = 호출어(새 대화의 첫 말)
+        s.voice = {...s.voice, said: [...(d.first ? [] : s.voice.said), {text: String(d.text ?? ""), since: e.t, dur: Number(d.dur ?? 0) * 1000}]};
+        if (d.first) answeredAt = null;   // 새 대화 — 지난 답의 말풍선 걷기가 새 말을 지우지 않게
         break;
       case "stt":
         if (s.voice.listening && d.text) {
@@ -112,6 +128,7 @@ export function stateAt(evs: Ev[], runStart: number, t: number): UiState {
         break;
       case "play_end":
         s.voice.speaking = false; lastPlayEnd = e.t;
+        if (answeredAt !== null) s.voice.endedAt = e.t;
         break;
       case "alert":
         s.voice.alert = d.key ?? null;
@@ -132,7 +149,7 @@ export function stateAt(evs: Ev[], runStart: number, t: number): UiState {
   }
   if (answeredAt !== null && !s.voice.speaking && lastPlayEnd > answeredAt && t - lastPlayEnd > BUBBLE_HOLD_MS) {
     s.voice = {...s.voice, question: null, answer: null, called: false, ack: false, thinking: false, thinkingSince: null, card: null,
-      calledSince: null, answerSince: null};
+      calledSince: null, answerSince: null, endedAt: null, said: []};
   }
   return s;
 }

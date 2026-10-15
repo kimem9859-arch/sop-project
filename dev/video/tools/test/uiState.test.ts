@@ -104,3 +104,16 @@ test("음성 — 호출 시각 · 답 시각(듣는 중 파동 · 답 글자가 
   assert.deepEqual([v(6200).calledSince, v(6200).answerSince], [1000, 6000]);
   assert.deepEqual([v(11000).calledSince, v(11000).answerSince], [null, null]);   // 말풍선이 걷히면 같이
 });
+test("음성 — 작업자 말(utter)은 말을 시작한 순간부터 목록에 · 호출어(first)가 새 대화를 열고 · 말풍선이 걷히면 비움(시안 17 3차)", () => {
+  const V = (t: number, kind: string, d: Record<string, unknown> = {}): Ev => ({t, kind, d, src: "voice"});
+  const ev = [V(300, "utter", {text: "가디언", dur: 0.66, first: true}), V(1000, "wake"), V(1350, "utter", {text: "다음 단계 뭐야?", dur: 0.9}),
+    V(2350, "stt", {text: "다음 단계 뭐야?"}), V(6000, "answer", {text: "기다리세요."}), V(6100, "play_start"), V(8000, "play_end", {what: "완료"}),
+    V(20000, "utter", {text: "가디언", dur: 0.66, first: true})];
+  const v = (t: number) => stateAt(ev, 0, t).voice;
+  assert.deepEqual(v(200).said, []);
+  assert.deepEqual(v(500).said, [{text: "가디언", since: 300, dur: 660}]);
+  assert.deepEqual([v(1100).said.length, v(1100).listening], [1, true]);   // 호출이 목록을 지우지 않는다
+  assert.deepEqual(v(1500).said.map((x) => x.text), ["가디언", "다음 단계 뭐야?"]);
+  assert.deepEqual(v(11000).said, []);
+  assert.deepEqual(v(20100).said.map((x) => x.since), [20000]);
+});

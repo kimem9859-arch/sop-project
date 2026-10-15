@@ -8,11 +8,23 @@ export type Clip = {take: string; file: string; from: number; to: number; speed:
   caption?: string; badge?: string; boot?: boolean; hold?: number; intro?: "buttons" | "hand" | "tool" | "overlap" | "dwell" | "end";
   chapter?: {no: string; title: string; desc: string}; section?: {no: string; title: string; desc: string}; run?: string;
   callout?: CalloutDef; card?: "chapter" | "section"; tip?: boolean; fadeOut?: number; fadeIn?: number;
-  subs?: [number, number, string][]; sfx?: [number, string, number?][]};
+  subs?: [number, number, string][]; sfx?: [number, string, number?][];
+  sound?: boolean; hud?: number; quiet?: boolean; noTool?: boolean; hideBtn?: string[]; spot?: string; dim?: [number, number];
+  focus?: "hand" | "tool" | "overlap"; factFrom?: string; factGauge?: boolean; shutdown?: number; meter?: boolean};
 // card = 장 · 절 제목 카드(정지 구간 · 화면을 어둡게 하고 제목만) — 시안 2 피드백 「절 제목은 따로 독립 제목 카드로」
 // tip = 검지 끝 빛 꼬리(판정 장면 · 시안 8) · fadeOut · fadeIn = 끝 · 처음 몇 초 동안 검은 화면으로 사라짐 · 검은 화면에서 나타남(로고 인트로 → 안경 장면 · 시안 11 · 12)
 // subs = 구간 안 자막 [시작, 끝, 문장](구간 시작부터 화면 초) — 한 구간 안에서 문장이 바뀔 때 · 구간 전체 한 문장이면 caption
 // sfx = 구간 안 소리 [시작, 이름(public/audio/<이름>.wav), 음량?](구간 시작부터 화면 초 · 시안 14 효과음 · TTS)
+// 시안 17 — sound = 배속이어도 원본 소리를 낸다(로고 · 렌더 때 음 높이는 유지된다) · hud = HUD 기록 시계를 이 초부터 화면 초로 흘린다
+//   (정지 · 느린 재생 중에도 음성비서 연출이 실제 속도로 — 없으면 원본 초) · quiet = 공구 인식 연출 동안 단계 목록 · 대기 시간 숨김
+//   noTool = 공구 박스를 그리지 않음 · hideBtn = 그리지 않을 버튼 박스(공구함의 빨간 손잡이가 EMO 로 잡히는 것)
+//   intro 는 정지(hold) 구간뿐 아니라 재생 구간에도 쓴다 — 재생 중 탐지 연출(시안 17 「영상을 계속 재생한 상태에서」)
+//   spot = 판정 장면 — 배경만 흐리고 어둡게 · 손과 이 버튼(판정 구역)은 선명(시안 17 2차 피드백)
+//   dim = [시작, 끝](구간 안 화면 초) 동안 영상 전체를 흐리고 어둡게 — 음성비서 호출 ~ 답 직전(시안 17 2차 피드백 · UI 는 위라 선명)
+//   focus = 탐지 연출(intro) 없이 배경만 흐리고 어둡게 · 이 주인공(손 · 공구 · 둘 다)은 선명 — 탐지 연출 앞뒤 재생 구간이 끊기지 않게(시안 17 3차)
+//   factFrom = 사실 카드 「검출 결과」 빛줄기를 낼 버튼(시안 17 3차 피드백 「B2 가 아닌 B1 에서 시작」)
+//   factGauge = 대기 시간 UI 에서도 사실 카드로 빛줄기(시안 17 4차 · 단계 질문) · shutdown = 이 구간 시작 뒤 몇 초에 HUD 꺼짐 연출(안경 벗기 · 시안 17 4차)
+//   meter = 손끝 확대 창 + 손끝 속도 계기(판정 장면 · spot 버튼 기준 · hud/SpeedMeter · 수정 18)
 export type Placed = {clip: Clip; start: number; frames: number};
 
 export function place(clips: Clip[], fps: number): Placed[] {

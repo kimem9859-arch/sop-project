@@ -1,6 +1,6 @@
 import {test} from "node:test";
 import assert from "node:assert/strict";
-import {burstAge, decode, insetSpot, screenSince, shake, typed} from "../../src/lib/fx.ts";
+import {burstAge, crtOff, decode, insetSpot, screenSince, shake, typed} from "../../src/lib/fx.ts";
 import {place, type Clip} from "../../src/lib/edit.ts";
 
 test("글자 써짐 — 0초 = 빈 글 · dur 이상 = 전부 · 가운데 = 앞부분(한글 한 글자 단위)", () => {
@@ -77,4 +77,13 @@ test("확대 창 자리 — 대각선 넷이 다 막히면 위 · 오른쪽 · �
   assert.ok(all.y > 700);                                                                  // 덜 가리는 아래쪽(옆) 자리
   const big = insetSpot({x: 0, y: 0, w: W, h: H}, S, [], W, H);                            // 화면 안 자리가 없어도 화면 안으로
   assert.ok(big.x >= 20 && big.y >= 20 && big.x + S <= W - 20 && big.y + S <= H - 20);
+});
+
+test("화면 꺼짐(시안 17 12차) — 띠를 읽는 동안 그대로 · 위아래로 눌려 한 줄 → 가운데 점 → 사라져 검정", () => {
+  assert.deepEqual(crtOff(0.5), {sx: 1, sy: 1, glow: 0, op: 1});
+  const line = crtOff(1.0), dot = crtOff(1.25), end = crtOff(1.5);
+  assert.ok(line.sy < 0.01 && line.sx === 1 && line.glow === 1, "1.0초 = 밝은 한 줄");
+  assert.ok(dot.sx < 0.02 && dot.op === 1, "1.25초 = 점");
+  assert.equal(end.op, 0, "1.4초 뒤 = 검정");
+  for (let a = 0.7; a < 1.4; a += 0.05) assert.ok(crtOff(a + 0.05).sy <= crtOff(a).sy + 1e-12 && crtOff(a + 0.05).sx <= crtOff(a).sx + 1e-12);
 });
