@@ -10,7 +10,7 @@ export type Clip = {take: string; file: string; from: number; to: number; speed:
   callout?: CalloutDef; card?: "chapter" | "section"; tip?: boolean; fadeOut?: number; fadeIn?: number;
   subs?: [number, number, string][]; sfx?: [number, string, number?][];
   sound?: boolean; hud?: number; quiet?: boolean; noTool?: boolean; hideBtn?: string[]; spot?: string; dim?: [number, number];
-  focus?: "hand" | "tool" | "overlap"; factFrom?: string; factGauge?: boolean; shutdown?: number; meter?: boolean};
+  focus?: "hand" | "tool" | "overlap"; factFrom?: string; factGauge?: boolean; shutdown?: number; meter?: boolean; cta?: boolean};
 // card = 장 · 절 제목 카드(정지 구간 · 화면을 어둡게 하고 제목만) — 시안 2 피드백 「절 제목은 따로 독립 제목 카드로」
 // tip = 검지 끝 빛 꼬리(판정 장면 · 시안 8) · fadeOut · fadeIn = 끝 · 처음 몇 초 동안 검은 화면으로 사라짐 · 검은 화면에서 나타남(로고 인트로 → 안경 장면 · 시안 11 · 12)
 // subs = 구간 안 자막 [시작, 끝, 문장](구간 시작부터 화면 초) — 한 구간 안에서 문장이 바뀔 때 · 구간 전체 한 문장이면 caption
@@ -25,6 +25,7 @@ export type Clip = {take: string; file: string; from: number; to: number; speed:
 //   factFrom = 사실 카드 「검출 결과」 빛줄기를 낼 버튼(시안 17 3차 피드백 「B2 가 아닌 B1 에서 시작」)
 //   factGauge = 대기 시간 UI 에서도 사실 카드로 빛줄기(시안 17 4차 · 단계 질문) · shutdown = 이 구간 시작 뒤 몇 초에 HUD 꺼짐 연출(안경 벗기 · 시안 17 4차)
 //   meter = 손끝 확대 창 + 손끝 속도 계기(판정 장면 · spot 버튼 기준 · hud/SpeedMeter · 수정 18)
+//   cta = 「작업 시작」 누름 화면(hud/StartCta · 시간표 CTA · 캡스톤 D83)
 export type Placed = {clip: Clip; start: number; frames: number};
 
 export function place(clips: Clip[], fps: number): Placed[] {

@@ -16,6 +16,7 @@ import {ChromaFilter, INSET, PixelBurst, ZoomInset} from "../hud/Fx.tsx";
 import {BTN} from "../hud/theme.ts";
 import {Hud} from "../hud/Hud.tsx";
 import {SpeedMeter} from "../hud/SpeedMeter.tsx";
+import {StartCta} from "../hud/StartCta.tsx";
 import {HudShutdown} from "../hud/HudShutdown.tsx";
 import {Caption} from "../hud/Overlays.tsx";
 import {SKELETON} from "../edits/skeleton.ts";
@@ -226,6 +227,7 @@ const ClipView: React.FC<{p: Placed; d: TakeData | undefined; boot0: {at: number
         {c.callout && fit && <Callout def={c.callout} sec={sec} age={f / fps} fit={fit} />}
         {c.intro === "end" && <EndSummary age={holdT ?? 0} W={width} H={height} />}
         {c.shutdown !== undefined && <HudShutdown age={f / fps - c.shutdown} W={width} H={height} />}   {/* 안경 벗기 — HUD 꺼짐(시안 17 4차) */}
+        {c.cta && <StartCta age={f / fps} W={width} H={height} synth={synth} />}   {/* 「작업 시작」 누름(캡스톤 D83) */}
       </AbsoluteFill>
       {crt && crt.glow > 0 && crt.op > 0 && (
         // 눌린 화면의 밝은 줄 · 점 빛
