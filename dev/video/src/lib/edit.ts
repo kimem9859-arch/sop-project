@@ -5,7 +5,7 @@ import type {CalloutDef} from "./callout.ts";
 // chapter · section = 이 구간 시작에 장 · 절 제목(기능 소개 영상) · run = 같은 촬영의 다른 연출 기록(절마다 따로 꾸밀 때)
 // intro tool = 공구 탐지 연출 · overlap = 손·공구 겹침(쥠 판정 시작) 강조 · dwell = 머묾 타이머를 멈춘 화면에서 채움(경고 절) · callout = 사람이 짚은 표시(타워램프)
 export type Clip = {take: string; file: string; from: number; to: number; speed: number; overlay: boolean;
-  caption?: string; badge?: string; boot?: boolean; hold?: number; intro?: "buttons" | "hand" | "tool" | "overlap" | "dwell" | "end";
+  caption?: string; badge?: string; boot?: boolean | number; hold?: number; intro?: "buttons" | "hand" | "tool" | "overlap" | "dwell" | "end";
   chapter?: {no: string; title: string; desc: string}; section?: {no: string; title: string; desc: string}; run?: string;
   callout?: CalloutDef; card?: "chapter" | "section"; tip?: boolean; fadeOut?: number; fadeIn?: number;
   subs?: [number, number, string][]; sfx?: [number, string, number?][];
@@ -43,10 +43,11 @@ export const totalFrames = (ps: Placed[]) => ps.reduce((s, p) => s + p.frames, 0
 
 // 켜짐 시계 — 구간마다 시작 시점의 켜짐 초(at)와 그 구간에서 흐르는지(runs) · boot 구간 앞은 null
 // 제목 카드(card) 동안은 멈춘다 — 점검 목록과 버튼 탐지 사이에 장 · 절 제목 카드를 끼워도 켜짐 순서가 이어진다
+// boot 가 숫자면 켜짐 시계를 그 초부터 — 켜짐 장면을 빼고 장 카드에서 바로 버튼 탐지로(캡스톤 D83 · boot: CHECK_SEC)
 export function bootTimes(ps: Placed[], fps: number): ({at: number; runs: boolean} | null)[] {
   let t: number | null = null;
   return ps.map((p) => {
-    if (p.clip.boot && t === null) t = 0;
+    if (p.clip.boot !== undefined && p.clip.boot !== false && t === null) t = p.clip.boot === true ? 0 : p.clip.boot;
     if (t === null) return null;
     const out = {at: t, runs: !p.clip.card};
     if (out.runs) t += p.frames / fps;

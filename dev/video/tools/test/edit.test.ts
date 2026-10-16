@@ -31,6 +31,11 @@ test("켜짐 시계 — boot 구간부터 흐르고 제목 카드(card) 동안�
   const ps = place([c(10, 12, 1), {...c(0, 3, 1), boot: true}, h(2, {card: "chapter"}), h(1.5, {card: "section"}), h(4, {intro: "buttons"}), c(3, 5, 1)], 30);
   assert.deepEqual(bootTimes(ps, 30), [null, {at: 0, runs: true}, {at: 3, runs: false}, {at: 3, runs: false}, {at: 3, runs: true}, {at: 7, runs: true}]);
 });
+test("켜짐 시계 — boot 가 숫자면 그 초부터(켜짐 장면을 빼고 장 카드에서 시작 · 캡스톤 D83)", () => {
+  const h = (hold: number, extra: Partial<Clip> = {}): Clip => ({take: "x", file: "f", from: 3, to: 3, speed: 1, overlay: true, hold, ...extra});
+  const ps = place([c(10, 12, 1), h(2, {card: "chapter", boot: 4.75}), h(1.5, {card: "section"}), h(4, {intro: "buttons"}), c(3, 5, 1)], 30);
+  assert.deepEqual(bootTimes(ps, 30), [null, {at: 4.75, runs: false}, {at: 4.75, runs: false}, {at: 4.75, runs: true}, {at: 8.75, runs: true}]);
+});
 
 test("자막 트랙 — 구간 자막(caption)은 구간 전체 · subs 는 구간 안 화면 초 · 바로 이어지는 같은 문장은 하나로 · 카드 구간은 없음", () => {
   const k = (cap?: string, subs?: [number, number, string][], card?: "chapter"): Clip =>
