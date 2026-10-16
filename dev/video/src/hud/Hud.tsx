@@ -1,5 +1,5 @@
 import type {Box, DetView, Pt} from "../lib/dets.ts";
-import {BOOT_SEC, BTN_INTRO_SEC, PANEL_FROM, btnIntroAge} from "../lib/boot.ts";
+import {BOOT_SEC, BTN_INTRO_SEC, RECIPE_OK, btnIntroAge} from "../lib/boot.ts";
 import type {Dwell} from "../lib/judge.ts";
 import {covers} from "../lib/occlusion.ts";
 import type {UiState} from "../lib/uiState.ts";
@@ -29,15 +29,17 @@ import {VoiceBubbles} from "./VoiceBubbles.tsx";
 // quiet = 0~1 — 공구 인식 연출이 왼쪽 위 단계 목록 · 위 대기 시간에 가리지 않게 그 둘을 잠깐 숨김(시안 17 피드백)
 // handRecog = 손 「인식」 길이(HandSkeleton recog — 손 정지 구간까지 · 시안 17 3차) · factFrom = 사실 카드 「검출 결과」 빛줄기를 낼 버튼(없으면 지금 단계 버튼)
 // factGauge = 대기 시간 UI 에서도 사실 카드로 빛줄기(시안 17 4차 · 단계 질문) · voiceFx = 지금 나오는 목소리의 물결 세기 · 흐름(lib/voiceLevel)
+// bootOpts = 켜짐 모양(편집마다) — world = 가상 세계 · panelAt = 단계 목록이 나타나는 켜짐 초(기본 = 레시피 줄 정상 · 한이음 = 점검 완료 뒤 · D84)
 export const Hud: React.FC<{ui: UiState; view: DetView; fit: Fit; t: number; tMs: number; boot: number; handAge: number | null;
   W: number; H: number; badge?: string; synth?: string; pressAt?: Box | null; dwell?: Dwell | null;
   toolIntro?: number | null; overlap?: number | null; frozenAge?: number | null; uiMs?: number; trail?: Pt[] | null; impact?: number | null;
-  quiet?: number; zoneBox?: Box | null; handRecog?: number; factFrom?: string; factGauge?: boolean; voiceFx?: {amp: number; phase: number}}> =
+  quiet?: number; zoneBox?: Box | null; handRecog?: number; factFrom?: string; factGauge?: boolean; voiceFx?: {amp: number; phase: number}; bootOpts?: {world: boolean; panelAt: number}}> =
   ({ui, view, fit, t, tMs, boot, handAge, W, H, badge, synth, pressAt = null, dwell = null,
-    toolIntro = null, overlap = null, frozenAge = null, uiMs = tMs, trail = null, impact = null, quiet = 0, zoneBox = null, handRecog, factFrom, factGauge = false, voiceFx}) => {
+    toolIntro = null, overlap = null, frozenAge = null, uiMs = tMs, trail = null, impact = null, quiet = 0, zoneBox = null, handRecog, factFrom, factGauge = false, voiceFx, bootOpts}) => {
     const bs = boot * BOOT_SEC;
-    const panelAge = boot >= 1 ? null : (boot - PANEL_FROM) * BOOT_SEC; // 단계 목록이 나타난 뒤 초(지지직 등장)
-    const panels = boot >= PANEL_FROM;
+    const panelAt = bootOpts?.panelAt ?? RECIPE_OK;
+    const panelAge = boot >= 1 ? null : bs - panelAt; // 단계 목록이 나타난 뒤 초(지지직 등장)
+    const panels = bs >= panelAt;
     const press = ui.lastPress ? {button: ui.lastPress.button, age: (uiMs - ui.lastPress.t) / 1000, ok: ui.lastPress.ok} : null;
     const alertAge = ui.alert ? (uiMs - ui.alert.since) / 1000 : 0;
     const ring = ui.alert ? (ui.alert.kind === "block" ? C.danger : C.warn) : C.current;
@@ -95,7 +97,7 @@ export const Hud: React.FC<{ui: UiState; view: DetView; fit: Fit; t: number; tMs
         {trail && trail.length > 1 && <TipTrail pts={trail} fit={fit} label={false} />}
         <HandSkeleton hand={view.hand} fit={fit} t={t} age={handAge} ring={ring} dim={holding && overlap === null} pulse={overlap !== null} recog={handRecog} />
         {lockBox && <LockBadge box={lockBox} fit={fit} age={impact ?? 10} t={t} />}
-        <HudBoot boot={boot} W={W} H={H} />
+        <HudBoot boot={boot} W={W} H={H} world={bootOpts?.world ?? true} />
         <div style={{position: "absolute", inset: 0, opacity: 1 - quiet}}>
           {panels && <StepPanel state={boot < 1 ? "START" : ui.state} done={ui.done} expected={ui.expected} alert={ui.alert?.kind ?? null} age={panelAge} />}
           {!ui.alert && panels && ui.sub && (

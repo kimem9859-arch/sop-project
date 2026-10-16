@@ -25,7 +25,7 @@ import {PRETEST, PRETEST_STAGED, PRETEST_SYNTH} from "../edits/pretest.ts";
 import {FEATURE, FEATURE_STAGED, FEATURE_SYNTH} from "../edits/feature.ts";
 import {FEATURE17, FEATURE17_STAGED, FEATURE17_SYNTH, FEATURE17_VIEWS} from "../edits/feature17.ts";
 import {CAPSTONE} from "../edits/capstone.ts";
-import {HANIUM} from "../edits/hanium.ts";
+import {HANIUM, HANIUM_BOOT} from "../edits/hanium.ts";
 import {viewAt, zoomFit, zoomRect, type ViewKey} from "../lib/view.ts";
 import {voiceTrack, type VoiceTrack} from "../lib/voiceLevel.ts";
 import {TTS_ENV} from "../edits/ttsEnv.ts";
@@ -40,6 +40,8 @@ export type Staged = {start: number; presses: StagedPress[]; first?: string; ext
 const STAGED: Record<string, Record<string, Staged>> = {pretest: PRETEST_STAGED, feature: FEATURE_STAGED, feature17: FEATURE17_STAGED, capstone: FEATURE17_STAGED, hanium: FEATURE17_STAGED};
 const SYNTH: Record<string, string> = {pretest: PRETEST_SYNTH, feature: FEATURE_SYNTH, feature17: FEATURE17_SYNTH, capstone: FEATURE17_SYNTH, hanium: FEATURE17_SYNTH};
 // 화면 보기(확대) — 편집마다 촬영별 기준점(lib/view · 시안 17 = 안경 끝 맞춤 · 비침 · 문 구간 확대)
+// 켜짐 모양(편집마다 · 없으면 가상 세계 + 레시피 줄 정상에 단계 목록) — 한이음 = 가상 세계 없이 · 점검 완료 뒤 목록(D84)
+const BOOT_OPTS: Record<string, {world: boolean; panelAt: number}> = {hanium: HANIUM_BOOT};
 const VIEWS: Record<string, Record<string, ViewKey[]>> = {feature17: FEATURE17_VIEWS, capstone: FEATURE17_VIEWS, hanium: FEATURE17_VIEWS};   // 캡스톤 · 한이음 = 시안 17 장면 그대로(D83 · D84)
 // hq = 렌더 때 검출용 사본(proxy.mp4 · 긴 변 1280) 대신 고화질 사본(hq.mp4 · 긴 변 1920)으로 — 최종 영상 화질(10/13 사용자 「고해상도로 렌더링」)
 //   hq.mp4 = tools/proxy.sh <원본> hq.mp4 1920 16(사본과 같은 과정 → 프레임 시각이 같아 검출 표시가 맞는다 · 원본을 그대로 쓰면 0.05초 어긋남)
@@ -85,7 +87,8 @@ const PANEL = {x: 40, y: 40, w: 440, h: 360};   // 왼쪽 위 단계 목록(확�
 // ps · i = 편집 전체와 이 구간 순번(차단 순간의 화면 시계) · trailFrom = 검지 끝 자취를 이 원본 초부터만(절 카드 바로 뒤 — 안 보인 자취를 그리지 않게)
 // views = 이 편집의 촬영별 화면 보기 기준점(없으면 원래 화면) — 영상 · 검출 좌표(fit)를 같이 확대한다
 const ClipView: React.FC<{p: Placed; d: TakeData | undefined; boot0: {at: number; runs: boolean} | null; synth?: string;
-  ps: Placed[]; i: number; trailFrom: number | null; views?: Record<string, ViewKey[]>; voice?: VoiceTrack; hq?: boolean}> = ({p, d, boot0, synth, ps, i, trailFrom, views, voice, hq = false}) => {
+  ps: Placed[]; i: number; trailFrom: number | null; views?: Record<string, ViewKey[]>; voice?: VoiceTrack; hq?: boolean;
+  bootOpts?: {world: boolean; panelAt: number}}> = ({p, d, boot0, synth, ps, i, trailFrom, views, voice, hq = false, bootOpts}) => {
   const f = useCurrentFrame();
   const {fps, width, height} = useVideoConfig();
   const c = p.clip;
@@ -152,7 +155,7 @@ const ClipView: React.FC<{p: Placed; d: TakeData | undefined; boot0: {at: number
       trail={c.tip ? tipTrail(d.dets, sec, back) : null}
       t={(p.start + f) / fps} tMs={tMs} boot={boot} handAge={handAge} W={width} H={height} badge={c.badge} synth={synth}
       toolIntro={c.intro === "tool" ? introT : null} overlap={c.intro === "overlap" ? introT : null} frozenAge={holdT} quiet={quiet} zoneBox={zone}
-      handRecog={handRecog} factFrom={c.factFrom} factGauge={c.factGauge}
+      handRecog={handRecog} factFrom={c.factFrom} factGauge={c.factGauge} bootOpts={bootOpts}
       voiceFx={voice ? {amp: voice.amp[p.start + f] ?? 0.3, phase: voice.phase[p.start + f] ?? 0} : undefined} />;
   }
   // 탐지 연출 동안 화면을 멈추고 배경을 흐리고 어둡게(10/9 초안 피드백) — 주인공(버튼 · 손 · 공구)은 선명하게 남긴다(시안 1 피드백)
@@ -230,7 +233,7 @@ const ClipView: React.FC<{p: Placed; d: TakeData | undefined; boot0: {at: number
         {c.callout && fit && <Callout def={c.callout} sec={sec} age={f / fps} fit={fit} />}
         {c.intro === "end" && <EndSummary age={holdT ?? 0} W={width} H={height} />}
         {c.shutdown !== undefined && <HudShutdown age={f / fps - c.shutdown} W={width} H={height} />}   {/* 안경 벗기 — HUD 꺼짐(시안 17 4차) */}
-        {c.cta && <StartCta age={f / fps} W={width} H={height} synth={synth} />}   {/* 「작업 시작」 누름(캡스톤 D83) */}
+        {c.cta && <StartCta age={f / fps} W={width} H={height} synth={synth} panel={c.cta.panel} />}   {/* 「작업 시작」 누름(캡스톤 D83) */}
         {c.projTitle && <TitleCard age={f / fps} W={width} H={height} />}   {/* 작품 이름 제목 화면(한이음 D84) */}
       </AbsoluteFill>
       {crt && crt.glow > 0 && crt.op > 0 && (
@@ -281,7 +284,7 @@ export const Cut: React.FC<CutProps> = ({edit, data, hq}) => {
       <AbsoluteFill style={ba !== null ? {filter: "url(#ca-burst)"} : undefined}>
         {ps.map((p, i) => (
           <Sequence key={i} from={p.start} durationInFrames={p.frames}>
-            <ClipView p={p} d={data[keyOf(p.clip)]} boot0={bt[i]} synth={SYNTH[edit]} ps={ps} i={i} views={VIEWS[edit]} voice={voice} hq={hq}
+            <ClipView p={p} d={data[keyOf(p.clip)]} boot0={bt[i]} synth={SYNTH[edit]} ps={ps} i={i} views={VIEWS[edit]} voice={voice} hq={hq} bootOpts={BOOT_OPTS[edit]}
             trailFrom={ps[i - 1]?.clip.tip && keyOf(ps[i - 1].clip) === keyOf(p.clip) ? null : p.clip.from} />
           </Sequence>
         ))}

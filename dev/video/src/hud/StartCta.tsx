@@ -13,7 +13,8 @@ const SUB = `PECVD 정비 · ${STEPS.length}단계 · 1단계 ${STEPS[0].name}�
 const W0 = 640, H0 = 148, CUT = 24, TILE = 96, PAD = 30;
 const k01 = (x: number) => Math.max(0, Math.min(1, x));
 
-export const StartCta: React.FC<{age: number; W: number; H: number; synth?: string}> = ({age, W, H, synth}) => {
+// panel = 누른 직후 왼쪽 위 단계 목록(캡스톤) · false = 목록은 뒤따르는 켜짐 점검이 끝난 뒤(한이음 · Hud)
+export const StartCta: React.FC<{age: number; W: number; H: number; synth?: string; panel?: boolean}> = ({age, W, H, synth, panel = true}) => {
   const show = easeOut(k01((age - CTA.IN) / 0.35)) * (1 - k01((age - CTA.OUT) / 0.3));
   const down = age >= CTA.PRESS && age < CTA.PRESS + 0.18;
   const scale = (0.94 + 0.06 * easeOut(k01((age - CTA.IN) / 0.35))) * (down ? 0.97 : 1) * (1 + 0.04 * k01((age - CTA.OUT) / 0.3));
@@ -49,7 +50,7 @@ export const StartCta: React.FC<{age: number; W: number; H: number; synth?: stri
       {ring >= 0 && ring < 1 && <div style={{position: "absolute", left: tap.x - 120 * easeOut(ring), top: tap.y - 120 * easeOut(ring),
         width: 240 * easeOut(ring), height: 240 * easeOut(ring), borderRadius: "50%", border: `4px solid ${C.current}`, opacity: 0.9 * (1 - ring)}} />}
       {/* 누른 직후 왼쪽 위 단계 목록 — 01 장 카드의 목록(Hud · START · 1단계 차례)과 같은 모양으로 이어짐 */}
-      <StepPanel state="START" done={[]} expected={STEPS[0].button} alert={null} age={age - CTA.PANEL} />
+      {panel && <StepPanel state="START" done={[]} expected={STEPS[0].button} alert={null} age={age - CTA.PANEL} />}
       <SynthLabel text={synth} />
     </>
   );

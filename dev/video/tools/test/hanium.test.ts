@@ -1,8 +1,9 @@
 import {test} from "node:test";
 import assert from "node:assert/strict";
+import {BANNER_FROM, CHECK_SEC} from "../../src/lib/boot.ts";
 import {place, sfxTrack, totalFrames} from "../../src/lib/edit.ts";
 import {FEATURE17} from "../../src/edits/feature17.ts";
-import {HANIUM} from "../../src/edits/hanium.ts";
+import {HANIUM, HANIUM_BOOT} from "../../src/edits/hanium.ts";
 
 // 한이음 제출판(설계 D84) — 예선 영상(시안 17)을 공고문 「4) 시연 동영상」 조건에 맞춤
 const ps = place(HANIUM, 30);
@@ -15,9 +16,15 @@ test("한이음 — 로고(소속 이름) 없음 · 첫 화면 = 작품 제목 +
   assert.ok(HANIUM[0].projTitle);
   assert.match(HANIUM[0].caption ?? "", /소리/);
 });
-test("한이음 — 예선 영상의 장면을 순서 그대로(로고만 뺌)", () => {
+test("한이음 — 제목 → 작업 시작(단계 목록 없이) → 켜짐 점검 → 예선 장면 순서 그대로(로고 · 안경 쓰기 뺌)", () => {
   const key = (c: (typeof HANIUM)[number]) => [c.take, c.run, c.from, c.to, c.speed, c.hold, c.caption].join("|");
-  assert.deepEqual(HANIUM.slice(1).map(key), FEATURE17.filter((c) => c.take !== "intro_logo").map(key));
+  assert.deepEqual(HANIUM[1].cta, {panel: false});
+  assert.ok(HANIUM[2].boot === true);
+  assert.deepEqual(HANIUM.slice(2).map(key), FEATURE17.filter((c) => c.take !== "intro_logo" && c.take !== "20261011_glasses3").map(key));
+});
+test("한이음 — 켜짐 = 가상 세계 없이 점검만 · 단계 목록은 점검 완료 뒤 · 켜짐 장면 안에서 나타남", () => {
+  assert.equal(HANIUM_BOOT.world, false);
+  assert.ok(HANIUM_BOOT.panelAt > BANNER_FROM && HANIUM_BOOT.panelAt < CHECK_SEC, `${HANIUM_BOOT.panelAt}`);
 });
 test("한이음 — 촬영 소리 끔 · 남는 소리는 실제 시스템 출력과 음성 비서 대화뿐", () => {
   assert.ok(HANIUM.every((c) => c.mute && !c.sound));

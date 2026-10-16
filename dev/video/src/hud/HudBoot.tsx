@@ -135,7 +135,8 @@ const World: React.FC<{s: number; W: number; H: number}> = ({s, W, H}) => {
   );
 };
 
-export const HudBoot: React.FC<{boot: number; W: number; H: number}> = ({boot, W, H}) => {
+// world = 가상 세계 펼침(없으면 점검 띠만 — 한이음 D84 「가상환경 연출이 아닌 시작 버튼 클릭 장면」)
+export const HudBoot: React.FC<{boot: number; W: number; H: number; world?: boolean}> = ({boot, W, H, world = true}) => {
   if (boot >= 1) return null;
   const s = boot * BOOT_SEC;
   const L = 160 * easeOut((s - 2.0) / 0.5);
@@ -150,7 +151,7 @@ export const HudBoot: React.FC<{boot: number; W: number; H: number}> = ({boot, W
   const doneIn = easeOut(k01((s - BANNER_FROM) / 0.25));       // 띠 안 「점검 완료」 줄
   return (
     <>
-      <World s={s} W={W} H={H} />
+      {world && <World s={s} W={W} H={H} />}
       <svg style={{position: "absolute", inset: 0, width: "100%", height: "100%"}}>
         <defs>
           <linearGradient id="scan-dn" x1="0" y1="0" x2="0" y2="1">

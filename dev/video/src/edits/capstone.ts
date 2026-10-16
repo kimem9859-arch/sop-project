@@ -22,7 +22,7 @@ const END_FADE = 0.8;   // 끝 — 단계 질문 뒤 검게 사라짐(시안 17 
 
 // 작업 시작 — 콘솔 정면을 거의 멈춘 느린 재생으로(켜짐 장면과 같은 구간 · 끝이 01 장 카드 배경과 이어짐) · 로고가 검게 사라진 뒤 나타남
 const START: Clip = {take: BOOT.take, file: BOOT.file, from: BOOT.from, to: BOOT.to, speed: (BOOT.to - BOOT.from) / CTA.SEC, overlay: false,
-  cta: true, fadeIn: 0.5, caption: "「작업 시작」을 누르면 정비 순서(레시피)대로 감시를 시작합니다",
+  cta: {panel: true}, fadeIn: 0.5, caption: "「작업 시작」을 누르면 정비 순서(레시피)대로 감시를 시작합니다",
   sfx: [[CTA.PRESS, "sfx_press", 0.7]]};   // 클릭 「톡」만(1차 미리보기 피드백 「우우웅하는 효과음은 제거」 — sfx_boot 뺌)
 
 export const CAPSTONE: Clip[] = [
