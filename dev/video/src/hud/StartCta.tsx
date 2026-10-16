@@ -1,3 +1,4 @@
+import {CTA} from "../lib/cta.ts";
 import {SynthLabel} from "./Overlays.tsx";
 import {C, FONT, STEPS, easeOut} from "./theme.ts";
 
@@ -5,8 +6,7 @@ import {C, FONT, STEPS, easeOut} from "./theme.ts";
 //   640×148 · 왼쪽 위 · 오른쪽 아래 모서리 24 잘림(overlay.cut_corner_path) · 바탕 sheet_bg · 노랑 테두리 2(누르면 3) · 노랑 ▶ 타일 96
 //   · 「START」 · 「작업 시작」 · 부제 · › · 자리 = 영상 가운데(relayout) · 글자 자리는 paintEvent 의 기준선 그대로
 //   촬영(10/11)이 버튼(10/14)보다 앞이라 실제 장면이 없어 그린 연출 — 손 대신 손가락 누름 물결
-// 시간표(구간 시작 뒤 화면 초) — 편집표가 같은 값으로 누름 소리를 놓는다
-export const CTA = {IN: 0.45, PRESS: 1.35, OUT: 1.8, SEC: 2.7};
+// 시간표 = lib/cta(편집표가 같은 값으로 누름 소리를 놓는다)
 // 부제 = 시연 프로그램 _start_subtitle(공정 이름 · 단계 수 · 1단계) — 공정 이름 정본 = Rpi5/Demo/recipe.json process_name 「PECVD 정비(PM) 시퀀스」의 괄호 앞
 const SUB = `PECVD 정비 · ${STEPS.length}단계 · 1단계 ${STEPS[0].name}부터`;
 const W0 = 640, H0 = 148, CUT = 24, TILE = 96, PAD = 30;

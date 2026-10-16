@@ -23,6 +23,7 @@ import {SKELETON} from "../edits/skeleton.ts";
 import {PRETEST, PRETEST_STAGED, PRETEST_SYNTH} from "../edits/pretest.ts";
 import {FEATURE, FEATURE_STAGED, FEATURE_SYNTH} from "../edits/feature.ts";
 import {FEATURE17, FEATURE17_STAGED, FEATURE17_SYNTH, FEATURE17_VIEWS} from "../edits/feature17.ts";
+import {CAPSTONE} from "../edits/capstone.ts";
 import {viewAt, zoomFit, zoomRect, type ViewKey} from "../lib/view.ts";
 import {voiceTrack, type VoiceTrack} from "../lib/voiceLevel.ts";
 import {TTS_ENV} from "../edits/ttsEnv.ts";
@@ -31,13 +32,13 @@ import {TTS_ENV} from "../edits/ttsEnv.ts";
 // handIntro · toolIntro = 편집표의 손 · 공구 탐지 정지 구간 원본 초(있으면 그 전엔 숨기고 그때 연출 · -1 = 다른 촬영에서 이미 함)
 type TakeData = {dets: Dets; tl: {runStart: number; events: Ev[]}; offsetMs: number; firstHand: number | null;
   handIntro: number | null; toolIntro: number | null};
-const EDITS: Record<string, Clip[]> = {skeleton: SKELETON, pretest: PRETEST, feature: FEATURE, feature17: FEATURE17};
+const EDITS: Record<string, Clip[]> = {skeleton: SKELETON, pretest: PRETEST, feature: FEATURE, feature17: FEATURE17, capstone: CAPSTONE};
 // 측정 기록 없이 찍은 촬영 = 연출 기록(lib/staged)으로 대신(편집 → 자료 묶음) · 그 편집은 「합성」 표기도 바꿔 단다
 export type Staged = {start: number; presses: StagedPress[]; first?: string; extra?: StagedEv[]};
-const STAGED: Record<string, Record<string, Staged>> = {pretest: PRETEST_STAGED, feature: FEATURE_STAGED, feature17: FEATURE17_STAGED};
-const SYNTH: Record<string, string> = {pretest: PRETEST_SYNTH, feature: FEATURE_SYNTH, feature17: FEATURE17_SYNTH};
+const STAGED: Record<string, Record<string, Staged>> = {pretest: PRETEST_STAGED, feature: FEATURE_STAGED, feature17: FEATURE17_STAGED, capstone: FEATURE17_STAGED};
+const SYNTH: Record<string, string> = {pretest: PRETEST_SYNTH, feature: FEATURE_SYNTH, feature17: FEATURE17_SYNTH, capstone: FEATURE17_SYNTH};
 // 화면 보기(확대) — 편집마다 촬영별 기준점(lib/view · 시안 17 = 안경 끝 맞춤 · 비침 · 문 구간 확대)
-const VIEWS: Record<string, Record<string, ViewKey[]>> = {feature17: FEATURE17_VIEWS};
+const VIEWS: Record<string, Record<string, ViewKey[]>> = {feature17: FEATURE17_VIEWS, capstone: FEATURE17_VIEWS};   // 캡스톤 = 시안 17 장면 그대로(D83)
 // hq = 렌더 때 검출용 사본(proxy.mp4 · 긴 변 1280) 대신 고화질 사본(hq.mp4 · 긴 변 1920)으로 — 최종 영상 화질(10/13 사용자 「고해상도로 렌더링」)
 //   hq.mp4 = tools/proxy.sh <원본> hq.mp4 1920 16(사본과 같은 과정 → 프레임 시각이 같아 검출 표시가 맞는다 · 원본을 그대로 쓰면 0.05초 어긋남)
 //   로고(intro_logo)는 원본이 1280 이라 원본을 그대로 hq.mp4 로 둔다 · 화면 맞춤(fit)은 검출 기준(사본 크기) 그대로
