@@ -39,7 +39,7 @@
 - 출력: **HailoRT NMS 결과** `[클래스5, 5, 100]` 파싱 (raw 텐서 디코딩 ❌)
 - **HailoRT 4.x 필수** (DFC 3.33.1 hef 호환 / 5.x 금지)
 - 클래스 순서 = 위 5클래스 표
-- 산출물 `console_v1.hef`(4.4MB, 빌드명 `yolov8n.hef` 개명) — ✅ **Rpi5 repo·파이 반영 완료**(`Demo/models/console_v1.hef`, `config.HEF_MODEL_PATH` 연결, 실추론 검증). 빌드 원본은 `D:\Hailo_DFC\`.
+- 산출물 `console_v1.hef`(4.4MB, 빌드명 `yolov8n.hef` 개명) — ✅ **Rpi5 repo·파이 반영 완료**(`Demo/models/console_v1.hef`, `config.HEF_MODEL_PATH` 연결, 실추론 검증). 빌드 원본은 데스크톱 WSL `~/lab/hailo-dfc/`(2026-10-16 `D:\Hailo_DFC\` 에서 옮김).
 
 ## 통합 시 주의 (Pi)
 - ✅ `Rpi5/Demo/recipe.json` 단계 라벨 = 정본 §6 PM 정비 시퀀스(클린·가스차단→펌프/퍼지→전극냉각→챔버벤트)로 **동기화 완료**. (버튼 클래스명 B1~B4·EMO 일치)

@@ -37,7 +37,7 @@
 | 훅 구성·작업 방식·훅 설계 원칙 | [`docs/claude-code-작업문서.md`](docs/claude-code-작업문서.md) |
 | 파이 Claude Code 활용 집계(발표 수치) | [`docs/claude-code-활용집계/`](docs/claude-code-활용집계/) — 결과 · 다시 뽑는 스크립트(파이에서만) |
 | **작업 규칙·금지·함정** | [`CLAUDE.md`](CLAUDE.md) |
-| 파이 홈 폴더 배치·생성 규칙 | [`docs/파이-홈-폴더규칙.md`](docs/파이-홈-폴더규칙.md) |
+| 기기별 폴더 배치·생성 규칙(파이1 · 파이2 · 데스크톱 WSL · Windows `D:\SOP가디언`) | [`docs/파이-홈-폴더규칙.md`](docs/파이-홈-폴더규칙.md) — 정리 기록 · 도구 = 파이1 `~/lab/storage-audit/20261016/` |
 | 작업 전 설계 근거 (왜·거부한 대안) | [`docs/superpowers/specs/`](docs/superpowers/specs/) |
 | 파이 런타임 코드 | `Rpi5/` — **별도 repo** (아래 셋업 참조) |
 | 파이 도구·함수 목록 · 조사 근거 · 백업한 도구 | `Rpi5/도구목록.md`(§0 한눈 지도) · `Rpi5/함수목록.md` · `Rpi5/조사/` · `Rpi5/백업/` |

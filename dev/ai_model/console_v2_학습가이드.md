@@ -124,7 +124,7 @@ Roboflow export의 `data.yaml`은 `train: ../train/images`로 나오는데 **실
 
 ## ④ DFC 변환 (.pt → .hef)
 - 규격(반드시 준수, `dev/ai_model/README.md`): **DFC 3.33.1 / HailoRT 4.x / uint8 640×640 / NMS on-chip**. HailoRT 5.x 금지.
-- v1 절차 원본(환경 구축 난관 포함): `참고/YOLOv8n_Hailo8_변환_작업기록.md`. **환경은 v1 때 구축된 것을 그대로 재사용**(`~/hailo-venv`, model zoo `v2.18` 체크아웃 + 패치 4개, editable → `/mnt/d/Hailo_DFC/hailo_model_zoo`). 재구축 금지 — 그 기록의 난관을 다시 겪는다.
+- v1 절차 원본(환경 구축 난관 포함): `참고/YOLOv8n_Hailo8_변환_작업기록.md`. **환경은 v1 때 구축된 것을 그대로 재사용**(`~/hailo-venv`, model zoo `v2.18` 체크아웃 + 패치 4개, editable → `~/lab/hailo-dfc/hailo_model_zoo` — 2026-10-16 `/mnt/d/Hailo_DFC` 에서 옮기며 두 가상환경의 연결 파일을 새 자리로 고침). 재구축 금지 — 그 기록의 난관을 다시 겪는다.
 
 ### 🔴 GPU는 쓸 수 없다 — RTX 5060(Blackwell)은 DFC와 비호환 (2026-07-16 확정)
 **DFC 3.33.1이 번들한 TensorFlow 2.18에 sm_120(Blackwell) CUDA 커널이 없다.** TF 2.18은 Pascal(6.0)~**Ada(8.9)**까지만 커널을 싣는다(공식 릴리스 노트). Hailo 커뮤니티에도 동일 사례가 보고돼 있고(RTX 5090/sm_120, `CUDA_ERROR_INVALID_PTX`) **Hailo 공식 지원·일정 발표는 없다**.
@@ -171,7 +171,7 @@ mkdir -p calib_v2 && cp console_v2-1/train/images/*.jpg console_v2-1/valid/image
 #       model_optimization_flavor(optimization_level=1)
 #       model_optimization_config(calibration, calibset_size=652)
 
-# 4) 컴파일 (hailo-venv에서, cwd = /mnt/d/Hailo_DFC)
+# 4) 컴파일 (hailo-venv에서, cwd = ~/lab/hailo-dfc)
 hailomz compile yolov8n --ckpt <경로>/console_v2.onnx --calib-path <경로>/calib_v2/ \
   --classes 5 --hw-arch hailo8 \
   --model-script <경로>/cfg/alls/generic/console_v2.alls \
