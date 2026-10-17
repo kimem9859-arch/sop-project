@@ -67,12 +67,17 @@
 ├─ docs/                  📄 문서
 │  ├─ 통합문서.md                     ★ 단일 정본
 │  ├─ 작업로그.md · claude-code-작업로그.md · claude-code-작업문서.md
+│  ├─ SOP-그림/ · backup/             SOP 표준작업절차서 그림 · 첫 판(v0 · 8/30) — 빌드 = docs/SOP-빌드.sh
+│  ├─ claude-code-활용집계/           파이 Claude Code 활용 집계(발표 수치)
 │  └─ superpowers/specs · plans        작업 전 설계·계획
 ├─ dev/                   💻 개발
 │  ├─ poc/                Step1 PoC — MediaPipe 손 + 색 ROI + dwell (검증 완료)
 │  ├─ interlock/          트랙 A — 물리 인터락 (ref/ = ESP/Arduino 참고자산)
 │  ├─ fsm/                순서위반 상태머신 (정본 코드는 Rpi5/Demo/fsm.py)
 │  ├─ ai_model/           트랙 B — YOLO 버튼 동적검출 (상태는 통합문서 §6.1)
+│  ├─ glass/              안경 결선도(초안)
+│  ├─ llm_bench/          V4 — 파이2 LLM 지연·품질 측정 도구
+│  ├─ tts/                한국어 음성 합성·인식 비교(결과 = 성능검증-저널 §12.49 · §12.94)
 │  └─ video/              🎬 시연 영상 합성 — Remotion(폰 영상 + 실제 기록 HUD) · 사용법 = dev/video/README.md
 │                         원본·사본·검출 = 데스크톱 ~/data/시연영상/ (git 밖 · public/footage 바로가기)
 ├─ captures/              🖼️ 손 검출 샘플 이미지 (테스트 입력용)
@@ -80,7 +85,8 @@
 │  └─ 발표차트/           📊 8월 발표용 차트 SVG·PNG (생성기 = Rpi5/백업/세기-20261009/slide_charts.py · 되돌려 쓴다)
 └─ Rpi5/                  🍓 RPi 데모 (별도 git repo · gitignore)
 
-gitignore 환경자산(루트): .poc_venv · poc_data · .syslibs — 머신마다 재구축
+gitignore 환경자산(루트): .poc_venv · poc_data · .syslibs · .node-env(영상 도구 Node) — 머신마다 재구축 · 도구 설정 폴더 .agents · .superpowers
+실행 로그 · 내려받은 모델 · 한글/Office 원본을 저장소 루트나 docs/ 에 두지 않는다(원본 = 데스크톱 D:\SOP가디언\문서 · 파이-홈-폴더규칙 10장)
 ```
 
 ### 형제 저장소 — `project-docs` (한이음·학교 프로젝트 문서 작업)
