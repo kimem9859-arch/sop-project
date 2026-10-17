@@ -10,6 +10,7 @@
 | 촬영 원본·사본·검출·기록 | 데스크톱 `~/data/시연영상/<촬영 id>/` — `original.mp4` · `proxy.mp4` · `hq.mp4`(최종 렌더용 고화질 사본) · `dets.json` · `measure/` · `timeline.json` · `sync.json` (git 밖) |
 | Remotion 에서 여는 길 | `public/footage` → `~/data/시연영상` 바로가기(렌더 때 복사되지 않고 그대로 넘어간다) |
 | 렌더 결과 | `out/` (git 밖) |
+| 편집표(무엇을 렌더하나) | `src/edits/feature17.ts` = 예선 · 학교 최종발표(`out/feature_final.mp4`) · `capstone.ts` = 캡스톤 본선 제출(`out/capstone_final.mp4`) · `hanium.ts` = 한이음 제출(설계 D83 · D84) |
 | 폰 원본 받는 곳 | Windows `C:\퀵쉐어\`(Quick Share) 또는 USB 로 옮긴 폴더 → `~/data/시연영상/<id>/original.mp4` 로 **복사** |
 
 촬영 id = `<날짜>_<장소>_<장면>` **영문·숫자만**(예 `20261008_phoneA` · `20261009_p1_main1`) — Remotion 파일 주소에 한글이 들어가지 않게.
