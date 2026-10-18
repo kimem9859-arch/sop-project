@@ -12,9 +12,9 @@ test("캡스톤 — 길이 66~76초(사용자 「1분 10초 안팎」)", () => {
   const sec = totalFrames(ps) / 30;
   assert.ok(sec >= 66 && sec <= 76, `${sec}초`);
 });
-test("캡스톤 — 로고 → 작업 시작 → 01 · 02 · 03 장 · 안경 쓰기 · 켜짐 · 공구 질문 · 안경 벗기 없음 · 틀린 공구 있음", () => {
-  assert.equal(cs[0].take, "intro_logo");
-  assert.ok(cs[1].cta);
+test("캡스톤 — 작업 시작 → 01 · 02 · 03 장 · 로고 · 안경 쓰기 · 켜짐 · 공구 질문 · 안경 벗기 없음 · 틀린 공구 있음", () => {
+  assert.ok(!cs.some((c) => c.take === "intro_logo"));   // 최종 뒤 피드백 「로고 인트로 장면을 빼고 싶어」(10/18)
+  assert.ok(cs[0].cta && (cs[0].fadeIn ?? 0) > 0);       // 검은 화면에서 나타나며 시작
   assert.deepEqual(cs.filter((c) => c.card === "chapter").map((c) => c.chapter!.no), ["01", "02", "03"]);
   assert.ok(!cs.some((c) => c.take === "20261011_glasses3" || c.take === "20261011_glassesoff"));
   assert.ok(!cs.some((c) => c.boot === true));
