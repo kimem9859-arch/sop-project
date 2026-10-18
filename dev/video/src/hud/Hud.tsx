@@ -1,5 +1,5 @@
 import type {Box, DetView, Pt} from "../lib/dets.ts";
-import {BOOT_SEC, BTN_INTRO_SEC, RECIPE_OK, btnIntroAge} from "../lib/boot.ts";
+import {BOOT_SEC, BTN_INTRO_SEC, btnIntroAge, panelState, type BootOpts} from "../lib/boot.ts";
 import type {Dwell} from "../lib/judge.ts";
 import {covers} from "../lib/occlusion.ts";
 import type {UiState} from "../lib/uiState.ts";
@@ -33,13 +33,11 @@ import {VoiceBubbles} from "./VoiceBubbles.tsx";
 export const Hud: React.FC<{ui: UiState; view: DetView; fit: Fit; t: number; tMs: number; boot: number; handAge: number | null;
   W: number; H: number; badge?: string; synth?: string; pressAt?: Box | null; dwell?: Dwell | null;
   toolIntro?: number | null; overlap?: number | null; frozenAge?: number | null; uiMs?: number; trail?: Pt[] | null; impact?: number | null;
-  quiet?: number; zoneBox?: Box | null; handRecog?: number; factFrom?: string; factGauge?: boolean; voiceFx?: {amp: number; phase: number}; bootOpts?: {world: boolean; panelAt: number}}> =
+  quiet?: number; zoneBox?: Box | null; handRecog?: number; factFrom?: string; factGauge?: boolean; voiceFx?: {amp: number; phase: number}; bootOpts?: BootOpts}> =
   ({ui, view, fit, t, tMs, boot, handAge, W, H, badge, synth, pressAt = null, dwell = null,
     toolIntro = null, overlap = null, frozenAge = null, uiMs = tMs, trail = null, impact = null, quiet = 0, zoneBox = null, handRecog, factFrom, factGauge = false, voiceFx, bootOpts}) => {
     const bs = boot * BOOT_SEC;
-    const panelAt = bootOpts?.panelAt ?? RECIPE_OK;
-    const panelAge = boot >= 1 ? null : bs - panelAt; // 단계 목록이 나타난 뒤 초(지지직 등장)
-    const panels = bs >= panelAt;
+    const {shown: panels, age: panelAge} = panelState(boot, bootOpts?.panelAt);   // 단계 목록 — 보이는지 · 나타난 뒤 초(지지직 등장)
     const press = ui.lastPress ? {button: ui.lastPress.button, age: (uiMs - ui.lastPress.t) / 1000, ok: ui.lastPress.ok} : null;
     const alertAge = ui.alert ? (uiMs - ui.alert.since) / 1000 : 0;
     const ring = ui.alert ? (ui.alert.kind === "block" ? C.danger : C.warn) : C.current;

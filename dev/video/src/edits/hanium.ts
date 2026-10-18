@@ -1,4 +1,4 @@
-import {LIST_END} from "../lib/boot.ts";
+import {LIST_END, type BootOpts} from "../lib/boot.ts";
 import {CTA} from "../lib/cta.ts";
 import {place, sfxTrack, type Clip} from "../lib/edit.ts";
 import {FEATURE17} from "./feature17.ts";
@@ -21,11 +21,11 @@ const notice = (sec: number) => `이 영상은 ${sec}초부터 시스템 음성 
 const KEEP = (name: string) => name.startsWith("tts_") || name === "sfx_alarm" || name === "sfx_chime";
 const TITLE_SEC = 4.0;
 // 켜짐 모양 — 가상 세계 없이 점검 띠만 · 단계 목록 = 「점검 완료」 뒤 띠가 걷히기 시작할 때(지지직 등장 · Cut BOOT_OPTS → Hud)
-export const HANIUM_BOOT = {world: false, panelAt: LIST_END};
+export const HANIUM_BOOT: BootOpts = {world: false, panelAt: LIST_END};
 const SCENES = FEATURE17.filter((c) => c.take !== "intro_logo" && c.take !== "20261011_glasses3");   // 로고 · 안경 쓰기 뺌
 const BOOT = SCENES[0];   // 켜짐 장면(콘솔 정면 · 손이 들어오기 전)
 const TITLE: Clip = {take: BOOT.take, file: BOOT.file, from: BOOT.from, to: BOOT.from, speed: 1, overlay: false, hold: TITLE_SEC,
-  projTitle: true, fadeOut: 0.5, mute: true};
+  projTitle: HANIUM_TITLE, fadeOut: 0.5, mute: true};
 // 작업 시작 — 켜짐 장면 첫 화면에서 멈춘 채로 버튼이 나타나 눌리고 사라질 때까지 → 바로 점검이 이어짐(같은 화면에서 재생)
 const START: Clip = {take: BOOT.take, file: BOOT.file, from: BOOT.from, to: BOOT.from, speed: 1, overlay: false, hold: CTA.OUT + 0.3,
   cta: {panel: false}, fadeIn: 0.5, caption: "작업 전 「작업 시작」을 눌러 감시를 시작합니다", mute: true};
@@ -38,13 +38,16 @@ const NOTES: Record<string, string> = {
   "경고": "경고 화면은 연출 · 음성 알림은 AI 합성", "차단": "차단 화면은 연출 · 음성 알림은 AI 합성",
   "공구 질문": "음성 비서 화면은 연출 · 목소리는 AI 합성", "단계 질문": "음성 비서 화면은 연출 · 목소리는 AI 합성",
 };
-let pending: string | undefined;
-const SHOTS = SCENES.map((c): Clip => {
-  if (c.card === "section") pending = c.section?.title;
-  const note = !c.card && pending ? NOTES[pending] : undefined;
-  if (note) pending = undefined;
-  return {...c, mute: true, sfx: c.sfx?.filter(([, n]) => KEEP(n)), ...(note ? {note} : {})};
-});
+const SHOTS: Clip[] = [];
+{
+  let pending: string | undefined;   // 방금 지난 절 제목 — 그다음 첫 화면에 글씨를 단다
+  for (const c of SCENES) {
+    if (c.card === "section") pending = c.section?.title;
+    const note = !c.card && pending ? NOTES[pending] : undefined;
+    if (note) pending = undefined;
+    SHOTS.push({...c, mute: true, sfx: c.sfx?.filter(([, n]) => KEEP(n)), ...(note ? {note} : {})});
+  }
+}
 const BODY: Clip[] = [{...START, note: START_NOTE}, ...SHOTS];
 // 첫 소리 시각(초 내림 — 안내가 실제보다 늦지 않게) · 제목 자막은 길이에 영향이 없어 한 번 놓아 보고 계산한다
 const FIRST = Math.floor(Math.min(...sfxTrack(place([TITLE, ...BODY], 30), 30).map((s) => s.frame)) / 30);

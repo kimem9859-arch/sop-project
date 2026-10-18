@@ -1,5 +1,5 @@
 import {AbsoluteFill, Freeze, Html5Audio, OffthreadVideo, Sequence, staticFile, useCurrentFrame, useVideoConfig, type CalculateMetadataFunction} from "remotion";
-import {BOOT_SEC, BTN_INTRO_SEC, BTN_ORDER, BTN_STEP, btnIntroAge} from "../lib/boot.ts";
+import {BOOT_SEC, BTN_INTRO_SEC, BTN_ORDER, BTN_STEP, btnIntroAge, type BootOpts} from "../lib/boot.ts";
 import {detAt, firstHandAt, fitRect, lastBox, stableBox, tipTrail, type Box, type Dets, type Pt} from "../lib/dets.ts";
 import {bootTimes, captionTrack, noteTrack, place, sfxTrack, srcSec, totalFrames, type Clip, type Placed} from "../lib/edit.ts";
 import {burstAge, crtOff, insetSpot, meterSpan, screenSince, shake} from "../lib/fx.ts";
@@ -41,7 +41,7 @@ const STAGED: Record<string, Record<string, Staged>> = {pretest: PRETEST_STAGED,
 const SYNTH: Record<string, string> = {pretest: PRETEST_SYNTH, feature: FEATURE_SYNTH, feature17: FEATURE17_SYNTH, capstone: FEATURE17_SYNTH, hanium: ""};   // 한이음 = 늘 떠 있는 표기 없음 → 장면마다 잠깐(note · NOTE_SEC)
 // 화면 보기(확대) — 편집마다 촬영별 기준점(lib/view · 시안 17 = 안경 끝 맞춤 · 비침 · 문 구간 확대)
 // 켜짐 모양(편집마다 · 없으면 가상 세계 + 레시피 줄 정상에 단계 목록) — 한이음 = 가상 세계 없이 · 점검 완료 뒤 목록(D84)
-const BOOT_OPTS: Record<string, {world: boolean; panelAt: number}> = {hanium: HANIUM_BOOT};
+const BOOT_OPTS: Record<string, BootOpts> = {hanium: HANIUM_BOOT};
 const VIEWS: Record<string, Record<string, ViewKey[]>> = {feature17: FEATURE17_VIEWS, capstone: FEATURE17_VIEWS, hanium: FEATURE17_VIEWS};   // 캡스톤 · 한이음 = 시안 17 장면 그대로(D83 · D84)
 // hq = 렌더 때 검출용 사본(proxy.mp4 · 긴 변 1280) 대신 고화질 사본(hq.mp4 · 긴 변 1920)으로 — 최종 영상 화질(10/13 사용자 「고해상도로 렌더링」)
 //   hq.mp4 = tools/proxy.sh <원본> hq.mp4 1920 16(사본과 같은 과정 → 프레임 시각이 같아 검출 표시가 맞는다 · 원본을 그대로 쓰면 0.05초 어긋남)
@@ -89,7 +89,7 @@ const PANEL = {x: 40, y: 40, w: 440, h: 360};   // 왼쪽 위 단계 목록(확�
 // views = 이 편집의 촬영별 화면 보기 기준점(없으면 원래 화면) — 영상 · 검출 좌표(fit)를 같이 확대한다
 const ClipView: React.FC<{p: Placed; d: TakeData | undefined; boot0: {at: number; runs: boolean} | null; synth?: string;
   ps: Placed[]; i: number; trailFrom: number | null; views?: Record<string, ViewKey[]>; voice?: VoiceTrack; hq?: boolean;
-  bootOpts?: {world: boolean; panelAt: number}}> = ({p, d, boot0, synth, ps, i, trailFrom, views, voice, hq = false, bootOpts}) => {
+  bootOpts?: BootOpts}> = ({p, d, boot0, synth, ps, i, trailFrom, views, voice, hq = false, bootOpts}) => {
   const f = useCurrentFrame();
   const {fps, width, height} = useVideoConfig();
   const c = p.clip;
@@ -235,7 +235,7 @@ const ClipView: React.FC<{p: Placed; d: TakeData | undefined; boot0: {at: number
         {c.intro === "end" && <EndSummary age={holdT ?? 0} W={width} H={height} />}
         {c.shutdown !== undefined && <HudShutdown age={f / fps - c.shutdown} W={width} H={height} />}   {/* 안경 벗기 — HUD 꺼짐(시안 17 4차) */}
         {c.cta && <StartCta age={f / fps} W={width} H={height} synth={synth} panel={c.cta.panel} />}   {/* 「작업 시작」 누름(캡스톤 D83) */}
-        {c.projTitle && <TitleCard age={f / fps} W={width} H={height} />}   {/* 작품 이름 제목 화면(한이음 D84) */}
+        {c.projTitle && <TitleCard lines={c.projTitle} age={f / fps} W={width} H={height} />}   {/* 작품 이름 제목 화면(한이음 D84) */}
       </AbsoluteFill>
       {crt && crt.glow > 0 && crt.op > 0 && (
         // 눌린 화면의 밝은 줄 · 점 빛
@@ -293,7 +293,7 @@ export const Cut: React.FC<CutProps> = ({edit, data, hq}) => {
       </AbsoluteFill>
       {ba !== null && <PixelBurst age={ba} win={BURST} W={width} H={height} />}
       {cue && <Caption text={cue.text} opacity={Math.min(1, (f - cue.start) / 8, (cue.end - f) / 8) * capFade} />}
-      {note && <SynthLabel text={note.text} opacity={Math.min(1, (f - note.start) / (NOTE_IN * fps), (note.end - f) / (NOTE_OUT * fps))} />}
+      {note && <SynthLabel text={note.text} opacity={Math.min(1, (f - note.start) / (NOTE_IN * fps), (note.end - f) / (NOTE_OUT * fps)) * capFade} />}   {/* 검게 사라지는 구간에선 자막처럼 같이 */}
       {/* 소리 — 효과음 · TTS(lib/edit sfxTrack · public/audio · 시안 14) */}
       {sfxTrack(ps, fps).map((s, i) => (
         <Sequence key={`sfx${i}`} from={s.frame} layout="none"><Html5Audio src={staticFile(`audio/${s.name}.wav`)} volume={s.volume} /></Sequence>

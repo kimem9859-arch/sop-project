@@ -2,7 +2,7 @@
 // 시안 17 피드백 「가상 환경 연출 · 비전 감시 시작 상태 점검 · 점검 완료 장면을 합쳤으면」 → 한 장면:
 //   0 ~ 0.6                    안경 프레임이 사라진 직후 가상 세계가 펼쳐짐(번쩍 · 눈꺼풀)
 //   HEAD_AT ~                  가상 세계가 배경으로 이어지는 위에 「비전 감시 시작」 + 점검 4줄(차분한 등장)
-//   4번째 줄(작업 레시피) 정상  왼쪽 위 단계 목록이 나타남(PANEL_FROM · 시안 17 「레시피 불러오기가 정상이 되면」)
+//   4번째 줄(작업 레시피) 정상  왼쪽 위 단계 목록이 나타남(PANEL_FROM · 시안 17 「레시피 불러오기가 정상이 되면」 · 편집마다 다르게 = panelState)
 //   BANNER_FROM                같은 띠 안에 「점검 완료 · 버튼 탐지를 시작합니다」
 //   LIST_END ~ BANNER_TO       띠와 가상 세계가 함께 걷힘(= WORLD_SEC)
 //   CHECK_SEC ~ + SCAN_HOLD_SEC 화면 정지 — 스캔 선 위 → 아래 → 위 한 번 → 그다음 버튼 강조 B1 → … → EMO(지지직 없음)
@@ -22,6 +22,16 @@ export const BTN_STEP = 0.45; // 스캔이 끝난 뒤 첫 버튼 · 버튼 사�
 export const SCAN_HOLD_SEC = BTN_FIRST + BTN_STEP * (BTN_ORDER.length - 1) + BTN_INTRO_SEC + 0.3;
 export const BOOT_SEC = CHECK_SEC + SCAN_HOLD_SEC;
 export const PANEL_FROM = RECIPE_OK / BOOT_SEC;
+
+// 켜짐 모양(편집마다 · Cut BOOT_OPTS → Hud) — world = 가상 세계 펼침 · panelAt = 단계 목록이 나타나는 켜짐 초(한이음 = 점검 완료 뒤 · D84)
+export type BootOpts = {world: boolean; panelAt: number};
+// 단계 목록 — 보이는지 · 나타난 뒤 초(지지직 등장 · 켜짐이 끝나면 null)
+//   🔴 boot(0~1) 비율로 비교 · 계산한다 — 켜짐 초(boot × BOOT_SEC)로 바꿔 쓰면 수학적으로 같아도 반올림이 달라
+//   지지직(floor(age × 30))이 프레임마다 바뀐다(최종 리뷰 — 예선판 2프레임이 달라졌던 것) · 기본값은 옛 Hud 식과 비트 단위로 같다
+export function panelState(boot: number, panelAt = RECIPE_OK): {shown: boolean; age: number | null} {
+  const from = panelAt / BOOT_SEC;
+  return {shown: boot >= from, age: boot >= 1 ? null : (boot - from) * BOOT_SEC};
+}
 
 const easeInOut = (x: number) => (x <= 0 ? 0 : x >= 1 ? 1 : x < 0.5 ? 2 * x * x : 1 - Math.pow(-2 * x + 2, 2) / 2);
 
