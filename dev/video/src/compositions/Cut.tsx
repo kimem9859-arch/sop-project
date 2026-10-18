@@ -1,7 +1,7 @@
 import {AbsoluteFill, Freeze, Html5Audio, OffthreadVideo, Sequence, staticFile, useCurrentFrame, useVideoConfig, type CalculateMetadataFunction} from "remotion";
 import {BOOT_SEC, BTN_INTRO_SEC, BTN_ORDER, BTN_STEP, btnIntroAge} from "../lib/boot.ts";
 import {detAt, firstHandAt, fitRect, lastBox, stableBox, tipTrail, type Box, type Dets, type Pt} from "../lib/dets.ts";
-import {bootTimes, captionTrack, place, sfxTrack, srcSec, totalFrames, type Clip, type Placed} from "../lib/edit.ts";
+import {bootTimes, captionTrack, noteTrack, place, sfxTrack, srcSec, totalFrames, type Clip, type Placed} from "../lib/edit.ts";
 import {burstAge, crtOff, insetSpot, meterSpan, screenSince, shake} from "../lib/fx.ts";
 import {dwellAt} from "../lib/judge.ts";
 import {speedRead, type SpeedRead} from "../lib/speed.ts";
@@ -19,7 +19,7 @@ import {SpeedMeter} from "../hud/SpeedMeter.tsx";
 import {StartCta} from "../hud/StartCta.tsx";
 import {TitleCard} from "../hud/TitleCard.tsx";
 import {HudShutdown} from "../hud/HudShutdown.tsx";
-import {Caption} from "../hud/Overlays.tsx";
+import {Caption, SynthLabel} from "../hud/Overlays.tsx";
 import {SKELETON} from "../edits/skeleton.ts";
 import {PRETEST, PRETEST_STAGED, PRETEST_SYNTH} from "../edits/pretest.ts";
 import {FEATURE, FEATURE_STAGED, FEATURE_SYNTH} from "../edits/feature.ts";
@@ -38,7 +38,7 @@ const EDITS: Record<string, Clip[]> = {skeleton: SKELETON, pretest: PRETEST, fea
 // 측정 기록 없이 찍은 촬영 = 연출 기록(lib/staged)으로 대신(편집 → 자료 묶음) · 그 편집은 「합성」 표기도 바꿔 단다
 export type Staged = {start: number; presses: StagedPress[]; first?: string; extra?: StagedEv[]};
 const STAGED: Record<string, Record<string, Staged>> = {pretest: PRETEST_STAGED, feature: FEATURE_STAGED, feature17: FEATURE17_STAGED, capstone: FEATURE17_STAGED, hanium: FEATURE17_STAGED};
-const SYNTH: Record<string, string> = {pretest: PRETEST_SYNTH, feature: FEATURE_SYNTH, feature17: FEATURE17_SYNTH, capstone: FEATURE17_SYNTH, hanium: FEATURE17_SYNTH};
+const SYNTH: Record<string, string> = {pretest: PRETEST_SYNTH, feature: FEATURE_SYNTH, feature17: FEATURE17_SYNTH, capstone: FEATURE17_SYNTH, hanium: ""};   // 한이음 = 늘 떠 있는 표기 없음 → 장면마다 잠깐(note · NOTE_SEC)
 // 화면 보기(확대) — 편집마다 촬영별 기준점(lib/view · 시안 17 = 안경 끝 맞춤 · 비침 · 문 구간 확대)
 // 켜짐 모양(편집마다 · 없으면 가상 세계 + 레시피 줄 정상에 단계 목록) — 한이음 = 가상 세계 없이 · 점검 완료 뒤 목록(D84)
 const BOOT_OPTS: Record<string, {world: boolean; panelAt: number}> = {hanium: HANIUM_BOOT};
@@ -71,6 +71,7 @@ export const calcCut: CalculateMetadataFunction<CutProps> = async ({props}) => {
   return {props: {...props, data}, durationInFrames: totalFrames(place(clips, 30))};
 };
 
+const NOTE_SEC = 3.0, NOTE_IN = 0.3, NOTE_OUT = 0.5;   // 장면마다 잠깐 나오는 오른쪽 아래 글씨(한이음 D84 ⑥)
 const BLUR_RAMP = 6; // 정지 구간 들고 날 때 흐림이 차오르는 프레임
 const DWELL_FILL = 1.5; // 경고 절 정지 중 0.3초 타이머가 차는 데 걸리는 화면 초
 const BLURS = new Set(["buttons", "hand", "tool", "overlap"]); // 흐림 · 어둡게를 쓰는 탐지 연출(정지 · 재생 모두 · 시안 17)
@@ -275,6 +276,7 @@ export const Cut: React.FC<CutProps> = ({edit, data, hq}) => {
   const voice = (VOICE[edit] ??= voiceTrack(sfxTrack(ps, fps), TTS_ENV, totalFrames(ps), fps));
   const ba = burstAge(ps, f, fps, BURST);
   const cue = captionTrack(ps, fps).find((q) => q.start <= f && f < q.end);
+  const note = noteTrack(ps, fps, NOTE_SEC).find((q) => q.start <= f && f < q.end);
   // 구간이 검게 사라질 때(fadeOut) 자막도 같이 — 검은 화면 위에 글자만 남지 않게(시안 17 5차 페이드)
   const cur = ps.find((p) => p.start <= f && f < p.start + p.frames);
   const capFade = cur?.clip.fadeOut ? Math.min(1, (cur.start + cur.frames - f) / (cur.clip.fadeOut * fps)) : 1;   // 자막 — 편집 전체 트랙(lib/edit captionTrack)   // 장 제목 카드 첫 0.3초 — 화면 전체 색 번짐 + 픽셀 조각(제목 글자는 그 위)
@@ -291,6 +293,7 @@ export const Cut: React.FC<CutProps> = ({edit, data, hq}) => {
       </AbsoluteFill>
       {ba !== null && <PixelBurst age={ba} win={BURST} W={width} H={height} />}
       {cue && <Caption text={cue.text} opacity={Math.min(1, (f - cue.start) / 8, (cue.end - f) / 8) * capFade} />}
+      {note && <SynthLabel text={note.text} opacity={Math.min(1, (f - note.start) / (NOTE_IN * fps), (note.end - f) / (NOTE_OUT * fps))} />}
       {/* 소리 — 효과음 · TTS(lib/edit sfxTrack · public/audio · 시안 14) */}
       {sfxTrack(ps, fps).map((s, i) => (
         <Sequence key={`sfx${i}`} from={s.frame} layout="none"><Html5Audio src={staticFile(`audio/${s.name}.wav`)} volume={s.volume} /></Sequence>

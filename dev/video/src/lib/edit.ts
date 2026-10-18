@@ -10,7 +10,7 @@ export type Clip = {take: string; file: string; from: number; to: number; speed:
   callout?: CalloutDef; card?: "chapter" | "section"; tip?: boolean; fadeOut?: number; fadeIn?: number;
   subs?: [number, number, string][]; sfx?: [number, string, number?][];
   sound?: boolean; hud?: number; quiet?: boolean; noTool?: boolean; hideBtn?: string[]; spot?: string; dim?: [number, number];
-  focus?: "hand" | "tool" | "overlap"; factFrom?: string; factGauge?: boolean; shutdown?: number; meter?: boolean; cta?: {panel: boolean}; projTitle?: boolean; mute?: boolean};
+  focus?: "hand" | "tool" | "overlap"; factFrom?: string; factGauge?: boolean; shutdown?: number; meter?: boolean; cta?: {panel: boolean}; projTitle?: boolean; mute?: boolean; note?: string};
 // card = 장 · 절 제목 카드(정지 구간 · 화면을 어둡게 하고 제목만) — 시안 2 피드백 「절 제목은 따로 독립 제목 카드로」
 // tip = 검지 끝 빛 꼬리(판정 장면 · 시안 8) · fadeOut · fadeIn = 끝 · 처음 몇 초 동안 검은 화면으로 사라짐 · 검은 화면에서 나타남(로고 인트로 → 안경 장면 · 시안 11 · 12)
 // subs = 구간 안 자막 [시작, 끝, 문장](구간 시작부터 화면 초) — 한 구간 안에서 문장이 바뀔 때 · 구간 전체 한 문장이면 caption
@@ -27,6 +27,7 @@ export type Clip = {take: string; file: string; from: number; to: number; speed:
 //   meter = 손끝 확대 창 + 손끝 속도 계기(판정 장면 · spot 버튼 기준 · hud/SpeedMeter · 수정 18)
 //   cta = 「작업 시작」 누름 화면(hud/StartCta · 시간표 CTA · 캡스톤 D83) · panel = 누른 직후 단계 목록(캡스톤) · 아니면 켜짐 점검 뒤(한이음 D84)
 //   projTitle = 작품 이름 제목 화면(hud/TitleCard · 한이음 D84) · mute = 촬영 소리 끔(한이음 「음성/음향 사용 불가」 · D84)
+//   note = 이 구간 시작에 오른쪽 아래 글씨를 잠깐(noteTrack · 늘 떠 있는 표기 대신 장면마다 그 장면의 사실만 · 한이음 D84 ⑥)
 export type Placed = {clip: Clip; start: number; frames: number};
 
 export function place(clips: Clip[], fps: number): Placed[] {
@@ -74,6 +75,14 @@ export function captionTrack(ps: Placed[], fps: number): Cue[] {
     }
   }
   return out;
+}
+
+// 알림 글씨 트랙 — note 가 있는 구간 시작부터 sec 초 · 다음 알림 · 다음 제목 카드가 오면 거기서 끊고 편집 끝을 넘지 않는다(그 밖의 구간 경계는 넘어 이어짐)
+export function noteTrack(ps: Placed[], fps: number, sec: number): Cue[] {
+  const end = totalFrames(ps);
+  const starts = ps.filter((p) => p.clip.note).map((p) => ({start: p.start, text: p.clip.note!}));
+  const cardAt = (f: number) => ps.find((p) => p.clip.card && p.start > f)?.start ?? end;
+  return starts.map((n, i) => ({...n, end: Math.min(n.start + Math.round(sec * fps), starts[i + 1]?.start ?? end, cardAt(n.start), end)}));
 }
 
 // 소리 트랙 — 구간마다 sfx 를 편집 전체 프레임으로 편다 · 구간 길이 밖의 소리는 버린다(편집이 바뀌어 구간이 짧아졌을 때)

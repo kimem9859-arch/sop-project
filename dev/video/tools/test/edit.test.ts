@@ -1,6 +1,6 @@
 import {test} from "node:test";
 import assert from "node:assert/strict";
-import {bootTimes, captionTrack, place, sfxTrack, srcSec, totalFrames, type Clip} from "../../src/lib/edit.ts";
+import {bootTimes, captionTrack, noteTrack, place, sfxTrack, srcSec, totalFrames, type Clip} from "../../src/lib/edit.ts";
 
 const c = (from: number, to: number, speed: number): Clip => ({take: "x", file: "original.mp4", from, to, speed, overlay: true});
 test("배속 구간의 길이 = 원본 길이 / 배속", () => {
@@ -52,4 +52,12 @@ test("소리 트랙 — 구간 안 화면 초 → 편집 전체 프레임 · 구
   const k = (sfx?: [number, string, number?][]): Clip => ({take: "x", file: "f", from: 0, to: 1, speed: 1, overlay: true, sfx});
   const ps = place([k([[0, "a"]]), k([[0.5, "b", 0.3], [1.0, "c"]])], 30);   // 0~30 · 30~60
   assert.deepEqual(sfxTrack(ps, 30), [{frame: 0, name: "a", volume: 1}, {frame: 45, name: "b", volume: 0.3}]);
+});
+test("알림 글씨 트랙 — note 가 있는 구간 시작부터 정해진 초 동안 · 다음 알림이 오면 거기서 끊김 · 편집 끝을 넘지 않음(한이음 D84 ⑥)", () => {
+  const k = (sec: number, note?: string): Clip => ({take: "x", file: "f", from: 0, to: sec, speed: 1, overlay: true, note});
+  const ps = place([k(1, "가"), k(1), k(1, "나"), k(2)], 30);   // 0 · 30 · 60 · 90 ~ 150
+  assert.deepEqual(noteTrack(ps, 30, 3), [{start: 0, end: 60, text: "가"}, {start: 60, end: 150, text: "나"}]);
+  // 제목 카드가 시작되면 거기서 끊김(카드 위에 앞 장면 글씨가 남지 않게)
+  const card: Clip = {take: "x", file: "f", from: 0, to: 0, speed: 1, overlay: true, hold: 1, card: "section"};
+  assert.deepEqual(noteTrack(place([k(1, "가"), card, k(2, "나")], 30), 30, 3), [{start: 0, end: 30, text: "가"}, {start: 60, end: 120, text: "나"}]);
 });
